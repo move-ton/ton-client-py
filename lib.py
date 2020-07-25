@@ -2,8 +2,9 @@ import os
 import ctypes
 import json
 import platform
+import logging
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
-
+logging.basicConfig(filename='py-ton-sdk.log', filemode='a', level=logging.DEBUG)
 class InteropString(ctypes.Structure):
     _fields_ = [
         ('content', ctypes.c_char_p),
@@ -16,6 +17,10 @@ class InteropJsonResponse(ctypes.Structure):
         ('result_json', InteropString),
         ('error_json', InteropString)
     ]
+
+class TonJsonResponse:
+    result_json = None
+    status = None # True - good, False - error
 
 def detect_lib():
     plt = platform.system()
@@ -43,43 +48,56 @@ class TonJsonSettings:
 class TonClient:
     lib_path = None
     lib = None
+    logging.basicConfig(level=logging.DEBUG)
     def __init__(self,lib_name=detect_lib()):
+        logging.debug('Start new Session')
         self.lib_path = os.path.join(BASE_DIR, 'lib', 'libton_client.so')
         self.lib = ctypes.cdll.LoadLibrary(self.lib_path)
 
+    def set_level_debugging(level):
+        logging.basicConfig(filename='py-ton-sdk.log', filemode='a',level=level)
+
     def _request(self,method_name,params={}):
+        logging.debug('Create request')
         lib = self.lib
         context = lib.tc_create_context()
         context = ctypes.c_uint32(context)
-        print('Context: ', context)
-
+        logging.debug(f'Context: {context}')
         fn_name = method_name.encode()
         fn_interop = InteropString(
             ctypes.cast(fn_name, ctypes.c_char_p), len(fn_name))
 
-        print('Fn name: ', fn_interop)
-
+        logging.debug(f'Fn name: {fn_interop}')
         data = json.dumps(params).encode()
         data_interop = InteropString(
             ctypes.cast(data, ctypes.c_char_p), len(data)
         )
-        print('Data: ', data)
+        logging.debug(f'Data: {data}')
 
         lib.tc_json_request.restype = ctypes.POINTER(InteropJsonResponse)
         response = lib.tc_json_request(context, fn_interop, data_interop)
-        print('Response: ', response)
+        logging.debug(f'Response: {response}')
 
         lib.tc_read_json_response.restype = InteropJsonResponse
         read = lib.tc_read_json_response(response)
-        print('Read response: ', read)
+        logging.debug(f'Read response: : {read}')
+        resp = TonJsonResponse()
         if read.result_json.len:
-            print('Result JSON: ', read.result_json.content)
+            logging.debug(f'Result JSON: {read.result_json.content}')
+            resp.result_json = read.result_json.content
+            resp.status = True
         elif read.error_json.len:
-            print('Error JSON: ', read.error_json.content)
+            logging.warning(f'Error json response')
+            logging.debug(f'Error JSON: {read.error_json.content}')
+            resp.result_json = read.error_json.content
+            resp.status = False
 
         lib.tc_destroy_json_response(response)
         lib.tc_destroy_context(context)
-
+        return resp
+        
+        
+        return 
 
 ton = TonClient()
 
