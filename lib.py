@@ -1,31 +1,32 @@
+import os
 import ctypes
 import json
-import time
-import base64
-from json import JSONEncoder
-from typing import NewType
-from pydantic import BaseModel
-#help(ctypes)
-#help(ctypes.create_string_buffer(b"hello"))
+import platform
+BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 class InteropString(ctypes.Structure):
-    _fields_ = [("Content",	ctypes.c_char_p),  # u8
-                ("Length", ctypes.c_uint)]  # u32
+    _fields_ = [
+        ('content', ctypes.c_char_p),
+        ('len', ctypes.c_int, 32)
+    ]
 
 
 class InteropJsonResponse(ctypes.Structure):
-    _fields_ = [("result_json", InteropString),
-                ("error_json", InteropString)]
+    _fields_ = [
+        ('result_json', InteropString),
+        ('error_json', InteropString)
+    ]
 
+def detect_lib():
+    plt = platform.system()
+    if plt == "Windows":
+        return 'libton_client.dll'
+    elif plt == "Darwin":
+        return 'libton_client.dylib'
+    else:
+        return 'libton_client.so'
 
-def string_to_InteropString(string):
-    obj = InteropString()
-    str_bytes = string.encode()
-    obj.Content = ctypes.c_char_p(str_bytes)
-    print(obj.Content)
-    obj.Length = len(str_bytes)
-    return obj
-
+        
 class TonJsonSettings:
     # Hint
     base_url = "net.ton.dev"#Url node
@@ -39,39 +40,47 @@ class TonJsonSettings:
     def __init__(self,**kwargs):
         self.__dict__.update(kwargs)
 
+class TonClient:
+    lib_path = None
+    lib = None
+    def __init__(self,lib_name=detect_lib()):
+        self.lib_path = os.path.join(BASE_DIR, 'lib', 'libton_client.so')
+        self.lib = ctypes.cdll.LoadLibrary(self.lib_path)
 
+    def _request(self,method_name,params={}):
+        lib = self.lib
+        context = lib.tc_create_context()
+        context = ctypes.c_uint32(context)
+        print('Context: ', context)
 
-class TonClient():
-    lib = None # ctypes.CDLL
+        fn_name = method_name.encode()
+        fn_interop = InteropString(
+            ctypes.cast(fn_name, ctypes.c_char_p), len(fn_name))
 
-    default_settings = {}
+        print('Fn name: ', fn_interop)
 
-    def __init__(self, lib:str="./libton_client.so"):
-        self.lib = ctypes.cdll.LoadLibrary(lib)
+        data = json.dumps(params).encode()
+        data_interop = InteropString(
+            ctypes.cast(data, ctypes.c_char_p), len(data)
+        )
+        print('Data: ', data)
 
-    def request(self,method_name,parametrs):
+        lib.tc_json_request.restype = ctypes.POINTER(InteropJsonResponse)
+        response = lib.tc_json_request(context, fn_interop, data_interop)
+        print('Response: ', response)
 
-        id_context = self.lib.tc_create_context() # Create context
-        id_context = ctypes.c_int(id_context) # Convert point context to int in c++
+        lib.tc_read_json_response.restype = InteropJsonResponse
+        read = lib.tc_read_json_response(response)
+        print('Read response: ', read)
+        if read.result_json.len:
+            print('Result JSON: ', read.result_json.content)
+        elif read.error_json.len:
+            print('Error JSON: ', read.error_json.content)
 
-        # TODO: Вылетает нахрен почему то если parametrs не пустой
-        self.lib.tc_json_request.restype = ctypes.POINTER(InteropJsonResponse) # Set what 'tc_json_request' return Point of 'InteropJsonResponse'
-        print("a")
-        id_json_request = self.lib.tc_json_request(id_context, string_to_InteropString( # Send to node json request with method name and parametrs
-            method_name), string_to_InteropString(parametrs))
-        self.lib.tc_read_json_response.restype = InteropJsonResponse # Set what 'tc_read_json_response' return  'InteropJsonResponse'
-        response = self.lib.tc_read_json_response(id_json_request) # Read json response
-        print("a")
-        self.lib.tc_destroy_json_response(id_json_request) # Delete json response in library for availibity reading Content in Json
-        # TODO: Detect error or result
+        lib.tc_destroy_json_response(response)
+        lib.tc_destroy_context(context)
 
-        print(response.error_json,"a") 
-        print(response.result_json) 
-        self.lib.tc_destroy_context(id_context) # Destroy context
-
-
-# Test
 
 ton = TonClient()
 
-ton.request("Setup",'{"wait_for_timeout":50000}')
+ton._request('crypto.mnemonic.from.random')
