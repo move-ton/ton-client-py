@@ -5,12 +5,12 @@ import base64
 from json import JSONEncoder
 from typing import NewType
 from pydantic import BaseModel
-
-
+#help(ctypes)
+#help(ctypes.create_string_buffer(b"hello"))
 
 class InteropString(ctypes.Structure):
-    _fields_ = [("Content", ctypes.c_char_p),  # u8
-                ("Length", ctypes.c_int)]  # u32
+    _fields_ = [("Content",	ctypes.c_char_p),  # u8
+                ("Length", ctypes.c_uint)]  # u32
 
 
 class InteropJsonResponse(ctypes.Structure):
@@ -20,9 +20,9 @@ class InteropJsonResponse(ctypes.Structure):
 
 def string_to_InteropString(string):
     obj = InteropString()
-    str_bytes = string.encode("utf-8")
-    print(string)
-    obj.Content = ctypes.cast(str_bytes, ctypes.c_char_p)
+    str_bytes = string.encode()
+    obj.Content = ctypes.c_char_p(str_bytes)
+    print(obj.Content)
     obj.Length = len(str_bytes)
     return obj
 
@@ -50,22 +50,23 @@ class TonClient():
         self.lib = ctypes.cdll.LoadLibrary(lib)
 
     def request(self,method_name,parametrs):
-        data = '{}'
 
         id_context = self.lib.tc_create_context() # Create context
         id_context = ctypes.c_int(id_context) # Convert point context to int in c++
 
         # TODO: Вылетает нахрен почему то если parametrs не пустой
         self.lib.tc_json_request.restype = ctypes.POINTER(InteropJsonResponse) # Set what 'tc_json_request' return Point of 'InteropJsonResponse'
-        id_json_request = self.lib.tc_json_request(id_context, string_to_InteropString( # Send to node json request with method name and parametrs
-            method_name), string_to_InteropString(json.dumps(parametrs)))
         print("a")
+        id_json_request = self.lib.tc_json_request(id_context, string_to_InteropString( # Send to node json request with method name and parametrs
+            method_name), string_to_InteropString(parametrs))
         self.lib.tc_read_json_response.restype = InteropJsonResponse # Set what 'tc_read_json_response' return  'InteropJsonResponse'
         response = self.lib.tc_read_json_response(id_json_request) # Read json response
+        print("a")
         self.lib.tc_destroy_json_response(id_json_request) # Delete json response in library for availibity reading Content in Json
         # TODO: Detect error or result
-        print(response.error_json.Content) 
-        print(response.result_json.Content)
+
+        print(response.error_json,"a") 
+        print(response.result_json) 
         self.lib.tc_destroy_context(id_context) # Destroy context
 
 
@@ -73,4 +74,4 @@ class TonClient():
 
 ton = TonClient()
 
-ton.request("Setup",TonJsonSettings(base_url="main.ton.dev").__dict__)
+ton.request("Setup",'{"wait_for_timeout":50000}')
