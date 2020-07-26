@@ -47,6 +47,7 @@ class TonJsonResponse:
     result_json = None
     status = None # True - good, False - error
     context = None # ctypes.c_uint32
+
 class TonClient:
     lib_path = None
     lib = None
@@ -68,23 +69,23 @@ class TonClient:
     
     async def _request_async(self, context, id, method, data=None,func=_on_result):
         lib = self.lib
-        print('Context: ', context)
+        logging.debug(f'Context: {context}')
 
         method = method.encode()
         method_interop = InteropString(
             ctypes.cast(method, ctypes.c_char_p), len(method))
-        print('Fn name: ', method)
+        logging.debug(f'Fn name: {method}')
 
         data = json.dumps(data or {}).encode()
         data_interop = InteropString(
             ctypes.cast(data, ctypes.c_char_p), len(data)
         )
-        print('Data: ', data)
+        logging.debug(f'Data: {data}')
 
         on_result = OnResult(func)
         response = lib.tc_json_request_async(
             context, method_interop, data_interop, ctypes.c_int32(id), on_result)
-        print('Response: ', response)
+        logging.debug(f'Response: {response}')
 
         lib.tc_destroy_json_response(response)
         lib.tc_destroy_context(context)
