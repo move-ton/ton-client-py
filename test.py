@@ -1,46 +1,28 @@
-from cffi import FFI
-ffi = FFI()
-converter = FFI()
-ffi.cdef("""
-		typedef int InteropContext;
-		
-		typedef struct {
-	        const unsigned char *content;
-	       	unsigned int len;
-	    } InteropString;
+from lib import TonClient
+import time
+import asyncio
+import os
 
-	    typedef struct {
-	        InteropString result_json;
-	       	InteropString error_json;
-	    } InteropJsonResponse;
+BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
-	    InteropContext tc_create_context();
-	    InteropContext tc_destroy_context(InteropContext context);
-	    InteropJsonResponse *tc_json_request(InteropContext, InteropString, InteropString);
-	    void tc_destroy_json_response(InteropJsonResponse *response);
-	    InteropJsonResponse tc_read_json_response(InteropJsonResponse *response);
-	"""
-	)
-converter.cdef("""
-		struct InteropString 
-{ 
-   const unsigned char *content;
-   unsigned int len;
-}; 
-  
-struct InteropString convert(char string[]);  
-	""")
+ton = TonClient(BASE_DIR)
 
-def create_InteropString(string):
-	obj = ffi.new("InteropString *")
-	string_in_c = ffi.from_buffer(string.encode("utf-8"))
-	obj.content = ffi.new("char[]",string.encode())
-	obj.len = len(string.encode())
-	return obj
+ton._request(ton._create_context(),'crypto.mnemonic.from.random')
 
-conv = converter.dlopen("./libconvert.so")
-lib = ffi.dlopen("./libton_client.so")
-a = conv.convert(ffi.new("char[]","string".encode()))
-result = lib.tc_create_context()
-print(result)
-a = lib.tc_json_request(result,a,a)
+
+async def test():
+    start = time.time()
+    futures = [ton._request_async(ton._create_context(),i,'crypto.mnemonic.from.random') for i in range(1, 5)]
+    for i, future in enumerate(asyncio.as_completed(futures)):
+        result = await future
+        print('{} {}'.format(">>" * (i + 1), result))
+
+    print("Process took: {:.2f} seconds".format(time.time() - start))
+    # print(await ton._request_async(ton._create_context(),1,'crypto.mnemonic.from.random'))
+    # print(await ton._request_async(ton._create_context(),2,'crypto.mnemonic.from.random'))
+    # print(await ton._request_async(ton._create_context(),3,'crypto.mnemonic.from.random'))
+
+
+ioloop = asyncio.get_event_loop()
+ioloop.run_until_complete(test())
+ioloop.close()
