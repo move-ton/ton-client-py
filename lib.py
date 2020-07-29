@@ -72,6 +72,8 @@ class TonClient(object):
     def setup(self, settings=TON_CLIENT_DEFAULT_SETUP):
         return self._request("setup",settings)
 
+    def version(self):
+        return self._request("version",{})
 
     def _create_context(self):
         """ Create client context """

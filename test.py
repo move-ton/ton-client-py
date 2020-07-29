@@ -30,6 +30,7 @@ giver_abi = {
     'events': [],
     'data': []
 }
+print(ton.version())
 
 print(ton._request('crypto.mnemonic.from.random', {}))
 print(ton._request('version', {}))
