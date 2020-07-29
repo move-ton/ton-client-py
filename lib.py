@@ -63,10 +63,11 @@ def _on_result(
 class TonClient(object):
     lib = None
 
-    def __init__(self, lib_path: str = get_lib_basename()):
-        logger.debug('Start new Session')
-        self.lib = ctypes.cdll.LoadLibrary(lib_path)
-        self.context = self._create_context()
+    def setup(self, settings=TonJsonSettings(),context=None):
+        if not context:
+            context = self.context
+        return self._request("setup",TonJsonSettings(),context)
+
 
     def _create_context(self):
         """ Create client context """
