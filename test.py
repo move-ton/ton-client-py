@@ -32,7 +32,18 @@ giver_abi = {
 }
 print(ton.version())
 
-print(ton._request('crypto.mnemonic.from.random', {}))
+
+
+mnemo = (ton._request('crypto.mnemonic.from.random', {}))
+mnemo = "machine logic master small before pole ramp ankle stage trash pepper success oxygen unhappy engine muscle party oblige situate cement fame keep inform lemon"
+
+keys = ton._request("crypto.ed25519.keypair",{})
+print(keys)
+
+keys = ton._request('crypto.mnemonic.derive.sign.keys',dict(phrase=mnemo))
+print(keys["result"]["public"])
+address = ton._request('crypto.ton_public_key_string',"4da8a4af5a794e6c70671ad9de4ec7a3d3a8ea04d9b6610db23df2519f31bfde")
+print(address)
 print(ton._request('version', {}))
 print(ton._request('setup', TON_CLIENT_DEFAULT_SETUP))
 

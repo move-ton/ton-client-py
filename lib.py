@@ -91,7 +91,7 @@ class TonClient(object):
         method = method_name.encode()
         method_interop = InteropString(ctypes.cast(method, ctypes.c_char_p), len(method))
         logger.debug(f'Fn name: {method}')
-
+        
         params = json.dumps(params).encode()
         params_interop = InteropString(ctypes.cast(params, ctypes.c_char_p), len(params))
         logger.debug(f'Data: {params}')
