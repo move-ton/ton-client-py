@@ -42,20 +42,49 @@ def _on_result(request_id: int, result_json: InteropString,
     else:
         print('No response data')
 
+class TonJsonSettings(json.JSONEncoder):
+    # Hint
+    baseUrl = "net.ton.dev"#Url node
+    message_retries_count = 5 
+    message_expiration_timeout = 10000
+    message_expiration_timeout_grow_factor = 1.5
+    message_processing_timeout = 40000
+    message_processing_timeout_grow_factor = 1.5
+    wait_for_timeout = 40000
+    access_key = ""
+    def __init__(self,**kwargs):
+        self.__dict__.update(kwargs)
+    def json(self):
+        if self.__dict__ == {}:
+            return dict(baseUrl = "net.ton.dev")
+        return self.__dict__
+
+
 
 class TonJsonResponse:
     result_json = None
     status = None # True - good, False - error
     context = None # ctypes.c_uint32
 
+def encodeTonJson(data):
+    try:
+        return json.dumps(data.json())
+    except:
+        return json.dumps(data)
+
 class TonClient:
     lib_path = None
     lib = None
+    context = None
     logging.basicConfig(level=logging.DEBUG)
-    def __init__(self,path=BASE_DIR,lib_name=detect_lib()):
+    def __init__(self,path=BASE_DIR,lib_name=detect_lib(),context=None):
         logging.debug('Start new Session')
         self.lib_path = os.path.join(path, 'lib', lib_name)
         self.lib = ctypes.cdll.LoadLibrary(self.lib_path)
+        if context:
+            self.context = context
+        else:
+            self.context = self._create_context()
 
     def set_level_debugging(level):
         logging.basicConfig(filename='py-ton-sdk.log', filemode='a',level=level)
@@ -66,8 +95,14 @@ class TonClient:
 
     def _destroy_context(self,context):
         self.lib.tc_destroy_context(context) # Destroy context
-    
-    async def _request_async(self, context, id, method, data=None,func=_on_result):
+
+    @staticmethod
+    def _convert_bytes(data,length):
+        return data.decode(errors="replace")[:length]
+
+    async def _request_async(self, id, method, data=None,func=_on_result, context=None):
+        if not context:
+            context = self.context
         lib = self.lib
         logging.debug(f'Context: {context}')
 
@@ -76,7 +111,7 @@ class TonClient:
             ctypes.cast(method, ctypes.c_char_p), len(method))
         logging.debug(f'Fn name: {method}')
 
-        data = json.dumps(data or {}).encode()
+        data = encodeTonJson(data or {}).encode()
         data_interop = InteropString(
             ctypes.cast(data, ctypes.c_char_p), len(data)
         )
@@ -88,10 +123,11 @@ class TonClient:
         logging.debug(f'Response: {response}')
 
         lib.tc_destroy_json_response(response)
-        lib.tc_destroy_context(context)
         return response
 
-    def _request(self,context,method_name,params={}):
+    def _request(self,method_name,params={},context=None):
+        if not context:
+            context = self.context
         logging.debug('Create request')
         lib = self.lib
         logging.debug(f'Context: {context}')
@@ -100,7 +136,7 @@ class TonClient:
             ctypes.cast(fn_name, ctypes.c_char_p), len(fn_name)) #Convert method name in InteropString
 
         logging.debug(f'Fn name: {fn_interop}')
-        data = json.dumps(params).encode() # Convert params in string and encode this string in bytes
+        data = encodeTonJson(params).encode() # Convert params in string and encode this string in bytes
         data_interop = InteropString(
             ctypes.cast(data, ctypes.c_char_p), len(data) # Convert params in bytes 
         )
@@ -116,12 +152,12 @@ class TonClient:
         obj = TonJsonResponse() 
         if read.result_json.len: # If noerror
             logging.debug(f'Result JSON: {read.result_json.content}')
-            obj.result_json = read.result_json.content
+            obj.result_json = self._convert_bytes(read.result_json.content,read.result_json.len)
             obj.status = True
         elif read.error_json.len: # If error 
             logging.warning(f'Error json response')
             logging.debug(f'Error JSON: {read.error_json.content}')
-            obj.result_json = read.error_json.content
+            obj.result_json = self._convert_bytes(read.error_json.content,read.error_json.len)
             obj.status = False
         obj.context = context
         lib.tc_destroy_json_response(response) # Destroy json response in memory
