@@ -1,165 +1,129 @@
-import os
 import ctypes
+import os
 import json
-import platform
 import logging
-import asyncio
-from ton_types import *
-from helpers import *
-import time
+import platform
+from typing import Dict, Callable
 
-BASE_DIR = os.path.dirname(os.path.dirname(__file__))
-logging.basicConfig(filename='py-ton-sdk.log', filemode='a', level=logging.DEBUG)
+from ton_types import InteropString, ResultCb, InteropJsonResponse
 
-class InteropString(ctypes.Structure):
-    _fields_ = [
-        ('content', ctypes.c_char_p),
-        ('len', ctypes.c_int, 32)
-    ]
+logger = logging.getLogger('ton')
+
+BASE_DIR = os.path.dirname(__file__)
+LIB_VERSION = '0.25.0'
+LIB_DIR = os.path.join(BASE_DIR, 'bin')
+LIB_FILENAME = f'ton-rust-client-{LIB_VERSION}'
+
+DEVNET_BASE_URL = 'net.ton.dev'
+MAINNET_BASE_URL = 'main.ton.dev'
+TON_CLIENT_DEFAULT_SETUP = {
+    'baseUrl': DEVNET_BASE_URL,
+    'messageRetriesCount': 5,
+    'messageExpirationTimeout': 10000,
+    'messageExpirationTimeoutGrowFactor': 1.5,
+    'messageProcessingTimeout': 30000,
+    'messageProcessingTimeoutGrowFactor': 1.5,
+    'waitForTimeout': 20000,
+    'accessKey': ''
+}
 
 
-class InteropJsonResponse(ctypes.Structure):
-    _fields_ = [
-        ('result_json', InteropString),
-        ('error_json', InteropString)
-    ]
+def get_lib_basename():
+    plt = platform.system().lower()
+    lib_ext_dict = {
+        'windows': 'dll',
+        'darwin': 'dylib',
+        'linux': 'so'
+    }
+    if plt not in lib_ext_dict:
+        raise RuntimeError(f'No library for current platform "{plt.capitalize()}"')
+    return os.path.join(BASE_DIR, LIB_DIR, f'{LIB_FILENAME}.{lib_ext_dict[plt]}')
 
-OnResult = ctypes.CFUNCTYPE(
-    ctypes.c_void_p, ctypes.c_int32, InteropString, InteropString,
-    ctypes.c_int32)
 
-def _on_result(request_id: int, result_json: InteropString,
-               error_json: InteropString, flags: int):
+def _on_result(
+        request_id: int,
+        result_json: InteropString,
+        error_json: InteropString, flags: int):
     """ Python callback for lib async request """
-    print('Async callback fired')
-    print(f'Request ID: {request_id}\nResult JSON: {result_json}\n'
-          f'Error JSON: {error_json}\nFlags: {flags}')
+    logger.debug('Async callback fired')
+    logger.debug(
+        f'Request ID: {request_id}\n'
+        f'Result JSON: {result_json}\n'
+        f'Error JSON: {error_json}\n'
+        f'Flags: {flags}\n')
 
     if result_json.len > 0:
-        print('Result JSON: ', result_json.content)
+        logger.debug('Result JSON: ', result_json.content)
     elif error_json.len > 0:
-        print('Error JSON: ', error_json.content)
+        logger.debug('Error JSON: ', error_json.content)
     else:
-        print('No response data')
-
-class TonJsonSettings(json.JSONEncoder):
-    # Hint
-    baseUrl = "net.ton.dev"#Url node
-    message_retries_count = 5 
-    message_expiration_timeout = 10000
-    message_expiration_timeout_grow_factor = 1.5
-    message_processing_timeout = 40000
-    message_processing_timeout_grow_factor = 1.5
-    wait_for_timeout = 40000
-    access_key = ""
-    def __init__(self,**kwargs):
-        self.__dict__.update(kwargs)
-    def json(self):
-        if self.__dict__ == {}:
-            return dict(baseUrl = "net.ton.dev")
-        return self.__dict__
+        logger.debug('No response data')
 
 
-
-class TonJsonResponse:
-    result_json = None
-    status = None # True - good, False - error
-    context = None # ctypes.c_uint32
-
-def encodeTonJson(data):
-    try:
-        return json.dumps(data.json())
-    except:
-        return json.dumps(data)
-
-class TonClient:
-    lib_path = None
+class TonClient(object):
     lib = None
-    context = None
-    logging.basicConfig(level=logging.DEBUG)
-    def __init__(self,path=BASE_DIR,lib_name=detect_lib(),context=None):
-        logging.debug('Start new Session')
-        self.lib_path = os.path.join(path, 'lib', lib_name)
-        self.lib = ctypes.cdll.LoadLibrary(self.lib_path)
-        if context:
-            self.context = context
-        else:
-            self.context = self._create_context()
 
-    def set_level_debugging(level):
-        logging.basicConfig(filename='py-ton-sdk.log', filemode='a',level=level)
+    def __init__(self, lib_path: str = get_lib_basename()):
+        logger.debug('Start new Session')
+        self.lib = ctypes.cdll.LoadLibrary(lib_path)
+        self.context = self._create_context()
 
     def _create_context(self):
-        context = self.lib.tc_create_context()  # Create ton context in rust
-        return ctypes.c_uint32(context) # Convert context in uint32 
+        """ Create client context """
+        context = self.lib.tc_create_context()
+        return ctypes.c_uint32(context)
 
-    def _destroy_context(self,context):
-        self.lib.tc_destroy_context(context) # Destroy context
+    def _destroy_context(self, context):
+        """ Destroy client context """
+        self.lib.tc_destroy_context(context)
 
-    @staticmethod
-    def _convert_bytes(data,length):
-        return data.decode(errors="replace")[:length]
+    def _request(self, method_name, params: Dict) -> Dict:
+        logger.debug('Create request')
+        logger.debug(f'Context: {self.context}')
 
-    async def _request_async(self, id, method, data=None,func=_on_result, context=None):
-        if not context:
-            context = self.context
-        lib = self.lib
-        logging.debug(f'Context: {context}')
+        method = method_name.encode()
+        method_interop = InteropString(ctypes.cast(method, ctypes.c_char_p), len(method))
+        logger.debug(f'Fn name: {method}')
 
-        method = method.encode()
-        method_interop = InteropString(
-            ctypes.cast(method, ctypes.c_char_p), len(method))
-        logging.debug(f'Fn name: {method}')
+        params = json.dumps(params).encode()
+        params_interop = InteropString(ctypes.cast(params, ctypes.c_char_p), len(params))
+        logger.debug(f'Data: {params}')
 
-        data = encodeTonJson(data or {}).encode()
-        data_interop = InteropString(
-            ctypes.cast(data, ctypes.c_char_p), len(data)
-        )
-        logging.debug(f'Data: {data}')
+        self.lib.tc_json_request.restype = ctypes.POINTER(InteropJsonResponse)
+        response = self.lib.tc_json_request(self.context, method_interop, params_interop)
+        logger.debug(f'Response ptr: {response}')
 
-        on_result = OnResult(func)
-        response = lib.tc_json_request_async(
-            context, method_interop, data_interop, ctypes.c_int32(id), on_result)
-        logging.debug(f'Response: {response}')
+        self.lib.tc_read_json_response.restype = InteropJsonResponse
+        read = self.lib.tc_read_json_response(response)
+        is_success = read.is_success
+        response_json = read.json
 
-        lib.tc_destroy_json_response(response)
-        return response
+        logger.debug(f'Read response: : {read}')
+        logger.debug(f'Is success: {is_success}')
 
-    def _request(self,method_name,params={},context=None):
-        if not context:
-            context = self.context
-        logging.debug('Create request')
-        lib = self.lib
-        logging.debug(f'Context: {context}')
-        fn_name = method_name.encode() #Encode method name in bytes
-        fn_interop = InteropString(
-            ctypes.cast(fn_name, ctypes.c_char_p), len(fn_name)) #Convert method name in InteropString
+        self.lib.tc_destroy_json_response(response)
+        return {
+            'success': is_success, 'result': response_json
+        }
 
-        logging.debug(f'Fn name: {fn_interop}')
-        data = encodeTonJson(params).encode() # Convert params in string and encode this string in bytes
-        data_interop = InteropString(
-            ctypes.cast(data, ctypes.c_char_p), len(data) # Convert params in bytes 
-        )
-        logging.debug(f'Data: {data}')
-
-        lib.tc_json_request.restype = ctypes.POINTER(InteropJsonResponse) # Set what tc_json_request return address of InteropJsonResponse
-        response = lib.tc_json_request(context, fn_interop, data_interop) # Request
-        logging.debug(f'Response: {response}')
-
-        lib.tc_read_json_response.restype = InteropJsonResponse # Set what tc_read_json_response return InteropJsonResponse
-        read = lib.tc_read_json_response(response) # Get InteropJsonResponse
-        logging.debug(f'Read response: : {read}')
-        obj = TonJsonResponse() 
-        if read.result_json.len: # If noerror
-            logging.debug(f'Result JSON: {read.result_json.content}')
-            obj.result_json = self._convert_bytes(read.result_json.content,read.result_json.len)
-            obj.status = True
-        elif read.error_json.len: # If error 
-            logging.warning(f'Error json response')
-            logging.debug(f'Error JSON: {read.error_json.content}')
-            obj.result_json = self._convert_bytes(read.error_json.content,read.error_json.len)
-            obj.status = False
-        obj.context = context
-        lib.tc_destroy_json_response(response) # Destroy json response in memory
-        return obj
-
+    # async def _request_async(self, method_name, params: Dict, req_id: int, cb: Callable = _on_result):
+    #     logger.debug('Create request (async)')
+    #     logger.debug(f'Context: {self.context}')
+    #
+    #     method = method_name.encode()
+    #     method_interop = InteropString(ctypes.cast(method, ctypes.c_char_p), len(method))
+    #     logger.debug(f'Fn name: {method}')
+    #
+    #     params = json.dumps(params).encode()
+    #     params_interop = InteropString(
+    #         ctypes.cast(params, ctypes.c_char_p), len(params)
+    #     )
+    #     logger.debug(f'Data: {params}')
+    #
+    #     on_result = OnResult(cb)
+    #     response = self.lib.tc_json_request_async(
+    #         self.context, method_interop, params_interop, ctypes.c_int32(req_id), on_result)
+    #     logger.debug(f'Response: {response}')
+    #
+    #     self.lib.tc_destroy_json_response(response)
+    #     return response

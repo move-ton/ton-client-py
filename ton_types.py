@@ -1,4 +1,6 @@
 import ctypes
+import json
+
 
 class InteropString(ctypes.Structure):
     _fields_ = [
@@ -13,26 +15,32 @@ class InteropJsonResponse(ctypes.Structure):
         ('error_json', InteropString)
     ]
 
-OnResult = ctypes.CFUNCTYPE(
-    ctypes.c_void_p, ctypes.c_int32, InteropString, InteropString,
-    ctypes.c_int32)
+    def __str__(self):
+        return self.content
+    __repr__ = __str__
 
-def _on_result(request_id: int, result_json: InteropString,
-               error_json: InteropString, flags: int):
-    """ Python callback for lib async request """
-    print('Async callback fired')
-    print(f'Request ID: {request_id}\nResult JSON: {result_json}\n'
-          f'Error JSON: {error_json}\nFlags: {flags}')
+    @property
+    def is_success(self):
+        return bool(self.result_json.len)
 
-    if result_json.len > 0:
-        print('Result JSON: ', result_json.content)
-    elif error_json.len > 0:
-        print('Error JSON: ', error_json.content)
-    else:
-        print('No response data')
+    @property
+    def len(self):
+        return self.result_json.len if self.is_success else self.error_json.len
+
+    @property
+    def content(self):
+        result = self.result_json if self.is_success else self.error_json
+        return result.content.decode(errors='replace')[:self.len]
+
+    @property
+    def json(self):
+        return json.loads(self.content)
 
 
-class TonJsonResponse:
-    result_json = None
-    status = None # True - good, False - error
-    context = None # ctypes.c_uint32
+ResultCb = ctypes.CFUNCTYPE(
+    ctypes.c_void_p,
+    ctypes.c_int32,
+    InteropString,
+    InteropString,
+    ctypes.c_int32
+)
