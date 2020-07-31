@@ -39,7 +39,7 @@ def get_lib_basename():
     }
     if plt not in lib_ext_dict:
         raise RuntimeError(f'No library for current platform "{plt.capitalize()}"')
-    return os.path.join(BASE_DIR, f'{LIB_FILENAME}.{lib_ext_dict[plt]}')
+    return os.path.join(LIB_DIR, f'{LIB_FILENAME}.{lib_ext_dict[plt]}')
 
 
 def _on_result(
