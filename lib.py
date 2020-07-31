@@ -11,7 +11,7 @@ from ton_types import InteropString, ResultCb, InteropJsonResponse
 
 logger = logging.getLogger('ton')
 
-BASE_DIR = os.path.dirname(__file__)
+BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 LIB_VERSION = '0.25.0'
 LIB_DIR = os.path.join(BASE_DIR, 'bin')
 LIB_FILENAME = f'ton-rust-client-{LIB_VERSION}'
