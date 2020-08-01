@@ -142,10 +142,6 @@ class TonClient(object):
 
 
 class TonWallet(object):
-    mnemonic = None
-    secret = None
-    public = None
-    ton = None
     def __init__(self,ton: TonClient,mnemonic=None,private_key=None):
         self.ton = ton
         if mnemonic:
@@ -218,8 +214,8 @@ class TonWallet(object):
                 },
                 "keyPair": self.__dict__()
             })
-
-    def __dict__(self):
+    @property 
+    def keypair(self):
         return dict(public=self.public,secret=self.secret)
 
     def __str__(self):
