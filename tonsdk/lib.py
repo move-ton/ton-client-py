@@ -3,9 +3,10 @@ import os
 import json
 import logging
 import platform
-from typing import Dict, Callable
+from typing import Dict
 
-from ton_types import InteropString, ResultCb, InteropJsonResponse
+from tonsdk.ton_types import InteropString, InteropJsonResponse
+from tonsdk.contracts.contracts import TonContracts
 
 logger = logging.getLogger('ton')
 
@@ -36,8 +37,10 @@ def get_lib_basename():
         'linux': 'so'
     }
     if plt not in lib_ext_dict:
-        raise RuntimeError(f'No library for current platform "{plt.capitalize()}"')
-    return os.path.join(BASE_DIR, LIB_DIR, f'{LIB_FILENAME}.{lib_ext_dict[plt]}')
+        raise RuntimeError(
+            f'No library for current platform "{plt.capitalize()}"')
+    return os.path.join(
+        BASE_DIR, LIB_DIR, f'{LIB_FILENAME}.{lib_ext_dict[plt]}')
 
 
 def _on_result(
@@ -68,12 +71,16 @@ class TonClient(object):
         self.lib = ctypes.cdll.LoadLibrary(lib_path)
 
         self.context = self._create_context()
+        self.contracts = TonContracts(client=self)
 
     def setup(self, settings=TON_CLIENT_DEFAULT_SETUP):
-        return self._request("setup",settings)
+        return self._request("setup", settings)
 
     def version(self):
-        return self._request("version",{})
+        return self._request("version", {})
+
+    def request(self, method_name: str, params: dict) -> dict:
+        return self._request(method_name=method_name, params=params)
 
     def _create_context(self):
         """ Create client context """
@@ -84,20 +91,22 @@ class TonClient(object):
         """ Destroy client context """
         self.lib.tc_destroy_context(context)
 
-    def _request(self, method_name, params: Dict) -> Dict:
+    def _request(self, method_name: str, params: dict) -> dict:
         logger.debug('Create request')
         logger.debug(f'Context: {self.context}')
 
         method = method_name.encode()
-        method_interop = InteropString(ctypes.cast(method, ctypes.c_char_p), len(method))
+        method_interop = InteropString(
+            ctypes.cast(method, ctypes.c_char_p), len(method))
         logger.debug(f'Fn name: {method}')
-        
+
         params = json.dumps(params).encode()
-        params_interop = InteropString(ctypes.cast(params, ctypes.c_char_p), len(params))
+        params_interop = InteropString(ctypes.c_char_p(params), len(params))
         logger.debug(f'Data: {params}')
 
         self.lib.tc_json_request.restype = ctypes.POINTER(InteropJsonResponse)
-        response = self.lib.tc_json_request(self.context, method_interop, params_interop)
+        response = self.lib.tc_json_request(
+            self.context, method_interop, params_interop)
         logger.debug(f'Response ptr: {response}')
 
         self.lib.tc_read_json_response.restype = InteropJsonResponse
@@ -113,12 +122,14 @@ class TonClient(object):
             'success': is_success, 'result': response_json
         }
 
-    # async def _request_async(self, method_name, params: Dict, req_id: int, cb: Callable = _on_result):
+    # async def _request_async(self, method_name, params: Dict, req_id: int,
+    # cb: Callable = _on_result):
     #     logger.debug('Create request (async)')
     #     logger.debug(f'Context: {self.context}')
     #
     #     method = method_name.encode()
-    #     method_interop = InteropString(ctypes.cast(method, ctypes.c_char_p), len(method))
+    #     method_interop = InteropString(
+    #     ctypes.cast(method, ctypes.c_char_p), len(method))
     #     logger.debug(f'Fn name: {method}')
     #
     #     params = json.dumps(params).encode()
@@ -129,7 +140,8 @@ class TonClient(object):
     #
     #     on_result = OnResult(cb)
     #     response = self.lib.tc_json_request_async(
-    #         self.context, method_interop, params_interop, ctypes.c_int32(req_id), on_result)
+    #         self.context, method_interop, params_interop,
+    #         ctypes.c_int32(req_id), on_result)
     #     logger.debug(f'Response: {response}')
     #
     #     self.lib.tc_destroy_json_response(response)

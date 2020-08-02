@@ -1,8 +1,6 @@
 import logging
 
-from lib import TonClient, TON_CLIENT_DEFAULT_SETUP
-import time
-import asyncio
+from tonsdk.lib import TonClient, TON_CLIENT_DEFAULT_SETUP
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -17,7 +15,7 @@ giver_abi = {
             'name': 'constructor',
             'inputs': [],
             'outputs': []
-        }, 
+        },
         {
             'name': 'sendGrams',
             'inputs': [
