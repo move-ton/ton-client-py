@@ -261,7 +261,7 @@ class TestTonContracts(unittest.TestCase):
     def test_run_local(self):
         result = self.client.contracts.run_local(
             address=self.address, abi=self.abi, function_name="getCustodians",
-            inputs={}, full_run=True)
+            inputs={})
 
         self.assertEqual(result["success"], True)
         self.assertEqual(
@@ -275,8 +275,8 @@ class TestTonContracts(unittest.TestCase):
     def test_run(self):
         # TODO: Find normal contract to test functions
         result = self.client.contracts.run(
-            address=self.address, abi=self.abi, function_name="getParameters",
-            inputs={}, key_pair=self.keys, try_index="0")
+            address=self.address, abi=self.abi, function_name="getTransactions",
+            inputs={}, try_index="0")
         print(result)
 
         self.assertEqual(result['success'], True)

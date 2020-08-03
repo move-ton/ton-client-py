@@ -45,7 +45,7 @@ class TonContracts:
             "input": inputs,
             "header": header,
             "keyPair": key_pair,
-            "full_run": full_run,
+            "fullRun": full_run,
             "time": time
         }
         params.update(kwargs)
