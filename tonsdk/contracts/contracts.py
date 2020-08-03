@@ -75,7 +75,7 @@ class TonContracts:
             "account": account,
             "abi": abi,
             "function_name": function_name,
-            "full_run": full_run,
+            "fullRun": full_run,
             "time": time
         }
         params.update(kwargs)
