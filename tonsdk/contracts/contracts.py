@@ -32,7 +32,9 @@ class TonContract(object):
 
     def load_abi(self, path: str):
         """ Load contract ABI from file """
-        self.abi = json.load(open(path))
+        with open(path, 'r') as fp:
+            abi = fp.read()
+            self.abi = json.loads(abi)
 
     def load_image(self, path: str):
         """ Load contract from code file """
@@ -44,9 +46,11 @@ class TonContract(object):
         if binary:
             with open(path, 'rb') as fp:
                 keys = fp.read().hex()
-            self.keypair = {"public": keys[64:], "secret": keys[:64]}
+                self.keypair = {"public": keys[64:], "secret": keys[:64]}
         else:
-            self.keypair = json.load(open(path))
+            with open(path, 'r') as fp:
+                keys = fp.read()
+                self.keypair = json.loads(keys)
 
     def deploy_message(self, constructor_params=None, constructor_header=None,
                        init_params=None, workchain_id=None) -> dict:
