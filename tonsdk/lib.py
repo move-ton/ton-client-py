@@ -3,10 +3,8 @@ import os
 import json
 import logging
 import platform
-from typing import Dict
 
 from tonsdk.ton_types import InteropString, InteropJsonResponse
-from tonsdk.contracts.contracts import TonContracts
 
 logger = logging.getLogger('ton')
 
@@ -71,7 +69,6 @@ class TonClient(object):
         self.lib = ctypes.cdll.LoadLibrary(lib_path)
 
         self.context = self._create_context()
-        self.contracts = TonContracts(client=self)
 
     def setup(self, settings=TON_CLIENT_DEFAULT_SETUP):
         return self._request("setup", settings)

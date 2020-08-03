@@ -1,148 +1,133 @@
-class TonContracts:
+import base64
+import json
+
+from tonsdk.lib import TonClient
+
+
+class TonContract(object):
     """
-    TON SDK contracts JSON API
+    Work with TON contracts.
     https://github.com/tonlabs/TON-SDK/wiki/Core-Library-JSON-API
     """
+    def __init__(self):
+        self.abi = None
+        self.image = None
+        self.keypair = None
+        self.address = None
 
-    def __init__(self, client):
+        self._client = None
+
+    @property
+    def image_b64(self) -> str:
+        """ Base64 contract image representation """
+        return base64.b64encode(self.image).decode("utf8")
+
+    def set_client(self, client: TonClient):
+        """ Set client for contract """
         self._client = client
 
-    def tvm_get(self, function_name: str, code_b64: str, data_b64: str,
-                **kwargs) -> dict:
-        params = {
-            "functionName": function_name,
-            "codeBase64": code_b64,
-            "dataBase64": data_b64
-        }
-        params.update(kwargs)
+    def setup_client(self, settings: dict):
+        """ Setup client with custom settings """
+        self._client.setup(settings)
 
-        return self._client.request("tvm.get", params)
+    def load_abi(self, path: str):
+        """ Load contract ABI from file """
+        self.abi = json.load(open(path))
 
-    def run_local(self, address: str, abi: dict, function_name: str,
-                  inputs: dict, header=None, account=None, key_pair=None,
-                  full_run=False, time=None, **kwargs) -> dict:
-        # TODO: Update args description
+    def load_image(self, path: str):
+        """ Load contract from code file """
+        with open(path, 'rb') as fp:
+            self.image = fp.read()
+
+    def load_keypair(self, path: str, binary: bool):
+        """ Load keys from json or binary file """
+        if binary:
+            with open(path, 'rb') as fp:
+                keys = fp.read().hex()
+            self.keypair = {"public": keys[64:], "secret": keys[:64]}
+        else:
+            self.keypair = json.load(open(path))
+
+    def deploy_message(self, constructor_params=None, constructor_header=None,
+                       init_params=None, workchain_id=None) -> dict:
         """
-        Run contract locally
+        This method is a part of the standard deploy script and is used to
+        create a message to the blockchain to get a contract address before
+        an actual deploy.
+        It has the same parameters as the general deploy method.
+        It returns an address in raw format. In TON you need contract
+        address before an actual deploy to send [test] tokens to it.
+        Given the gas logic, you cannot deploy a contract with zero balance.
+
         Args:
-            address (address): Address string
-            abi (dict): Contract JSON ABI (part of function call set)
-            function_name (str): Contract fn name (part of function call set)
-            inputs (dict): Contract fn inputs (part of function call set)
-            header (?, None): Contract header (part of function call set)
-            account (?dict): Account struct
-            key_pair (dict): Dict with 'public' and 'secret' keys
-            full_run (bool):
-            time (int, None):
+            constructor_params (dict): Contract constructor arguments
+            constructor_header (dict): Contract constructor header
+            init_params (dict): Additional parameters in a form of an
+                object that are saved right to the Persistent Storage (c4)
+                during deployment. This field determines the contract address
+                (in combination with the contract code). In previous versions
+                it only included the public key, but now it can store
+                additional data.
+            workchain_id (int): Default will be 0
         Returns:
             dict
         """
         params = {
-            "address": address,
-            "account": account,
-            "abi": abi,
-            "functionName": function_name,
-            "input": inputs,
-            "header": header,
-            "keyPair": key_pair,
-            "fullRun": full_run,
-            "time": time
+            "constructorParams": constructor_params or {},
+            "constructorHeader": constructor_header or {},
+            "initParams": init_params or {},
+            "abi": self.abi,
+            "imageBase64": self.image_b64,
+            "keyPair": self.keypair,
+            "workchainId": workchain_id
         }
-        params.update(kwargs)
 
-        return self._client.request("contracts.run.local", params)
+        result = self._execute("contracts.deploy.message", params)
+        self.address = result["address"]
 
-    def run_local_msg(self, address: str, message_base64: str, account=None,
-                      abi=None, function_name=None, full_run=False, time=None,
-                      **kwargs) -> dict:
-        # TODO: Update args description
+        return result
+
+    def deploy(self, constructor_params=None, constructor_header=None,
+               init_params=None, workchain_id=None, try_index=None) -> dict:
         """
-        Locally run contract with message
+        Deploy contract to blockchain
+
         Args:
-            address (str): Sender address
-            message_base64 (str): Base64 of message BOC
-            account (?, None): Some struct wanted
-            abi (dict, None): JSON ABI as str
-            function_name (str, None): Contract function name
-            full_run (bool): ? Full contract run?
-            time (int, None): ? What time
+            constructor_params (dict): Constructor parameters
+            constructor_header (dict): Constructor header
+            init_params (dict): Additional parameters in a form of an
+                object that are saved right to the Persistent Storage (c4)
+                during deployment. This field determines the contract address
+                (in combination with the contract code). In previous versions
+                it only included the public key, but now it can store
+                additional data.
+            workchain_id (int): Default will be 0
+            try_index (str): Single character
         Returns:
             dict
         """
         params = {
-            "address": address,
-            "messageBase64": message_base64,
-            "account": account,
-            "abi": abi,
-            "function_name": function_name,
-            "fullRun": full_run,
-            "time": time
+            "constructorParams": constructor_params or {},
+            "constructorHeader": constructor_header or {},
+            "initParams": init_params or {},
+            "abi": self.abi,
+            "imageBase64": self.image_b64,
+            "keyPair": self.keypair,
+            "workchainId": workchain_id,
+            "tryIndex": try_index
         }
-        params.update(kwargs)
 
-        return self._client.request("contracts.run.local.msg", params)
+        result = self._execute("contracts.deploy", params)
+        self.address = result["address"]
 
-    def run(self, address: str, abi: dict, function_name: str, inputs: dict,
-            header=None, key_pair=None, try_index=None, **kwargs) -> dict:
-        """
-        Run contract in blockchain. Pay attention for client configuration,
-        is it main net or test test to avoid funds loss.
-        Args:
-            address (str): Contract address
-            abi (dict): Contract JSON ABI
-            function_name (str): Contract function name to execute
-            inputs (dict): Arguments for function
-            key_pair (dict, None): Contract key pair {'public', 'secret'}
-            header (?): Contract header
-            try_index (int, None): ?
-        Returns:
-            dict
-        """
-        params = {
-            "address": address,
-            "abi": abi,
-            "functionName": function_name,
-            "input": inputs,
-            "header": header,
-            "keyPair": key_pair,
-            "try_index": try_index
-        }
-        params.update(kwargs)
+        return result
 
-        return self._client.request("contracts.run", params)
+    def _execute(self, method: str, params: dict, raise_exception=True,
+                 **kwargs) -> dict:
+        """ Execute client call """
+        result = self._client.request(method, params)
 
-    def load(self, address: str, **kwargs) -> dict:
-        params = {"address": address}
-        params.update(kwargs)
+        if raise_exception and not result["success"]:
+            raise Exception(result["result"])
 
-        return self._client.request("contracts.load", params)
-
-    def find_shard(self, address: str, shards: [dict], **kwargs) -> dict:
-        params = {
-            "address": address,
-            "shards": shards
-        }
-        params.update(kwargs)
-
-        return self._client.request("contracts.find.shard", params)
-
-    def convert_address(self, address: str, convert_to: str, b64_params=None,
-                        **kwargs) -> dict:
-        """
-        Address representations
-        Args:
-            address (str): Address
-            convert_to (str): Available values (AccountId, Hex, Base64)
-            b64_params (dict): Required only for Base64 convert to.
-                               {"url": bool, "test": bool, "bounce": bool}
-        Returns:
-            dict
-        """
-        params = {
-            "address": address,
-            "convertTo": convert_to,
-            "base64Params": b64_params
-        }
-        params.update(kwargs)
-
-        return self._client.request("contracts.address.convert", params)
+        return result["result"]
