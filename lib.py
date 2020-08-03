@@ -3,9 +3,9 @@ import os
 import json
 import logging
 import platform
-from typing import Dict, Callable
+from typing import Dict
 
-from ton_types import InteropString, ResultCb, InteropJsonResponse
+from ton_types import InteropString, InteropJsonResponse
 
 logger = logging.getLogger('ton')
 
@@ -40,26 +40,6 @@ def get_lib_basename():
     return os.path.join(BASE_DIR, LIB_DIR, f'{LIB_FILENAME}.{lib_ext_dict[plt]}')
 
 
-def _on_result(
-        request_id: int,
-        result_json: InteropString,
-        error_json: InteropString, flags: int):
-    """ Python callback for lib async request """
-    logger.debug('Async callback fired')
-    logger.debug(
-        f'Request ID: {request_id}\n'
-        f'Result JSON: {result_json}\n'
-        f'Error JSON: {error_json}\n'
-        f'Flags: {flags}\n')
-
-    if result_json.len > 0:
-        logger.debug('Result JSON: ', result_json.content)
-    elif error_json.len > 0:
-        logger.debug('Error JSON: ', error_json.content)
-    else:
-        logger.debug('No response data')
-
-
 class TonClient(object):
     lib = None
 
@@ -69,11 +49,12 @@ class TonClient(object):
 
         self.context = self._create_context()
 
-    def setup(self, settings=TON_CLIENT_DEFAULT_SETUP):
-        return self._request("setup",settings)
+    def setup(self, settings=None):
+        settings = settings or TON_CLIENT_DEFAULT_SETUP
+        return self._request("setup", settings)
 
     def version(self):
-        return self._request("version",{})
+        return self._request("version", {})
 
     def _create_context(self):
         """ Create client context """
@@ -134,3 +115,23 @@ class TonClient(object):
     #
     #     self.lib.tc_destroy_json_response(response)
     #     return response
+
+
+# def _on_result(
+#         request_id: int,
+#         result_json: InteropString,
+#         error_json: InteropString, flags: int):
+#     """ Python callback for lib async request """
+#     logger.debug('Async callback fired')
+#     logger.debug(
+#         f'Request ID: {request_id}\n'
+#         f'Result JSON: {result_json}\n'
+#         f'Error JSON: {error_json}\n'
+#         f'Flags: {flags}\n')
+#
+#     if result_json.len > 0:
+#         logger.debug('Result JSON: ', result_json.content)
+#     elif error_json.len > 0:
+#         logger.debug('Error JSON: ', error_json.content)
+#     else:
+#         logger.debug('No response data')

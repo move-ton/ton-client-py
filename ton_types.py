@@ -37,10 +37,10 @@ class InteropJsonResponse(ctypes.Structure):
         return json.loads(self.content)
 
 
-ResultCb = ctypes.CFUNCTYPE(
-    ctypes.c_void_p,
-    ctypes.c_int32,
-    InteropString,
-    InteropString,
-    ctypes.c_int32
-)
+# ResultCb = ctypes.CFUNCTYPE(
+#     ctypes.c_void_p,
+#     ctypes.c_int32,
+#     ctypes.POINTER(InteropString),
+#     ctypes.POINTER(InteropString),
+#     ctypes.c_int32
+# )
