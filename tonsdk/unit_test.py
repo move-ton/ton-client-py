@@ -260,8 +260,8 @@ class TestTonContracts(unittest.TestCase):
 
     def test_run_local(self):
         result = self.client.contracts.run_local(
-            address=self.address, abi=self.abi, function_name="getParameters",
-            inputs={})
+            address=self.address, abi=self.abi, function_name="getCustodians",
+            inputs={}, full_run=True)
 
         self.assertEqual(result["success"], True)
         self.assertEqual(
