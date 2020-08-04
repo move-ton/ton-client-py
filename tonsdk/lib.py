@@ -171,15 +171,15 @@ class TonClient(object):
         return self.request(
             method="crypto.mnemonic.derive.sign.keys", params=params)
 
-    def ton_crc16(self, string: str, fmt: str) -> int:
+    def ton_crc16(self, string: str, string_fmt: str) -> int:
         """
         Args:
             string (str): String as hex, base64 or plain text
-            fmt (str): String type ('TonClient.TYPE_x' constants)
+            string_fmt (str): String type ('TonClient.TYPE_x' constants)
         Returns:
             int
         """
-        params = self._str_type_dict(string=string, fmt=fmt)
+        params = self._str_type_dict(string=string, fmt=string_fmt)
         return self.request(method='crypto.ton_crc16', params=params)
 
     def mnemonic_generate(self, word_count=24) -> str:
@@ -194,19 +194,19 @@ class TonClient(object):
         return self.request(
             method='crypto.mnemonic.from.random', params=params)
 
-    def mnemonic_from_entropy(self, entropy: str, fmt: str, word_count=24)\
-            -> str:
+    def mnemonic_from_entropy(self, entropy: str, entropy_fmt: str,
+                              word_count=24) -> str:
         """
         Args:
             entropy (str): String as hex, base64 or plain text
+            entropy_fmt (str): Entropy string type (TonClient.TYPE_x)
             word_count (int):
-            fmt (str): Entropy string type ('TonClient.TYPE_x' constants)
         Returns:
             str
         """
         params = {
             "wordCount": word_count,
-            "entropy": self._str_type_dict(string=entropy, fmt=fmt)
+            "entropy": self._str_type_dict(string=entropy, fmt=entropy_fmt)
         }
         return self.request(
             method="crypto.mnemonic.from.entropy", params=params)
@@ -225,26 +225,30 @@ class TonClient(object):
         """ Get word list """
         return self.request("crypto.mnemonic.words")
 
-    def sha512(self, string: str, fmt: str) -> str:
+    def sha512(self, string: str, string_fmt: str) -> str:
         """
         Args:
             string (str): String as hex, base64 or plain text
-            fmt (str): String type ('TonClient.TYPE_x' constants)
+            string_fmt (str): String type (TonClient.TYPE_x)
         Returns:
             str
         """
-        params = {"message": self._str_type_dict(string=string, fmt=fmt)}
+        params = {
+            "message": self._str_type_dict(string=string, fmt=string_fmt)
+        }
         return self.request(method='crypto.sha512', params=params)
 
-    def sha256(self, string: str, fmt: str) -> str:
+    def sha256(self, string: str, string_fmt: str) -> str:
         """
         Args:
             string (str): String as hex, base64 or plain text
-            fmt (str): Entropy string type ('TonClient.TYPE_x' constants)
+            string_fmt (str): Entropy string type (TonClient.TYPE_x)
         Returns:
             str
         """
-        params = {"message": self._str_type_dict(string=string, fmt=fmt)}
+        params = {
+            "message": self._str_type_dict(string=string, fmt=string_fmt)
+        }
         return self.request(method='crypto.sha256', params=params)
 
     def scrypt(self, data: str, n: int, r: int, p: int, dk_len: int, salt: str,
@@ -412,35 +416,35 @@ class TonClient(object):
             method='crypto.nacl.sign.keypair.fromSecretKey', params=secret_key)
 
     def nacl_box(self, nonce: str, their_public_key: str, message: str,
-                 fmt: str) -> str:
+                 message_fmt: str) -> str:
         """
         Args:
             nonce (str):
             their_public_key (str):
             message (str): Message as hex, base64 or plain text
-            fmt (str): Message string type ('TonClient.TYPE_x' constants)
+            message_fmt (str): Message string type (TonClient.TYPE_x)
         Returns:
             str
         """
         params = {
             "nonce": nonce,
             "theirPublicKey": their_public_key,
-            "message": self._str_type_dict(string=message, fmt=fmt)
+            "message": self._str_type_dict(string=message, fmt=message_fmt)
         }
         return self.request(method="crypto.nacl.box", params=params)
 
-    def nacl_sign(self, key: str, message: str, fmt: str) -> str:
+    def nacl_sign(self, key: str, message: str, message_fmt: str) -> str:
         """
         Args:
             key (str):
             message (str): Message as hex, base64 or plain text
-            fmt (str): Message string type ('TonClient.TYPE_x' constants)
+            message_fmt (str): Message string type (TonClient.TYPE_x)
         Returns:
             str
         """
         params = {
             "key": key,
-            "message": self._str_type_dict(string=message, fmt=fmt)
+            "message": self._str_type_dict(string=message, fmt=message_fmt)
         }
         return self.request(method='crypto.nacl.sign', params=params)
 
@@ -449,66 +453,67 @@ class TonClient(object):
             method='crypto.nacl.box.keypair.fromSecretKey', params=key)
 
     def nacl_secret_box_open(self, nonce: str, their_public_key: str,
-                             message: str, fmt: str) -> str:
+                             message: str, message_fmt: str) -> str:
         """
         Args:
             nonce (str):
             their_public_key (str):
             message (str): Message as hex, base64 or plain text
-            fmt (str): Message string type ('TonClient.TYPE_x' constants)
+            message_fmt (str): Message string type (TonClient.TYPE_x)
         Returns:
             str
         """
         params = {
             "nonce": nonce,
             "key": their_public_key,
-            "message": self._str_type_dict(string=message, fmt=fmt)
+            "message": self._str_type_dict(string=message, fmt=message_fmt)
         }
         return self.request(
             method="crypto.nacl.secret.box.open", params=params)
 
-    def nacl_sign_detached(self, key: str, message: str, fmt: str) -> str:
+    def nacl_sign_detached(self, key: str, message: str, message_fmt: str) \
+            -> str:
         """
         Args:
             key (str):
             message (str): Message as hex, base64 or plain text
-            fmt (str): Message string type ('TonClient.TYPE_x' constants)
+            message_fmt (str): Message string type (TonClient.TYPE_x)
         Returns:
             str
         """
         params = {
             "key": key,
-            "message": self._str_type_dict(string=message, fmt=fmt)
+            "message": self._str_type_dict(string=message, fmt=message_fmt)
         }
         return self.request(method="crypto.nacl.sign.detached", params=params)
 
     def nacl_secret_box(self, nonce: str, their_public_key: str, message: str,
-                        fmt: str) -> str:
+                        message_fmt: str) -> str:
         """
         Args:
             nonce (str):
             their_public_key (str):
             message (str): Message as hex, base64 or plain text
-            fmt (str): Message string type ('TonClient.TYPE_x' constants)
+            message_fmt (str): Message string type (TonClient.TYPE_x)
         Returns:
             str
         """
         params = {
             "nonce": nonce,
             "key": their_public_key,
-            "message": self._str_type_dict(string=message, fmt=fmt)
+            "message": self._str_type_dict(string=message, fmt=message_fmt)
         }
         return self.request(method="crypto.nacl.secret.box", params=params)
 
     def nacl_box_open(self, nonce: str, their_public_key: str, secret_key: str,
-                      message: str, fmt: str) -> str:
+                      message: str, message_fmt: str) -> str:
         """
         Args:
             nonce (str):
             their_public_key (str):
             secret_key (str):
             message (str): Message as hex, base64 or plain text
-            fmt (str): Message string type ('TonClient.TYPE_x' constants)
+            message_fmt (str): Message string type (TonClient.TYPE_x)
         Returns:
             str
         """
@@ -516,22 +521,22 @@ class TonClient(object):
             "nonce": nonce,
             "theirPublicKey": their_public_key,
             "secretKey": secret_key,
-            "message": self._str_type_dict(string=message, fmt=fmt)
+            "message": self._str_type_dict(string=message, fmt=message_fmt)
         }
         return self.request(method="crypto.nacl.box.open", params=params)
 
-    def nacl_sign_open(self, key: str, message: str, fmt: str) -> str:
+    def nacl_sign_open(self, key: str, message: str, message_fmt: str) -> str:
         """
         Args:
             key (str):
             message (str): Message as hex, base64 or plain text
-            fmt (str): Message string type ('TonClient.TYPE_x' constants)
+            message_fmt (str): Message string type (TonClient.TYPE_x)
         Returns:
             str
         """
         params = {
             "key": key,
-            "message": self._str_type_dict(string=message, fmt=fmt)
+            "message": self._str_type_dict(string=message, fmt=message_fmt)
         }
         return self.request(method="crypto.nacl.sign.open", params=params)
 

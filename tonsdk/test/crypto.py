@@ -42,17 +42,17 @@ class TestCrypto(unittest.TestCase):
     def test_ton_crc16(self):
         # CRC from plain text
         crc = self.client.ton_crc16(
-            string=self.text_plain, fmt=TonClient.TYPE_TEXT)
+            string=self.text_plain, string_fmt=TonClient.TYPE_TEXT)
         self.assertEqual(crc, self.text_valid_crc16)
 
         # CRC from hex
         crc = self.client.ton_crc16(
-            string=self.text_hex, fmt=TonClient.TYPE_HEX)
+            string=self.text_hex, string_fmt=TonClient.TYPE_HEX)
         self.assertEqual(crc, self.text_valid_crc16)
 
         # CRC from base64
         crc = self.client.ton_crc16(
-            string=self.text_base64, fmt=TonClient.TYPE_BASE64)
+            string=self.text_base64, string_fmt=TonClient.TYPE_BASE64)
         self.assertEqual(crc, self.text_valid_crc16)
 
     def test_mnemonic_generate(self):
@@ -69,12 +69,13 @@ class TestCrypto(unittest.TestCase):
 
         # Mnemonic from hex entropy
         mnemonic_from_hex = self.client.mnemonic_from_entropy(
-            entropy=hex_entropy, fmt=TonClient.TYPE_HEX, word_count=24)
+            entropy=hex_entropy, entropy_fmt=TonClient.TYPE_HEX, word_count=24)
         self.assertEqual(mnemonic_from_hex, mnemonic)
 
         # Mnemonic from base64 entropy
         mnemonic_from_b64 = self.client.mnemonic_from_entropy(
-            entropy=b64_entropy, fmt=TonClient.TYPE_BASE64, word_count=24)
+            entropy=b64_entropy, entropy_fmt=TonClient.TYPE_BASE64,
+            word_count=24)
         self.assertEqual(mnemonic_from_b64, mnemonic)
 
         self.assertEqual(mnemonic_from_hex, mnemonic_from_b64)
@@ -93,31 +94,33 @@ class TestCrypto(unittest.TestCase):
     def test_sha512(self):
         # SHA512 from plain text
         sha = self.client.sha512(
-            string=self.text_plain, fmt=TonClient.TYPE_TEXT)
+            string=self.text_plain, string_fmt=TonClient.TYPE_TEXT)
         self.assertEqual(sha, self.text_valid_sha512)
 
         # SHA512 from hex string
-        sha = self.client.sha512(string=self.text_hex, fmt=TonClient.TYPE_HEX)
+        sha = self.client.sha512(
+            string=self.text_hex, string_fmt=TonClient.TYPE_HEX)
         self.assertEqual(sha, self.text_valid_sha512)
 
         # SHA512 from base64
         sha = self.client.sha512(
-            string=self.text_base64, fmt=TonClient.TYPE_BASE64)
+            string=self.text_base64, string_fmt=TonClient.TYPE_BASE64)
         self.assertEqual(sha, self.text_valid_sha512)
 
     def test_sha256(self):
         # SHA256 from plain text
         sha = self.client.sha256(
-            string=self.text_plain, fmt=TonClient.TYPE_TEXT)
+            string=self.text_plain, string_fmt=TonClient.TYPE_TEXT)
         self.assertEqual(sha, self.text_valid_sha256)
 
         # SHA256 from hex string
-        sha = self.client.sha256(string=self.text_hex, fmt=TonClient.TYPE_HEX)
+        sha = self.client.sha256(
+            string=self.text_hex, string_fmt=TonClient.TYPE_HEX)
         self.assertEqual(sha, self.text_valid_sha256)
 
         # SHA256 from base64
         sha = self.client.sha256(
-            string=self.text_base64, fmt=TonClient.TYPE_BASE64)
+            string=self.text_base64, string_fmt=TonClient.TYPE_BASE64)
         self.assertEqual(sha, self.text_valid_sha256)
 
     def test_scrypt(self):
@@ -156,7 +159,7 @@ class TestCrypto(unittest.TestCase):
 
     def test_factorize(self):
         result = self.client.factorize(number="2a")
-        self.assertEqual(result, {'a': '6', 'b': '7'})
+        self.assertEqual(result, {'a': '3', 'b': 'E'})
 
     def test_ton_public_key_string(self):
         public = self.client.ton_public_key_string(
@@ -171,3 +174,13 @@ class TestCrypto(unittest.TestCase):
     def test_modular_power(self):
         result = self.client.modular_power(base="1", exponent="2", modulus="5")
         self.assertEqual(result.isnumeric(), True)
+
+    def test_nacl_box_keypair(self):
+        keypair = self.client.nacl_box_keypair()
+        self.assertEqual(type(keypair), dict)
+        self.assertEqual(list(keypair.keys()), ["public", "secret"])
+
+    def test_nacl_sign_keypair(self):
+        keypair = self.client.nacl_sign_keypair()
+        self.assertEqual(type(keypair), dict)
+        self.assertEqual(list(keypair.keys()), ["public", "secret"])
