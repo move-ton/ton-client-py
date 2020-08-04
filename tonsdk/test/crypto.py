@@ -10,7 +10,20 @@ logging.basicConfig(level=logging.INFO)
 class TestCrypto(unittest.TestCase):
     def setUp(self) -> None:
         self.client = TonClient()
+
         self.mnemonic = "machine logic master small before pole ramp ankle stage trash pepper success oxygen unhappy engine muscle party oblige situate cement fame keep inform lemon"
+        self.keypair = {
+            "public": "2e750ea795aad6e04ae1544132619c6a5e1356c36db60532320dae6aa656cf2e",
+            "secret": "7ee962326304f9f88d5048fabdde7921411b1aad6400ef984c85a0a9cb3b1a7c"
+        }
+        self.public_b64 = "PuYudQ6nlarW4ErhVEEyYZxqXhNWw222BTIyDa5qplbPLjlF"
+        self.bip32_key = "xprv9s21ZrQH143K41qESFSVMwMgA2qvjYdjJo4wz9QWgH2G5yiFG5Ep8rVZsm2zn87CwBR7GYjJY57GLs529NhXsRvpm9M9vJ62WD7tA5J6gPs"
+        self.bip32_secret = "8a5f38321a53581415f11fb7e056ef703136b4e58d491bd702985db42dec25f4"
+        self.bip32_public = "03b03351fc4928f337c11ef01ade9109e5fd47f348c01e7bc64020208e819201bb"
+        self.derivation_path = "m/44'/60'/0'/0"
+        self.derived = "xprvA1N8muEo6dX1RVmzgDPULAmkKaKqrXio2cpyxUSYcEttvfF65p5vFnkzgirWNq8EyD4DWFu9diZ1gGJnxHNe7exU4fNTKWurZfDt2kykTNK"
+        self.derived_0 = "xprv9uY18qvpBDuj1ejUbdpgYN8ENMWz3sze73RhNqq1tZvzayH54KFC9GAUReKmJUTNJHF9gsHwjGs3wvyWAHFAHZ6VshF9KZp96S8th5A4ti2"
+
         self.text_plain = "Test"
         self.text_hex = self.text_plain.encode().hex()
         self.text_base64 = base64.b64encode(self.text_plain.encode()).decode()
@@ -24,7 +37,7 @@ class TestCrypto(unittest.TestCase):
 
     def test_derive_sign_keys(self):
         keys = self.client.derive_sign_keys(mnemonic=self.mnemonic)
-        self.assertEqual(keys, {"public": "2e750ea795aad6e04ae1544132619c6a5e1356c36db60532320dae6aa656cf2e", "secret": "7ee962326304f9f88d5048fabdde7921411b1aad6400ef984c85a0a9cb3b1a7c"})
+        self.assertEqual(keys, self.keypair)
 
     def test_ton_crc16(self):
         # CRC from plain text
@@ -106,3 +119,55 @@ class TestCrypto(unittest.TestCase):
         sha = self.client.sha256(
             string=self.text_base64, fmt=TonClient.TYPE_BASE64)
         self.assertEqual(sha, self.text_valid_sha256)
+
+    def test_scrypt(self):
+        result = self.client.scrypt(
+            data="Test", n=2, r=4, p=1, dk_len=32, salt="salt",
+            salt_fmt=TonClient.TYPE_TEXT, password="password",
+            password_fmt=TonClient.TYPE_TEXT)
+        self.assertEqual(result, "01f4a6ab0123db7d5f4a3c50612774479af9b63548b161d093b40c1e87c953cc")
+
+    def test_keystore_add(self):
+        result = self.client.keystore_add(keypair=self.keypair)
+        self.assertEqual(result.isnumeric(), True)
+
+    def test_hdkey_xprv_from_mnemonic(self):
+        key = self.client.hdkey_xprv_from_mnemonic(mnemonic=self.mnemonic)
+        self.assertEqual(key, self.bip32_key)
+
+    def test_hdkey_xprv_secret(self):
+        secret = self.client.hdkey_xprv_secret(bip32_key=self.bip32_key)
+        self.assertEqual(secret, self.bip32_secret)
+
+    def test_hdkey_xprv_public(self):
+        public = self.client.hdkey_xprv_public(bip32_key=self.bip32_key)
+        self.assertEqual(public, self.bip32_public)
+
+    def test_hdkey_xprv_derive_path(self):
+        result = self.client.hdkey_xprv_derive_path(
+            bip32_key=self.bip32_key, derive_path=self.derivation_path)
+        self.assertEqual(result, self.derived)
+
+    def test_hdkey_xprv_derive(self):
+        index = 0
+        result = self.client.hdkey_xprv_derive(
+            bip32_key=self.bip32_key, index=index)
+        self.assertEqual(result, getattr(self, f"derived_{index}"))
+
+    def test_factorize(self):
+        result = self.client.factorize(number="2a")
+        self.assertEqual(result, {'a': '6', 'b': '7'})
+
+    def test_ton_public_key_string(self):
+        public = self.client.ton_public_key_string(
+            public_key=self.keypair["public"])
+        self.assertEqual(public, self.public_b64)
+
+    def test_ed25519_keypair(self):
+        keypair = self.client.ed25519_keypair()
+        self.assertEqual(type(keypair), dict)
+        self.assertEqual(list(keypair.keys()), ["public", "secret"])
+
+    def test_modular_power(self):
+        result = self.client.modular_power(base="1", exponent="2", modulus="5")
+        self.assertEqual(result.isnumeric(), True)

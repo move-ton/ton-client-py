@@ -3,7 +3,6 @@ import os
 import json
 import logging
 import platform
-import base64
 
 from tonsdk.ton_types import InteropString, InteropJsonResponse
 
@@ -72,10 +71,10 @@ class TonClient(object):
         self.context = self._create_context()
 
     def setup(self, settings=TON_CLIENT_DEFAULT_SETUP):
-        return self._request("setup", settings)
+        return self.request(method="setup", params=settings)
 
     def version(self):
-        return self._request("version", {})
+        return self.request(method="version")
 
     def _create_context(self):
         """ Create client context """
@@ -158,7 +157,8 @@ class TonClient(object):
             str
         """
         params = {"length": length}
-        return self.request("crypto.random.generateBytes", params)
+        return self.request(
+            method="crypto.random.generateBytes", params=params)
 
     def derive_sign_keys(self, mnemonic: str) -> dict:
         """
@@ -168,7 +168,8 @@ class TonClient(object):
             dict
         """
         params = {"phrase": mnemonic, "wordCount": len(mnemonic.split(" "))}
-        return self.request("crypto.mnemonic.derive.sign.keys", params)
+        return self.request(
+            method="crypto.mnemonic.derive.sign.keys", params=params)
 
     def ton_crc16(self, string: str, fmt: str) -> int:
         """
@@ -178,8 +179,8 @@ class TonClient(object):
         Returns:
             int
         """
-        params = self._str_type_dict(string, fmt)
-        return self.request('crypto.ton_crc16', params)
+        params = self._str_type_dict(string=string, fmt=fmt)
+        return self.request(method='crypto.ton_crc16', params=params)
 
     def mnemonic_generate(self, word_count=24) -> str:
         """
@@ -190,7 +191,8 @@ class TonClient(object):
             str
         """
         params = {"wordCount": word_count}
-        return self.request('crypto.mnemonic.from.random', params)
+        return self.request(
+            method='crypto.mnemonic.from.random', params=params)
 
     def mnemonic_from_entropy(self, entropy: str, fmt: str, word_count=24)\
             -> str:
@@ -204,9 +206,10 @@ class TonClient(object):
         """
         params = {
             "wordCount": word_count,
-            "entropy": self._str_type_dict(entropy, fmt)
+            "entropy": self._str_type_dict(string=entropy, fmt=fmt)
         }
-        return self.request("crypto.mnemonic.from.entropy", params)
+        return self.request(
+            method="crypto.mnemonic.from.entropy", params=params)
 
     def mnemonic_verify(self, mnemonic) -> bool:
         """
@@ -216,7 +219,7 @@ class TonClient(object):
             bool
         """
         params = {"phrase": mnemonic, "wordCount": len(mnemonic.split(" "))}
-        return self.request('crypto.mnemonic.verify', params)
+        return self.request(method='crypto.mnemonic.verify', params=params)
 
     def mnemonic_words(self) -> str:
         """ Get word list """
@@ -230,8 +233,8 @@ class TonClient(object):
         Returns:
             str
         """
-        params = {"message": self._str_type_dict(string, fmt)}
-        return self.request('crypto.sha512', params)
+        params = {"message": self._str_type_dict(string=string, fmt=fmt)}
+        return self.request(method='crypto.sha512', params=params)
 
     def sha256(self, string: str, fmt: str) -> str:
         """
@@ -241,28 +244,39 @@ class TonClient(object):
         Returns:
             str
         """
-        params = {"message": self._str_type_dict(string, fmt)}
-        return self.request('crypto.sha256', params)
+        params = {"message": self._str_type_dict(string=string, fmt=fmt)}
+        return self.request(method='crypto.sha256', params=params)
 
-    # def scrypt(self, data, log_n, r, p, dk_len, salt=None, hex_salt=None,
-    #            base64_salt=None, password=None, hex_password=None,
-    #            base64_password=None):
-    #     # TODO: не работает
-    #     if password:
-    #         password = {"text": password}
-    #     elif hex_password:
-    #         password = {"hex": hex_password}
-    #     elif base64_password:
-    #         password = {"base64": base64_password}
-    #     if salt:
-    #         salt = {"text": salt}
-    #     elif hex_salt:
-    #         salt = {"hex": hex_salt}
-    #     elif base64_salt:
-    #         salt = {"base64": base64_salt}
-    #     return self._request(
-    #         'crypto.scrypt', {"data": data, "password": password,
-    #         "salt": salt, "logN": log_n, "r": r, "p": p, "dkLen": dk_len})
+    def scrypt(self, data: str, n: int, r: int, p: int, dk_len: int, salt: str,
+               salt_fmt: str, password: str, password_fmt: str) -> str:
+        """
+        Args:
+            data (str): Data to encrypt
+            n (int): The CPU/Memory cost parameter. Must be larger than 1,
+                    a power of 2, and less than 2^(128 * r / 8)
+            r (int): The parameter specifies block size
+            p (int): The parallelization parameter. Is a positive integer
+                    less than or equal to ((2^32-1) * 32) / (128 * r)
+            dk_len (int): The intended output length. Is the length in octets
+                    of the key to be derived ("keyLength"); it is a positive
+                    integer less than or equal to (2^32 - 1) * 32.
+            salt (str): Salt string
+            salt_fmt (str): Salt string type (TonClient.TYPE_x)
+            password (str): Password string
+            password_fmt (str): Password string type (TonClient.TYPE_x)
+        Returns:
+            str
+        """
+        params = {
+            "data": data,
+            "salt": self._str_type_dict(string=salt, fmt=salt_fmt),
+            "password": self._str_type_dict(string=password, fmt=password_fmt),
+            "logN": n,
+            "r": r,
+            "p": p,
+            "dkLen": dk_len
+        }
+        return self.request(method="crypto.scrypt", params=params)
 
     def keystore_add(self, keypair: dict) -> str:
         """
@@ -271,7 +285,7 @@ class TonClient(object):
         Returns:
             str: index in store
         """
-        return self.request('crypto.keystore.add', keypair)
+        return self.request(method='crypto.keystore.add', params=keypair)
 
     def keystore_remove(self, index) -> None:
         """
@@ -280,11 +294,11 @@ class TonClient(object):
         Returns:
             None or exception
         """
-        self.request('crypto.keystore.remove', str(index))
+        self.request(method='crypto.keystore.remove', params=str(index))
 
     def keystore_clear(self) -> None:
         """ Clear keystore or exception """
-        self.request('crypto.keystore.clear')
+        self.request(method='crypto.keystore.clear')
 
     def hdkey_xprv_from_mnemonic(self, mnemonic: str) -> str:
         """
@@ -295,7 +309,8 @@ class TonClient(object):
             str
         """
         params = {"phrase": mnemonic, "wordCount": len(mnemonic.split(" "))}
-        return self.request('crypto.hdkey.xprv.from.mnemonic', params)
+        return self.request(
+            method='crypto.hdkey.xprv.from.mnemonic', params=params)
 
     def hdkey_xprv_secret(self, bip32_key: str) -> str:
         """
@@ -306,7 +321,7 @@ class TonClient(object):
             str
         """
         params = {"serialized": bip32_key}
-        return self.request('crypto.hdkey.xprv.secret', params)
+        return self.request(method='crypto.hdkey.xprv.secret', params=params)
 
     def hdkey_xprv_public(self, bip32_key: str) -> str:
         """
@@ -317,7 +332,7 @@ class TonClient(object):
             str
         """
         params = {"serialized": bip32_key}
-        return self.request('crypto.hdkey.xprv.public', params)
+        return self.request(method='crypto.hdkey.xprv.public', params=params)
 
     def hdkey_xprv_derive_path(self, bip32_key: str, derive_path: str) -> str:
         """
@@ -328,7 +343,8 @@ class TonClient(object):
             str
         """
         params = {"serialized": bip32_key, 'path': derive_path}
-        return self.request('crypto.hdkey.xprv.derive.path', params)
+        return self.request(
+            method='crypto.hdkey.xprv.derive.path', params=params)
 
     def hdkey_xprv_derive(self, bip32_key: str, index: int) -> str:
         """
@@ -339,7 +355,7 @@ class TonClient(object):
             str
         """
         params = {"serialized": bip32_key, 'index': index}
-        return self.request('crypto.hdkey.xprv.derive', params)
+        return self.request(method='crypto.hdkey.xprv.derive', params=params)
 
     def factorize(self, number: str) -> dict:
         """
@@ -348,7 +364,7 @@ class TonClient(object):
         Returns:
             dict
         """
-        return self.request('crypto.math.factorize', number)
+        return self.request(method='crypto.math.factorize', params=number)
 
     def ton_public_key_string(self, public_key: str) -> str:
         """
@@ -357,11 +373,12 @@ class TonClient(object):
         Returns:
             str
         """
-        return self.request('crypto.ton_public_key_string', public_key)
+        return self.request(
+            method='crypto.ton_public_key_string', params=public_key)
 
     def ed25519_keypair(self) -> dict:
         """ Generate ed25519 keypair """
-        return self.request('crypto.ed25519.keypair')
+        return self.request(method='crypto.ed25519.keypair')
 
     def modular_power(self, base: str, exponent: str, modulus: str) -> str:
         """
@@ -373,7 +390,7 @@ class TonClient(object):
             str
         """
         params = {'base': base, 'exponent': exponent, 'modulus': modulus}
-        return self.request('crypto.math.modularPower', params)
+        return self.request(method='crypto.math.modularPower', params=params)
 
     def nacl_box_keypair(self) -> dict:
         """ Generate nacl box keypair """
