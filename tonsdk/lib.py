@@ -155,6 +155,7 @@ class TonClient(object):
             message = {"hex": string}
         else:
             message = {"text": string}
+        logger.debug(f"Guess message type: {message}")
 
         return message
 
@@ -222,12 +223,12 @@ class TonClient(object):
         }
         return self.request("crypto.mnemonic.from.entropy", params)
 
-    def mnemonic_verify(self, mnemonic) -> dict:
+    def mnemonic_verify(self, mnemonic) -> bool:
         """
         Args:
             mnemonic (str):
         Returns:
-            dict
+            bool
         """
         params = {"phrase": mnemonic, "wordCount": len(mnemonic.split(" "))}
         return self.request('crypto.mnemonic.verify', params)
