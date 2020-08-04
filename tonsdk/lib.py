@@ -394,11 +394,11 @@ class TonClient(object):
 
     def nacl_box_keypair(self) -> dict:
         """ Generate nacl box keypair """
-        return self.request('crypto.nacl.box.keypair')
+        return self.request(method='crypto.nacl.box.keypair')
 
     def nacl_sign_keypair(self) -> dict:
         """ Generate nacl sign keypair """
-        return self.request('crypto.nacl.sign.keypair')
+        return self.request(method='crypto.nacl.sign.keypair')
 
     def nacl_sign_keypair_from_secret_key(self, secret_key: str) -> dict:
         """
@@ -409,7 +409,7 @@ class TonClient(object):
             dict
         """
         return self.request(
-            'crypto.nacl.sign.keypair.fromSecretKey', secret_key)
+            method='crypto.nacl.sign.keypair.fromSecretKey', params=secret_key)
 
     def nacl_box(self, nonce: str, their_public_key: str, message: str,
                  fmt: str) -> str:
@@ -425,9 +425,9 @@ class TonClient(object):
         params = {
             "nonce": nonce,
             "theirPublicKey": their_public_key,
-            "message": self._str_type_dict(message, fmt)
+            "message": self._str_type_dict(string=message, fmt=fmt)
         }
-        return self.request("crypto.nacl.box", params)
+        return self.request(method="crypto.nacl.box", params=params)
 
     def nacl_sign(self, key: str, message: str, fmt: str) -> str:
         """
@@ -440,12 +440,13 @@ class TonClient(object):
         """
         params = {
             "key": key,
-            "message": self._str_type_dict(message, fmt)
+            "message": self._str_type_dict(string=message, fmt=fmt)
         }
-        return self.request('crypto.nacl.sign', params)
+        return self.request(method='crypto.nacl.sign', params=params)
 
     def nacl_box_keypair_from_secret_key(self, key: str) -> dict:
-        return self.request('crypto.nacl.box.keypair.fromSecretKey', key)
+        return self.request(
+            method='crypto.nacl.box.keypair.fromSecretKey', params=key)
 
     def nacl_secret_box_open(self, nonce: str, their_public_key: str,
                              message: str, fmt: str) -> str:
@@ -461,9 +462,10 @@ class TonClient(object):
         params = {
             "nonce": nonce,
             "key": their_public_key,
-            "message": self._str_type_dict(message, fmt)
+            "message": self._str_type_dict(string=message, fmt=fmt)
         }
-        return self.request("crypto.nacl.secret.box.open", params)
+        return self.request(
+            method="crypto.nacl.secret.box.open", params=params)
 
     def nacl_sign_detached(self, key: str, message: str, fmt: str) -> str:
         """
@@ -476,9 +478,9 @@ class TonClient(object):
         """
         params = {
             "key": key,
-            "message": self._str_type_dict(message, fmt)
+            "message": self._str_type_dict(string=message, fmt=fmt)
         }
-        return self.request("crypto.nacl.sign.detached", params)
+        return self.request(method="crypto.nacl.sign.detached", params=params)
 
     def nacl_secret_box(self, nonce: str, their_public_key: str, message: str,
                         fmt: str) -> str:
@@ -494,9 +496,9 @@ class TonClient(object):
         params = {
             "nonce": nonce,
             "key": their_public_key,
-            "message": self._str_type_dict(message, fmt)
+            "message": self._str_type_dict(string=message, fmt=fmt)
         }
-        return self.request("crypto.nacl.secret.box", params)
+        return self.request(method="crypto.nacl.secret.box", params=params)
 
     def nacl_box_open(self, nonce: str, their_public_key: str, secret_key: str,
                       message: str, fmt: str) -> str:
@@ -514,9 +516,9 @@ class TonClient(object):
             "nonce": nonce,
             "theirPublicKey": their_public_key,
             "secretKey": secret_key,
-            "message": self._str_type_dict(message, fmt)
+            "message": self._str_type_dict(string=message, fmt=fmt)
         }
-        return self.request("crypto.nacl.box.open", params)
+        return self.request(method="crypto.nacl.box.open", params=params)
 
     def nacl_sign_open(self, key: str, message: str, fmt: str) -> str:
         """
@@ -529,9 +531,9 @@ class TonClient(object):
         """
         params = {
             "key": key,
-            "message": self._str_type_dict(message, fmt)
+            "message": self._str_type_dict(string=message, fmt=fmt)
         }
-        return self.request("crypto.nacl.sign.open", params)
+        return self.request(method="crypto.nacl.sign.open", params=params)
 
     # async def _request_async(self, method_name, params: Dict, req_id: int,
     #                          cb: Callable = _on_result):
