@@ -23,6 +23,10 @@ class TestCrypto(unittest.TestCase):
         self.derivation_path = "m/44'/60'/0'/0"
         self.derived = "xprvA1N8muEo6dX1RVmzgDPULAmkKaKqrXio2cpyxUSYcEttvfF65p5vFnkzgirWNq8EyD4DWFu9diZ1gGJnxHNe7exU4fNTKWurZfDt2kykTNK"
         self.derived_0 = "xprv9uY18qvpBDuj1ejUbdpgYN8ENMWz3sze73RhNqq1tZvzayH54KFC9GAUReKmJUTNJHF9gsHwjGs3wvyWAHFAHZ6VshF9KZp96S8th5A4ti2"
+        self.keypair_nacl_sign = {  # Keypair from self.keypair["secret"]
+            "public": "b4d426cf444a9aef30c913527208c58726af96876f16a7dc38b7b27cfedb3352",
+            "secret": "7ee962326304f9f88d5048fabdde7921411b1aad6400ef984c85a0a9cb3b1a7c"
+        }
 
         self.text_plain = "Test"
         self.text_hex = self.text_plain.encode().hex()
@@ -184,3 +188,8 @@ class TestCrypto(unittest.TestCase):
         keypair = self.client.nacl_sign_keypair()
         self.assertEqual(type(keypair), dict)
         self.assertEqual(list(keypair.keys()), ["public", "secret"])
+
+    def test_nacl_sign_keypair_from_secret_key(self):
+        keypair = self.client.nacl_box_keypair_from_secret_key(
+            key=self.keypair["secret"])
+        self.assertEqual(keypair, self.keypair_nacl_sign)
