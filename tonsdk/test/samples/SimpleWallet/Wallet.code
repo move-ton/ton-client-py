@@ -1,0 +1,346 @@
+.globl	constructor
+.public	constructor
+.type	constructor, @function
+GETGLOB 1
+ISNULL
+PUSHCONT {
+	CALL $c4_to_c7_with_init_storage$
+}
+IF
+;; constructor protection
+GETGLOB 6
+THROWIF 51
+PUSHINT 1
+SETGLOB 6
+;; end constructor protection
+; Decode input parameters
+ENDS
+; constructor Wallet
+ACCEPT
+GETGLOB 2
+; expValue
+; end expValue
+; colValue
+SETGLOB 10
+; end colValue
+; end constructor Wallet
+CALL $c7_to_c4$
+TRUE
+SETGLOB 7
+
+.globl	sendTransaction
+.public	sendTransaction
+.type	sendTransaction, @function
+GETGLOB 1
+ISNULL
+PUSHCONT {
+	CALL $c4_to_c7$
+}
+IF
+; Decode input parameters
+; Decode dest
+LDMSGADDR
+; Decode value
+LDUQ 128
+PUSHCONT {
+	;; load next cell
+	LDREF
+	ENDS
+	CTOS
+	LDU 128
+}
+IFNOT
+; Decode bounce
+LDIQ 1
+PUSHCONT {
+	;; load next cell
+	LDREF
+	ENDS
+	CTOS
+	LDI 1
+}
+IFNOT
+ENDS
+;; param: dest
+;; param: value
+;; param: bounce
+; modifier checkOwnerAndAccept
+GETGLOB 5
+DUP
+ISNULL
+PUSHCONT {
+	DROP
+	PUSHINT 0
+}
+IF
+;; push identifier owner
+GETGLOB 10
+;; ==
+EQUAL
+THROWIFNOT 100
+ACCEPT
+; function sendTransaction
+;; push identifier value
+PUSH S1
+GTINT 0
+;; short-circuiting &&
+DUP
+PUSHCONT {
+	DROP
+	;; push identifier value
+	PUSH S1
+	;; get member balance
+	GETPARAM 7
+	INDEX 0
+	;; <
+	LESS
+}
+IF
+THROWIFNOT 101
+;; transfer()
+;; push identifier value
+PUSH S1
+;; push identifier dest
+PUSH S3
+;; push identifier bounce
+PUSH S2
+NEWC
+STSLICECONST x6_
+STI 1
+PUSHINT 3
+STZEROES
+STSLICE
+SWAP
+STGRAMS
+PUSHINT 105
+STZEROES
+STSLICECONST 0
+STSLICECONST 0
+ENDC
+PUSHINT 0
+SENDRAWMSG
+; end function sendTransaction
+BLKDROP 3
+; end modifier checkOwnerAndAccept
+EQINT -1
+PUSHCONT {
+	CALL $c7_to_c4$
+}
+IF
+TRUE
+SETGLOB 7
+
+.globl	sendTransaction_internal
+.type	sendTransaction_internal, @function
+;; param: dest
+;; param: value
+;; param: bounce
+; modifier checkOwnerAndAccept
+GETGLOB 5
+DUP
+ISNULL
+PUSHCONT {
+	DROP
+	PUSHINT 0
+}
+IF
+;; push identifier owner
+GETGLOB 10
+;; ==
+EQUAL
+THROWIFNOT 100
+ACCEPT
+; function sendTransaction
+;; push identifier value
+PUSH S1
+GTINT 0
+;; short-circuiting &&
+DUP
+PUSHCONT {
+	DROP
+	;; push identifier value
+	PUSH S1
+	;; get member balance
+	GETPARAM 7
+	INDEX 0
+	;; <
+	LESS
+}
+IF
+THROWIFNOT 101
+;; transfer()
+;; push identifier value
+PUSH S1
+;; push identifier dest
+PUSH S3
+;; push identifier bounce
+PUSH S2
+NEWC
+STSLICECONST x6_
+STI 1
+PUSHINT 3
+STZEROES
+STSLICE
+SWAP
+STGRAMS
+PUSHINT 105
+STZEROES
+STSLICECONST 0
+STSLICECONST 0
+ENDC
+PUSHINT 0
+SENDRAWMSG
+; end function sendTransaction
+BLKDROP 3
+; end modifier checkOwnerAndAccept
+
+.internal-alias :main_external,        -1
+.internal	:main_external
+PUSHINT -1 ; main_external trans id
+PUSH S1
+CALL $c4_to_c7_with_init_storage$
+LDU 1 ; haveSign msgSlice
+SWAP
+PUSHCONT {
+	PUSHINT 512
+	LDSLICEX ; signatureSlice msgSlice
+	DUP      ; signatureSlice msgSlice msgSlice
+	HASHSU   ; signatureSlice msgSlice hashMsgSlice
+	ROT
+	GETGLOB 2
+	DUP
+	SETGLOB 5
+	CHKSIGNU      ; msgSlice isSigned
+	THROWIFNOT 40 ; msgSlice
+}
+IF
+LDU 64                         ; timestamp msgSlice
+SWAP                           ; msgSlice timestamp
+CALL $replay_protection_macro$ ; msgSlice
+LDU  32 ; funcId body
+SWAP    ; body funcId
+CALL 1
+GETGLOB 7
+ISNULL
+PUSHCONT {
+	THROW 60
+}
+IF
+
+.macro	c7_to_c4
+GETGLOB 2
+NEWC
+STU 256
+GETGLOB 3
+STUR 64
+GETGLOB 6
+STUR 1
+GETGLOB 10
+SWAP
+STU 256
+ENDC
+POP C4
+
+.macro	c4_to_c7
+PUSHROOT
+CTOS        ; c4
+LDU 256      ; pubkey c4
+LDU 64      ; pubkey timestamp c4
+LDU 1       ; pubkey [timestamp] constructor_flag memory
+PLDU 256
+SETGLOB 10
+TRUE
+SETGLOB 1   ; pubkey [timestamp] constructor_flag
+SETGLOB 6   ; pubkey [timestamp]
+SETGLOB 3   ; D
+SETGLOB 2
+
+.macro	c4_to_c7_with_init_storage
+PUSHROOT
+CTOS        ; c4
+DUP        ; c4 c4
+SBITS      ; c4 bits
+GTINT 1    ; c4 bits>1
+PUSHCONT {
+	LDU 256      ; pubkey c4
+	LDU 64      ; pubkey timestamp c4
+	LDU 1       ; pubkey [timestamp] constructor_flag memory
+	PLDU 256
+	SETGLOB 10
+	TRUE
+	SETGLOB 1   ; pubkey [timestamp] constructor_flag
+	SETGLOB 6   ; pubkey [timestamp]
+	SETGLOB 3   ; D
+	SETGLOB 2
+}
+PUSHCONT {
+	PLDDICT   ; D
+	; init owner
+	PUSHINT 0
+	SETGLOB 10
+	; set contract pubkey
+	PUSHINT 0
+	SWAP
+	PUSHINT 64
+	DICTUGET
+	THROWIFNOT 61
+	PLDU 256
+	SETGLOB 2
+	PUSHINT 0 ; timestamp
+	SETGLOB 3
+	PUSHINT 0 ; constructor_flag
+	SETGLOB 6
+	TRUE
+	SETGLOB 1
+}
+IFELSE
+
+.internal-alias :main_internal,        0
+.internal	:main_internal
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Function: main_internal
+;; param: contract_balance
+;; param: msg_balance
+;; param: int_msg_info
+;; param: msg_body_slice
+PUSHINT 0  ; main_external trans id
+PUSH S2
+CTOS
+LDSLICE 3
+NIP
+LDI 1     ; bounced tail
+DROP
+IFRET
+PUSH S1    ; body
+SEMPTY     ; isEmpty
+PUSHCONT {
+}
+IFJMP
+PUSH S1            ; body
+LDUQ 32            ; [funcId] body' ok
+PUSHCONT {
+	THROW 60
+}
+IFNOTJMP
+PUSH2 S1,S1        ; funcId body' funcId funcId
+PUSHCONT {
+}
+IFNOTJMP
+LESSINT 4            ; funcId body' funcId<4
+PUSH S2              ; funcId body' funcId<4 funcId
+PUSHINT 4294967293   ; funcId body' funcId<4 funcId 4294967293
+GREATER              ; funcId body' funcId<4 funcId>4294967293
+OR                   ; funcId body' funcId<4||funcId>4294967293
+PUSHCONT {
+	THROW 60
+}
+IFJMP
+SWAP  ; bodyLen body' funcId
+CALL 1
+GETGLOB 7
+ISNULL
+PUSHCONT {
+	THROW 60
+}
+IF
+

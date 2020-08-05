@@ -53,8 +53,9 @@ class TonContract(object):
                 keys = fp.read()
                 self.keypair = json.loads(keys)
 
-    def deploy_message(self, constructor_params=None, constructor_header=None,
-                       init_params=None, workchain_id=None) -> dict:
+    def deploy_message(
+            self, constructor_params: Dict = None, constructor_header: Dict = None,
+            init_params: Dict = None, workchain_id: int = None) -> Dict:
         """
         This method is a part of the standard deploy script and is used to
         create a message to the blockchain to get a contract address before
@@ -64,18 +65,16 @@ class TonContract(object):
         address before an actual deploy to send [test] tokens to it.
         Given the gas logic, you cannot deploy a contract with zero balance.
 
-        Args:
-            constructor_params (dict): Contract constructor arguments
-            constructor_header (dict): Contract constructor header
-            init_params (dict): Additional parameters in a form of an
+        :param constructor_params: Contract constructor arguments
+        :param constructor_header: Contract constructor header
+        :param init_params: Additional parameters in a form of an
                 object that are saved right to the Persistent Storage (c4)
                 during deployment. This field determines the contract address
                 (in combination with the contract code). In previous versions
                 it only included the public key, but now it can store
                 additional data.
-            workchain_id (int): Default will be 0
-        Returns:
-            dict
+        :param workchain_id: Default will be 0
+        :returns: Dict
         """
         params = {
             "constructorParams": constructor_params or {},
@@ -94,24 +93,23 @@ class TonContract(object):
         return result
 
     def deploy(
-            self, constructor_params=None, constructor_header=None, init_params=None, workchain_id=None,
-            try_index=None) -> dict:
+            self, constructor_params: Dict = None,
+            constructor_header: Dict = None, init_params: Dict = None,
+            workchain_id: int = None, try_index: str = None) -> Dict:
         """
         Deploy contract to blockchain
 
-        Args:
-            constructor_params (dict): Constructor parameters
-            constructor_header (dict): Constructor header
-            init_params (dict): Additional parameters in a form of an
+        :param constructor_params: Contract constructor arguments
+        :param constructor_header: Contract constructor header
+        :param init_params: Additional parameters in a form of an
                 object that are saved right to the Persistent Storage (c4)
                 during deployment. This field determines the contract address
                 (in combination with the contract code). In previous versions
                 it only included the public key, but now it can store
                 additional data.
-            workchain_id (int): Default will be 0
-            try_index (str): Single character
-        Returns:
-            dict
+        :param workchain_id: Default will be 0
+        :param try_index:
+        :returns: Dict
         """
         params = {
             "constructorParams": constructor_params or {},

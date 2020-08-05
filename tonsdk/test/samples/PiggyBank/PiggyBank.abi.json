@@ -1,62 +1,68 @@
 {
-    "ABI version": 2,
-    "functions": [
-        {
-            "name": "constructor",
-            "inputs": [
-                {"name": "pb_owner", "type": "address"},
-                {"name": "pb_limit", "type": "uint256"}
-            ],
-            "outputs": []
-        },
-        {
-            "name": "getData",
-            "inputs": [],
-            "outputs": [
-                {"name": "owner", "type": "address"},
-                {"name": "limit", "type": "uint256"},
-                {"name": "balance", "type": "uint128"}
-            ]
-        },
-        {
-            "name": "deposit",
-            "inputs": [
-                {"name": "amount", "type": "uint256"}
-            ],
-            "outputs": []
-        },
-        {
-            "name": "withdraw",
-            "inputs": [],
-            "outputs": []
-        },
-        {
-            "name": "setLimit",
-            "inputs": [
-                {"name": "newLimit", "type": "uint256"}
-            ],
-            "outputs": []
-        },
-        {
-            "name": "setCode",
-            "inputs": [
-                {"name": "newCode", "type": "cell"}
-            ],
-            "outputs": []
-        },
-        {
-            "name": "getVersion",
-            "inputs": [],
-            "outputs": [
-                {"name": "version", "type": "uint256"}
-            ]
-        }
-    ],
-    "events": [],
-    "data": [
-        {"key": 100, "name": "owner", "type": "address"},
-		{"key": 101, "name": "limit", "type": "uint256"},
-        {"key": 102, "name": "balance", "type": "uint128"},
-        {"key": 103, "name": "version", "type": "uint256"}
-    ]
+	"ABI version": 2,
+	"header": ["time"],
+	"functions": [
+		{
+			"name": "constructor",
+			"inputs": [
+				{"name":"pb_owner","type":"address"},
+				{"name":"pb_limit","type":"uint256"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "getData",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"value0","type":"address"},
+				{"name":"value1","type":"uint256"},
+				{"name":"value2","type":"uint128"}
+			]
+		},
+		{
+			"name": "deposit",
+			"inputs": [
+				{"name":"amount","type":"uint256"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "withdraw",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "setLimit",
+			"inputs": [
+				{"name":"newLimit","type":"uint256"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "setCode",
+			"inputs": [
+				{"name":"newCode","type":"cell"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "getVersion",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"value0","type":"uint256"}
+			]
+		}
+	],
+	"data": [
+	],
+	"events": [
+	]
 }
