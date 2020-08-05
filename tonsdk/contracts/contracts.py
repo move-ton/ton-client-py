@@ -92,6 +92,33 @@ class TonContract(object):
 
         return result
 
+    def deploy_message_unsigned(
+            self, constructor_params: Dict = None, init_params: Dict = None) \
+            -> Dict:
+        """
+        This function allows creating a separate deploy message
+        without a signature.
+        You may need this function if in your architecture signing is
+        performed at an HSM or some kind of offline hardware wallet where
+        the private key is stored.
+        The method creates a byte block that has to be signed via a specific
+        cryptographic method.
+
+        :param constructor_params:
+        :param init_params:
+        :return:
+        """
+        params = {
+            "abi": self.abi,
+            "constructorParams": constructor_params or {},
+            "initParams": init_params or {},
+            "imageBase64": self.image_b64,
+            "publicKeyHex": self.keypair["public"]
+        }
+
+        return self._client.request(
+            method="contracts.deploy.encode_unsigned_message", params=params)
+
     def deploy(
             self, constructor_params: Dict = None,
             constructor_header: Dict = None, init_params: Dict = None,
@@ -149,6 +176,53 @@ class TonContract(object):
         return self._client.request(
             method="contracts.run.message", params=params)
 
+    def run_message_unsigned(
+            self, function_name: str, inputs: Dict = None) -> Dict:
+        """
+        This method works similarly to the 'deploy_message_unsigned', but
+        it is designed to create a message returning the ID of the public
+        contract function that is called without a signature.
+        This method is another one that can be used in a distributed
+        architecture (when messages are signed externally).
+
+        :param function_name:
+        :param inputs:
+        :return:
+        """
+        params = {
+            "address": self.address,
+            "abi": self.abi,
+            "functionName": function_name,
+            "input": inputs or {}
+        }
+
+        return self._client.request(
+            method="contracts.run.encode_unsigned_message", params=params)
+
+    def run_body(
+            self, function_name: str, internal: bool = False,
+            inputs: Dict = None) -> Dict:
+        """
+        Creates only a message body with parameters encoded according
+        to the ABI.
+        This method supports SETCODE and deploy of one contract by
+        another contract.
+
+        :param function_name:
+        :param internal:
+        :param inputs:
+        :return:
+        """
+        params = {
+            "abi": self.abi,
+            "function": function_name,
+            "params": inputs or {},
+            "internal": internal,
+            "keyPair": self.keypair or {}
+        }
+
+        return self._client.request(method="contracts.run.body", params=params)
+
     def run(self, function_name: str, inputs: Dict = None) -> Dict:
         """
         This method is used to call contract methods within the blockchain.
@@ -171,3 +245,29 @@ class TonContract(object):
         }
 
         return self._client.request(method="contracts.run", params=params)
+
+    def sign_message(
+            self, unsigned_base64: str, sign_base64: str, expire: int = None,
+            abi: Dict = None, public: str = None) -> Dict:
+        """
+        This method can also be used used in distributed architectures
+        where message signing is carried out externally.
+
+        :param unsigned_base64:
+        :param sign_base64:
+        :param expire:
+        :param abi: Contract ABI, if None - will be retrieved from 'self.abi'
+        :param public: Public key to sign message, if None - will be retrieved
+                from 'self.keypair'
+        :return:
+        """
+        params = {
+            "abi": abi or self.abi,
+            "unsignedBytesBase64": unsigned_base64,
+            "signBytesBase64": sign_base64,
+            "publicKeyHex": public or self.keypair["public"],
+            "expire": expire
+        }
+
+        return self._client.request(
+            method="contracts.encode_message_with_sign", params=params)

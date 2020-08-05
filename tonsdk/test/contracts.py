@@ -105,6 +105,13 @@ class TestPiggyBankContract(unittest.TestCase):
         self.assertEqual(result["address"], self.contract_address)
         self.assertEqual(self.contract.address, self.contract_address)
 
+    def test_deploy_message_unsigned(self):
+        result = self.contract.deploy_message_unsigned(
+            constructor_params=self.constructor_params,
+            init_params=self.init_params)
+
+        self.assertEqual(result["addressHex"], self.contract_address)
+
     def test_deploy(self):
         result = self.contract.deploy(
             constructor_params=self.constructor_params,
@@ -122,11 +129,44 @@ class TestPiggyBankContract(unittest.TestCase):
             list(result.keys()),
             ["address", "messageId", "messageBodyBase64", "expire"])
 
+    def test_run_message_unsigned(self):
+        self.contract.address = self.contract_address
+        result = self.contract.run_message(function_name="getVersion")
+
+        self.assertEqual(result["address"], self.contract_address)
+        self.assertEqual(
+            list(result.keys()),
+            ["address", "messageId", "messageBodyBase64", "expire"])
+
+    def test_run_body(self):
+        result = self.contract.run_body(function_name="getVersion")
+        self.assertEqual(
+            "te6ccgEBAQEATwAA" in result["bodyBase64"], True)
+
+        result = self.contract.run_body(
+            function_name="getVersion", internal=True)
+        self.assertEqual(result["bodyBase64"], "te6ccgEBAQEABgAACFoZzZI=")
+
     def test_run(self):
         self.contract.address = self.contract_address
         result = self.contract.run(function_name="getData")
 
         self.assertEqual(result["output"]["value0"], self.owner_address)
+
+    def test_sign_message(self):
+        # Create unsigned message
+        self.contract.address = self.contract_address
+        result = self.contract.run_message_unsigned(function_name="getVersion")
+
+        # Sign message
+        result = self.contract.sign_message(
+            unsigned_base64=result["unsignedBytesBase64"],
+            sign_base64=result["bytesToSignBase64"])
+
+        self.assertEqual(result["address"], self.contract_address)
+        self.assertEqual(
+            "te6ccgEBAQEAUQAAnYgAzRa5BgrdfjClmPXpzDkUhCCtgGI" in result["messageBodyBase64"],
+            True)
 
 
 if __name__ == '__main__':
