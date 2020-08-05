@@ -201,7 +201,7 @@ class TonContract(object):
 
     def run_body(
             self, function_name: str, internal: bool = False,
-            inputs: Dict = None) -> Dict:
+            inputs: Dict = None) -> str:
         """
         Creates only a message body with parameters encoded according
         to the ABI.
@@ -221,7 +221,10 @@ class TonContract(object):
             "keyPair": self.keypair or {}
         }
 
-        return self._client.request(method="contracts.run.body", params=params)
+        result = self._client.request(
+            method="contracts.run.body", params=params)
+
+        return result["bodyBase64"]
 
     def run(self, function_name: str, inputs: Dict = None) -> Dict:
         """
@@ -246,9 +249,46 @@ class TonContract(object):
 
         return self._client.request(method="contracts.run", params=params)
 
+    def run_output(
+            self, function_name: str, body: str, internal: bool = False) -> Dict:
+        """
+        Decode a response message from a called contract.
+
+        :param function_name:
+        :param body: Base64 body
+        :param internal:
+        :return:
+        """
+        params = {
+            "abi": self.abi,
+            "functionName": function_name,
+            "bodyBase64": body,
+            "internal": internal
+        }
+
+        result = self._client.request(
+            method="contracts.run.output", params=params)
+
+        return result["output"]
+
+    def run_fee(self, function_name: str, inputs: Dict = None) -> Dict:
+        """
+        :param function_name:
+        :param inputs:
+        :return:
+        """
+        params = {
+            "address": self.address,
+            "abi": self.abi,
+            "functionName": function_name,
+            "input": inputs or {}
+        }
+
+        return self._client.request(method="contracts.run.fee", params=params)
+
     def sign_message(
-            self, unsigned_base64: str, sign_base64: str, expire: int = None,
-            abi: Dict = None, public: str = None) -> Dict:
+            self, unsigned_base64: str, sign_base64: str, expire: int = None) \
+            -> Dict:
         """
         This method can also be used used in distributed architectures
         where message signing is carried out externally.
@@ -256,16 +296,13 @@ class TonContract(object):
         :param unsigned_base64:
         :param sign_base64:
         :param expire:
-        :param abi: Contract ABI, if None - will be retrieved from 'self.abi'
-        :param public: Public key to sign message, if None - will be retrieved
-                from 'self.keypair'
         :return:
         """
         params = {
-            "abi": abi or self.abi,
+            "abi": self.abi,
             "unsignedBytesBase64": unsigned_base64,
             "signBytesBase64": sign_base64,
-            "publicKeyHex": public or self.keypair["public"],
+            "publicKeyHex": self.keypair["public"],
             "expire": expire
         }
 

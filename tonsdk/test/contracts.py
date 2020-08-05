@@ -88,9 +88,9 @@ class TestPiggyBankContract(unittest.TestCase):
         self.contract.load_abi(path=self.abi_path)
         self.contract.load_image(path=self.image_path)
         self.contract.load_keypair(path=self.keypair_path, binary=False)
+        self.contract.address = "0:668b5c83056ebf1852cc7af4e61c8a421056c0311f035a39e5baf7ce28b14728"
 
         self.owner_address = "0:1ab22c364214e24b782bc4966e23874b1c0cc682e8dba2d24a0561bb27d04221"
-        self.contract_address = "0:668b5c83056ebf1852cc7af4e61c8a421056c0311f035a39e5baf7ce28b14728"
         self.constructor_params = {
             "pb_owner": self.owner_address,
             "pb_limit": 5 * 10**9
@@ -102,60 +102,63 @@ class TestPiggyBankContract(unittest.TestCase):
             constructor_params=self.constructor_params,
             init_params=self.init_params)
 
-        self.assertEqual(result["address"], self.contract_address)
-        self.assertEqual(self.contract.address, self.contract_address)
+        self.assertEqual(result["address"], self.contract.address)
 
     def test_deploy_message_unsigned(self):
         result = self.contract.deploy_message_unsigned(
             constructor_params=self.constructor_params,
             init_params=self.init_params)
 
-        self.assertEqual(result["addressHex"], self.contract_address)
+        self.assertEqual(result["addressHex"], self.contract.address)
 
     def test_deploy(self):
         result = self.contract.deploy(
             constructor_params=self.constructor_params,
             init_params=self.init_params)
 
-        self.assertEqual(result["address"], self.contract_address)
-        self.assertEqual(self.contract.address, self.contract_address)
+        self.assertEqual(result["address"], self.contract.address)
 
     def test_run_message(self):
-        self.contract.address = self.contract_address
         result = self.contract.run_message(function_name="getVersion")
 
-        self.assertEqual(result["address"], self.contract_address)
+        self.assertEqual(result["address"], self.contract.address)
         self.assertEqual(
             list(result.keys()),
             ["address", "messageId", "messageBodyBase64", "expire"])
 
     def test_run_message_unsigned(self):
-        self.contract.address = self.contract_address
         result = self.contract.run_message(function_name="getVersion")
 
-        self.assertEqual(result["address"], self.contract_address)
+        self.assertEqual(result["address"], self.contract.address)
         self.assertEqual(
             list(result.keys()),
             ["address", "messageId", "messageBodyBase64", "expire"])
 
     def test_run_body(self):
-        result = self.contract.run_body(function_name="getVersion")
-        self.assertEqual(
-            "te6ccgEBAQEATwAA" in result["bodyBase64"], True)
+        body = self.contract.run_body(function_name="getVersion")
+        self.assertEqual("te6ccgEBAQEATwAA" in body, True)
 
-        result = self.contract.run_body(
+        body = self.contract.run_body(
             function_name="getVersion", internal=True)
-        self.assertEqual(result["bodyBase64"], "te6ccgEBAQEABgAACFoZzZI=")
+        self.assertEqual(body, "te6ccgEBAQEABgAACFoZzZI=")
 
     def test_run(self):
-        self.contract.address = self.contract_address
         result = self.contract.run(function_name="getData")
-
         self.assertEqual(result["output"]["value0"], self.owner_address)
+
+    def test_run_output(self):
+        # Body for 'getVersion' result
+        body = "te6ccgEBAQEAJgAASNoZzZIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQ=="
+        output = self.contract.run_output(
+            function_name="getVersion", body=body)
+        self.assertEqual(list(output.keys())[0], "value0")
+
+    def test_run_fee(self):
+        result = self.contract.run_fee(function_name="getVersion")
+        self.assertEqual(list(result["output"].keys())[0], "value0")
 
     def test_sign_message(self):
         # Create unsigned message
-        self.contract.address = self.contract_address
         result = self.contract.run_message_unsigned(function_name="getVersion")
 
         # Sign message
@@ -163,7 +166,7 @@ class TestPiggyBankContract(unittest.TestCase):
             unsigned_base64=result["unsignedBytesBase64"],
             sign_base64=result["bytesToSignBase64"])
 
-        self.assertEqual(result["address"], self.contract_address)
+        self.assertEqual(result["address"], self.contract.address)
         self.assertEqual(
             "te6ccgEBAQEAUQAAnYgAzRa5BgrdfjClmPXpzDkUhCCtgGI" in result["messageBodyBase64"],
             True)
