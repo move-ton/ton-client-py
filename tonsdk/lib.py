@@ -18,7 +18,7 @@ DEVNET_BASE_URL = 'net.ton.dev'
 MAINNET_BASE_URL = 'main.ton.dev'
 
 TON_CLIENT_DEFAULT_SETUP = {
-    'servers': ['localhost'],
+    'servers': ['http://localhost'],
     'messageRetriesCount': 1,
     'messageExpirationTimeout': 50000,
     'messageExpirationTimeoutGrowFactor': 1.5,
