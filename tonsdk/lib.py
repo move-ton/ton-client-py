@@ -9,14 +9,14 @@ from tonsdk.ton_types import InteropString, InteropJsonResponse
 logger = logging.getLogger('ton')
 
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
-LIB_VERSION = '0.25.0'
+LIB_VERSION = '0.25.3'
 LIB_DIR = os.path.join(BASE_DIR, 'bin')
 LIB_FILENAME = f'ton-rust-client-{LIB_VERSION}'
 
 DEVNET_BASE_URL = 'net.ton.dev'
 MAINNET_BASE_URL = 'main.ton.dev'
 TON_CLIENT_DEFAULT_SETUP = {
-    'baseUrl': DEVNET_BASE_URL,
+    'servers': ['localhost'],
     'messageRetriesCount': 1,
     'messageExpirationTimeout': 50000,
     'messageExpirationTimeoutGrowFactor': 1.5,
@@ -62,7 +62,6 @@ class TonClient(object):
     TYPE_TEXT = "text"
     TYPE_HEX = "hex"
     TYPE_BASE64 = "base64"
-    lib = None
 
     def __init__(self, lib_path: str = get_lib_basename()):
         logger.debug('Start new Session')
@@ -83,6 +82,7 @@ class TonClient(object):
 
     def _destroy_context(self, context):
         """ Destroy client context """
+        print('----- destroy ctx -----')
         self.lib.tc_destroy_context(context)
 
     def _request(self, method_name, params=None) -> dict:
@@ -104,8 +104,7 @@ class TonClient(object):
         params = InteropString.from_string(params)
 
         self.lib.tc_json_request.restype = ctypes.POINTER(InteropJsonResponse)
-        response = self.lib.tc_json_request(
-            self.context, method_name, params)
+        response = self.lib.tc_json_request(self.context, method_name, params)
         logger.debug(f'Response ptr: {response}')
 
         self.lib.tc_read_json_response.restype = InteropJsonResponse
@@ -140,8 +139,7 @@ class TonClient(object):
 
         return message
 
-    def request(self, method: str, params=None, raise_exception=True,
-                **kwargs) -> any:
+    def request(self, method: str, params=None, raise_exception=True):
         result = self._request(method, params)
 
         if raise_exception and not result["success"]:
@@ -194,8 +192,7 @@ class TonClient(object):
         return self.request(
             method='crypto.mnemonic.from.random', params=params)
 
-    def mnemonic_from_entropy(self, entropy: str, entropy_fmt: str,
-                              word_count=24) -> str:
+    def mnemonic_from_entropy(self, entropy: str, entropy_fmt: str, word_count=24) -> str:
         """
         Args:
             entropy (str): String as hex, base64 or plain text

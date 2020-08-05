@@ -11,7 +11,7 @@ CLIENT.setup(settings={"baseUrl": DEVNET_BASE_URL})
 
 
 class ContractBaseTest(unittest.TestCase):
-    def setUp(self) -> None:
+    def setUp(self):
         self.valid_keypair_binary = {
             'public': 'c078fbff6a4daed8ab8d78d2371a99778c4a3a058fd4e4079e093e5a19b44722',
             'secret': '6fc0531fd1d0a76704cc0e2e1f1e827abb953aa03be39b5fdbebf6dcbfdba14b'
@@ -48,7 +48,7 @@ class PiggyBankTest(unittest.TestCase):
     image_path = os.path.join(SAMPLES_DIR, 'PiggyBank', 'PiggyBank.tvc')
     keypair_path = os.path.join(SAMPLES_DIR, 'keys.json')
 
-    def setUp(self) -> None:
+    def setUp(self):
         # Setup contract
         contract = TonContract()
         contract.set_client(client=CLIENT)
@@ -82,7 +82,6 @@ class PiggyBankTest(unittest.TestCase):
         result = self.contract.deploy(
             constructor_params=self.constructor_params,
             init_params=self.init_params)
-        print(result)
 
 
 if __name__ == '__main__':

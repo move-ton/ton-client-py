@@ -8,10 +8,10 @@ class InteropString(ctypes.Structure):
         ('len', ctypes.c_int, 32)
     ]
 
-    @classmethod
-    def from_string(cls, string: str):
+    @staticmethod
+    def from_string(string: str):
         string = string.encode()
-        return cls(ctypes.c_char_p(string), len(string))
+        return InteropString(ctypes.c_char_p(string), len(string))
 
 
 class InteropJsonResponse(ctypes.Structure):
@@ -42,10 +42,9 @@ class InteropJsonResponse(ctypes.Structure):
         return json.loads(self.content)
 
 
-# ResultCb = ctypes.CFUNCTYPE(
-#     ctypes.c_void_p,
-#     ctypes.c_int32,
-#     InteropString,
-#     InteropString,
-#     ctypes.c_int32
-# )
+ResultCb = ctypes.CFUNCTYPE(
+    ctypes.c_void_p,
+    ctypes.c_int32,
+    ctypes.POINTER(InteropString),
+    ctypes.POINTER(InteropString),
+    ctypes.c_int32)

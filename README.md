@@ -1,2 +1,2 @@
 # py-ton-sdk
-Python sdk for Freeton. 
+Python sdk for Free TON. 

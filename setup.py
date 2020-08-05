@@ -7,9 +7,9 @@ with open("README.md", "r") as fh:
 setuptools.setup(
     name="py-ton-sdk",
     version="0.0.1",
-    author="Move-TON",
+    author="MoveTON",
     author_email="",
-    description=u"Python SDK for Freeton",
+    description=u"Python SDK for Free TON",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="",

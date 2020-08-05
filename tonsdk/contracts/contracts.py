@@ -1,5 +1,6 @@
 import base64
 import json
+from typing import Dict
 
 from tonsdk.lib import TonClient
 
@@ -91,8 +92,9 @@ class TonContract(object):
 
         return result
 
-    def deploy(self, constructor_params=None, constructor_header=None,
-               init_params=None, workchain_id=None, try_index=None) -> dict:
+    def deploy(
+            self, constructor_params=None, constructor_header=None, init_params=None, workchain_id=None,
+            try_index=None) -> dict:
         """
         Deploy contract to blockchain
 
@@ -126,8 +128,7 @@ class TonContract(object):
 
         return result
 
-    def _execute(self, method: str, params: dict, raise_exception=True,
-                 **kwargs) -> dict:
+    def _execute(self, method: str, params: Dict, raise_exception=True) -> Dict:
         """ Execute client call """
         result = self._client.request(method, params)
 
