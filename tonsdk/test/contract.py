@@ -6,8 +6,7 @@ from tonsdk.contracts.contracts import TonContract
 
 
 SAMPLES_DIR = os.path.join(os.path.dirname(__file__), "samples")
-CLIENT = TonClient()
-CLIENT.setup(settings={"baseUrl": DEVNET_BASE_URL})
+CLIENT = TonClient(servers=[DEVNET_BASE_URL])
 
 
 class ContractBaseTest(unittest.TestCase):

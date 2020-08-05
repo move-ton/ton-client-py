@@ -50,10 +50,9 @@ class TonClient(object):
     TYPE_HEX = "hex"
     TYPE_BASE64 = "base64"
 
-    def __init__(self, settings=None):
+    def __init__(self, **config):
         self.context = _LIB.tc_create_context()
-        settings = settings or TON_CLIENT_DEFAULT_SETUP
-        self.setup(settings)
+        self.setup({**TON_CLIENT_DEFAULT_SETUP, **config})
 
     def _request(self, method_name, params=None) -> Dict:
         """
