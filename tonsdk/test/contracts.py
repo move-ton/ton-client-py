@@ -113,6 +113,21 @@ class TestPiggyBankContract(unittest.TestCase):
         self.assertEqual(result["address"], self.contract_address)
         self.assertEqual(self.contract.address, self.contract_address)
 
+    def test_run_message(self):
+        self.contract.address = self.contract_address
+        result = self.contract.run_message(function_name="getVersion")
+
+        self.assertEqual(result["address"], self.contract_address)
+        self.assertEqual(
+            list(result.keys()),
+            ["address", "messageId", "messageBodyBase64", "expire"])
+
+    def test_run(self):
+        self.contract.address = self.contract_address
+        result = self.contract.run(function_name="getData")
+
+        self.assertEqual(result["output"]["value0"], self.owner_address)
+
 
 if __name__ == '__main__':
     unittest.main()

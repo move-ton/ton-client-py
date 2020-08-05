@@ -74,7 +74,7 @@ class TonContract(object):
                 it only included the public key, but now it can store
                 additional data.
         :param workchain_id: Default will be 0
-        :returns: Dict
+        :return: Dict
         """
         params = {
             "constructorParams": constructor_params or {},
@@ -109,7 +109,7 @@ class TonContract(object):
                 additional data.
         :param workchain_id: Default will be 0
         :param try_index:
-        :returns: Dict
+        :return: Dict
         """
         params = {
             "constructorParams": constructor_params or {},
@@ -126,3 +126,54 @@ class TonContract(object):
         self.address = result["address"]
 
         return result
+
+    def run_message(
+            self, function_name: str, inputs: Dict = None,
+            full_run: bool = False, time: int = None) -> Dict:
+        """
+        This method is similar to 'deploy_message' but it applies to active
+        contracts.
+        It yields a TONContractMessage message body and the ID of public
+        contract function that was called, not the contract address.
+
+        :param function_name: Contract function name (ABI function)
+        :param inputs: Contract function arguments (ABI inputs)
+        :param full_run:
+        :param time:
+        :return: Dict
+        """
+        params = {
+            "address": self.address,
+            "abi": self.abi,
+            "functionName": function_name,
+            "input": inputs or {},
+            "keyPair": self.keypair,
+            "fullRun": full_run,
+            "time": time
+        }
+
+        return self._client.request(
+            method="contracts.run.message", params=params)
+
+    def run(self, function_name: str, inputs: Dict = None) -> Dict:
+        """
+        This method is used to call contract methods within the blockchain.
+        Calling run creates a message with the following serialized parameters
+        and sends it to the blockchain. Message is serialized according to the
+        ABI rules.
+        After the message is sent run waits for it to be executed and returns
+        a JSON-object with the resulting parameters.
+
+        :param function_name: Contract function name (ABI function)
+        :param inputs: Contract function arguments (ABI inputs)
+        :return: Dict
+        """
+        params = {
+            "address": self.address,
+            "abi": self.abi,
+            "functionName": function_name,
+            "input": inputs or {},
+            "keyPair": self.keypair
+        }
+
+        return self._client.request(method="contracts.run", params=params)
