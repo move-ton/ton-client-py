@@ -9,7 +9,7 @@ SAMPLES_DIR = os.path.join(os.path.dirname(__file__), "samples")
 CLIENT = TonClient(servers=[DEVNET_BASE_URL])
 
 
-class ContractBaseTest(unittest.TestCase):
+class TestContractBase(unittest.TestCase):
     def setUp(self):
         self.valid_keypair_binary = {
             'public': 'c078fbff6a4daed8ab8d78d2371a99778c4a3a058fd4e4079e093e5a19b44722',
@@ -39,7 +39,7 @@ class ContractBaseTest(unittest.TestCase):
         self.assertEqual(self.contract.image_b64, self.valid_image)
 
 
-class PiggyBankTest(unittest.TestCase):
+class TestPiggyBankContract(unittest.TestCase):
     """
     Piggy bank contract tests
     """
@@ -56,8 +56,8 @@ class PiggyBankTest(unittest.TestCase):
         contract.load_keypair(path=self.keypair_path, binary=False)
         self.contract = contract
 
-        self.owner_address = "0:1ab22c364214e24b782bc4966e23874b1c0cc682e8dba2d24a0561bb27d04221"
-        self.contract_address = "0:07761d2935f08e2002da561ebfb89501ac6a2a904d2a92a083b694af5d103dc2"
+        self.owner_address = "1ab22c364214e24b782bc4966e23874b1c0cc682e8dba2d24a0561bb27d04221"
+        self.contract_address = "0:8b67aea4adf2f1791909a858a6e6d04503aa5dc3d913e0087fd25e040e6e6cc8"
         self.constructor_params = {
             "pb_owner": self.owner_address,
             "pb_limit": 5 * 10**9

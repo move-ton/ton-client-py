@@ -16,7 +16,7 @@ class TonContract(object):
         self.keypair = None
         self.address = None
 
-        self._client = None
+        self._client: (TonClient, None) = None
 
     @property
     def image_b64(self) -> str:
@@ -87,7 +87,8 @@ class TonContract(object):
             "workchainId": workchain_id
         }
 
-        result = self._execute("contracts.deploy.message", params)
+        result = self._client.request(
+            method="contracts.deploy.message", params=params)
         self.address = result["address"]
 
         return result
@@ -123,16 +124,7 @@ class TonContract(object):
             "tryIndex": try_index
         }
 
-        result = self._execute("contracts.deploy", params)
+        result = self._client.request(method="contracts.deploy", params=params)
         self.address = result["address"]
 
         return result
-
-    def _execute(self, method: str, params: Dict, raise_exception=True) -> Dict:
-        """ Execute client call """
-        result = self._client.request(method, params)
-
-        if raise_exception and not result["success"]:
-            raise Exception(result["result"])
-
-        return result["result"]
