@@ -3,6 +3,7 @@ import os
 import json
 import logging
 import platform
+from typing import Dict
 
 from tonsdk.ton_types import InteropString, InteropJsonResponse
 
@@ -15,6 +16,7 @@ LIB_FILENAME = f'ton-rust-client-{LIB_VERSION}'
 
 DEVNET_BASE_URL = 'net.ton.dev'
 MAINNET_BASE_URL = 'main.ton.dev'
+
 TON_CLIENT_DEFAULT_SETUP = {
     'servers': ['localhost'],
     'messageRetriesCount': 1,
@@ -27,7 +29,7 @@ TON_CLIENT_DEFAULT_SETUP = {
 }
 
 
-def get_lib_basename():
+def _get_lib_path():
     plt = platform.system().lower()
     lib_ext_dict = {
         'windows': 'dll',
@@ -40,22 +42,7 @@ def get_lib_basename():
     return os.path.join(LIB_DIR, f'{LIB_FILENAME}.{lib_ext_dict[plt]}')
 
 
-# def _on_result(request_id: int, result_json: InteropString,
-#                error_json: InteropString, flags: int):
-#     """ Python callback for lib async request """
-#     logger.debug('Async callback fired')
-#     logger.debug(
-#         f'Request ID: {request_id}\n'
-#         f'Result JSON: {result_json}\n'
-#         f'Error JSON: {error_json}\n'
-#         f'Flags: {flags}\n')
-#
-#     if result_json.len > 0:
-#         logger.debug('Result JSON: ', result_json.content)
-#     elif error_json.len > 0:
-#         logger.debug('Error JSON: ', error_json.content)
-#     else:
-#         logger.debug('No response data')
+_LIB = ctypes.cdll.LoadLibrary(_get_lib_path())
 
 
 class TonClient(object):
@@ -63,29 +50,12 @@ class TonClient(object):
     TYPE_HEX = "hex"
     TYPE_BASE64 = "base64"
 
-    def __init__(self, lib_path: str = get_lib_basename()):
-        logger.debug('Start new Session')
-        self.lib = ctypes.cdll.LoadLibrary(lib_path)
+    def __init__(self, settings=None):
+        self.context = _LIB.tc_create_context()
+        settings = settings or TON_CLIENT_DEFAULT_SETUP
+        self.setup(settings)
 
-        self.context = self._create_context()
-
-    def setup(self, settings=TON_CLIENT_DEFAULT_SETUP):
-        return self.request(method="setup", params=settings)
-
-    def version(self):
-        return self.request(method="version")
-
-    def _create_context(self):
-        """ Create client context """
-        context = self.lib.tc_create_context()
-        return ctypes.c_uint32(context)
-
-    def _destroy_context(self, context):
-        """ Destroy client context """
-        print('----- destroy ctx -----')
-        self.lib.tc_destroy_context(context)
-
-    def _request(self, method_name, params=None) -> dict:
+    def _request(self, method_name, params=None) -> Dict:
         """
         Args:
             method_name (str): SDK method name
@@ -93,33 +63,29 @@ class TonClient(object):
         Returns:
             dict
         """
-        logger.debug('Create request')
-        logger.debug(f'Context: {self.context}')
-
-        logger.debug(f'Fn name: {method_name}')
         method_name = InteropString.from_string(method_name)
+        params = InteropString.from_string(json.dumps(params or {}))
 
-        logger.debug(f'Data: {params}')
-        params = json.dumps(params or {})
-        params = InteropString.from_string(params)
+        _LIB.tc_json_request.restype = ctypes.POINTER(InteropJsonResponse)
+        response_ptr = _LIB.tc_json_request(self.context, method_name, params)
 
-        self.lib.tc_json_request.restype = ctypes.POINTER(InteropJsonResponse)
-        response = self.lib.tc_json_request(self.context, method_name, params)
-        logger.debug(f'Response ptr: {response}')
+        _LIB.tc_read_json_response.restype = InteropJsonResponse
+        response = _LIB.tc_read_json_response(response_ptr)
+        result = {'success': response.is_success, 'result': response.json}
 
-        self.lib.tc_read_json_response.restype = InteropJsonResponse
-        read = self.lib.tc_read_json_response(response)
-        is_success = read.is_success
-        response_json = read.json
+        _LIB.tc_destroy_json_response(response_ptr)
+        return result
 
-        logger.debug(f'Read response: : {read}')
-        logger.debug(f'Is success: {is_success}')
+    def destroy_context(self):
+        return _LIB.tc_destroy_context(self.context)
 
-        self.lib.tc_destroy_json_response(response)
+    def setup(self, settings):
+        return self.request(method="setup", params=settings)
 
-        return {'success': is_success, 'result': response_json}
+    def version(self):
+        return self.request(method="version")
 
-    def _str_type_dict(self, string: str, fmt: str) -> dict:
+    def _str_type_dict(self, string: str, fmt: str) -> Dict:
         """
         Generates dict for API params, based on string format
         Args:
@@ -128,16 +94,9 @@ class TonClient(object):
         Returns:
             dict
         """
-        if fmt == self.TYPE_BASE64:
-            message = {"base64": string}
-        elif fmt == self.TYPE_HEX:
-            message = {"hex": string}
-        elif fmt == self.TYPE_TEXT:
-            message = {"text": string}
-        else:
-            raise ValueError("One of 'base64, hex, text' should be provided")
-
-        return message
+        if fmt not in [self.TYPE_BASE64, self.TYPE_HEX, self.TYPE_TEXT]:
+            raise ValueError("One of 'base64, hex, text' should be provided for 'fmt' param")
+        return {fmt: string}
 
     def request(self, method: str, params=None, raise_exception=True):
         result = self._request(method, params)
@@ -158,7 +117,7 @@ class TonClient(object):
         return self.request(
             method="crypto.random.generateBytes", params=params)
 
-    def derive_sign_keys(self, mnemonic: str) -> dict:
+    def derive_sign_keys(self, mnemonic: str) -> Dict:
         """
         Args:
             mnemonic (str): Mnemonic phrase
@@ -219,7 +178,6 @@ class TonClient(object):
         return self.request(method='crypto.mnemonic.verify', params=params)
 
     def mnemonic_words(self) -> str:
-        """ Get word list """
         return self.request("crypto.mnemonic.words")
 
     def sha512(self, string: str, string_fmt: str) -> str:
@@ -248,8 +206,9 @@ class TonClient(object):
         }
         return self.request(method='crypto.sha256', params=params)
 
-    def scrypt(self, data: str, n: int, r: int, p: int, dk_len: int, salt: str,
-               salt_fmt: str, password: str, password_fmt: str) -> str:
+    def scrypt(
+            self, data: str, n: int, r: int, p: int, dk_len: int, salt: str,
+            salt_fmt: str, password: str, password_fmt: str) -> str:
         """
         Args:
             data (str): Data to encrypt
@@ -279,7 +238,7 @@ class TonClient(object):
         }
         return self.request(method="crypto.scrypt", params=params)
 
-    def keystore_add(self, keypair: dict) -> str:
+    def keystore_add(self, keypair: Dict) -> str:
         """
         Args:
             keypair (dict): Keypair dict {"public": str, "secret": str}
@@ -288,7 +247,7 @@ class TonClient(object):
         """
         return self.request(method='crypto.keystore.add', params=keypair)
 
-    def keystore_remove(self, index) -> None:
+    def keystore_remove(self, index):
         """
         Args:
             index (str, int): Keystore index to be removed
@@ -297,8 +256,8 @@ class TonClient(object):
         """
         self.request(method='crypto.keystore.remove', params=str(index))
 
-    def keystore_clear(self) -> None:
-        """ Clear keystore or exception """
+    def keystore_clear(self):
+        """ Clear keystore """
         self.request(method='crypto.keystore.clear')
 
     def hdkey_xprv_from_mnemonic(self, mnemonic: str) -> str:
@@ -358,7 +317,7 @@ class TonClient(object):
         params = {"serialized": bip32_key, 'index': index}
         return self.request(method='crypto.hdkey.xprv.derive', params=params)
 
-    def factorize(self, number: str) -> dict:
+    def factorize(self, number: str) -> Dict:
         """
         Args:
             number (str):
@@ -377,7 +336,7 @@ class TonClient(object):
         return self.request(
             method='crypto.ton_public_key_string', params=public_key)
 
-    def ed25519_keypair(self) -> dict:
+    def ed25519_keypair(self) -> Dict:
         """ Generate ed25519 keypair """
         return self.request(method='crypto.ed25519.keypair')
 
@@ -393,17 +352,17 @@ class TonClient(object):
         params = {'base': base, 'exponent': exponent, 'modulus': modulus}
         return self.request(method='crypto.math.modularPower', params=params)
 
-    def nacl_box_keypair(self) -> dict:
+    def nacl_box_keypair(self) -> Dict:
         """ Generate nacl box keypair """
         return self.request(method='crypto.nacl.box.keypair')
 
-    def nacl_sign_keypair(self) -> dict:
+    def nacl_sign_keypair(self) -> Dict:
         """ Generate nacl sign keypair """
         return self.request(method='crypto.nacl.sign.keypair')
 
-    def nacl_sign_keypair_from_secret_key(self, secret_key: str) -> dict:
+    def nacl_sign_keypair_from_secret_key(self, secret_key: str) -> Dict:
         """
-        Generate nack sign keypair from secret key
+        Generate nacl sign keypair from secret key
         Args:
             secret_key (str):
         Returns:
@@ -412,8 +371,9 @@ class TonClient(object):
         return self.request(
             method='crypto.nacl.sign.keypair.fromSecretKey', params=secret_key)
 
-    def nacl_box(self, nonce: str, their_public: str, message: str,
-                 message_fmt: str) -> str:
+    def nacl_box(
+            self, nonce: str, their_public: str,
+            message: str, message_fmt: str) -> str:
         """
         Args:
             nonce (str):
@@ -445,12 +405,13 @@ class TonClient(object):
         }
         return self.request(method='crypto.nacl.sign', params=params)
 
-    def nacl_box_keypair_from_secret_key(self, key: str) -> dict:
+    def nacl_box_keypair_from_secret_key(self, key: str) -> Dict:
         return self.request(
             method='crypto.nacl.box.keypair.fromSecretKey', params=key)
 
-    def nacl_secret_box_open(self, nonce: str, their_public: str,
-                             message: str, message_fmt: str) -> str:
+    def nacl_secret_box_open(
+            self, nonce: str, their_public: str,
+            message: str, message_fmt: str) -> str:
         """
         Args:
             nonce (str):
@@ -468,8 +429,8 @@ class TonClient(object):
         return self.request(
             method="crypto.nacl.secret.box.open", params=params)
 
-    def nacl_sign_detached(self, key: str, message: str, message_fmt: str) \
-            -> str:
+    def nacl_sign_detached(
+            self, key: str, message: str, message_fmt: str) -> str:
         """
         Args:
             key (str):
@@ -484,8 +445,9 @@ class TonClient(object):
         }
         return self.request(method="crypto.nacl.sign.detached", params=params)
 
-    def nacl_secret_box(self, nonce: str, their_public: str, message: str,
-                        message_fmt: str) -> str:
+    def nacl_secret_box(
+            self, nonce: str, their_public: str,
+            message: str, message_fmt: str) -> str:
         """
         Args:
             nonce (str):
@@ -502,8 +464,9 @@ class TonClient(object):
         }
         return self.request(method="crypto.nacl.secret.box", params=params)
 
-    def nacl_box_open(self, nonce: str, their_public: str, secret_key: str,
-                      message: str, message_fmt: str) -> str:
+    def nacl_box_open(
+            self, nonce: str, their_public: str, secret_key: str,
+            message: str, message_fmt: str) -> str:
         """
         Args:
             nonce (str):
@@ -554,10 +517,28 @@ class TonClient(object):
     #     logger.debug(f'Data: {params}')
     #
     #     on_result = OnResult(cb)
-    #     response = self.lib.tc_json_request_async(
+    #     response = _LIB.tc_json_request_async(
     #         self.context, method_interop, params_interop,
     #         ctypes.c_int32(req_id), on_result)
     #     logger.debug(f'Response: {response}')
     #
-    #     self.lib.tc_destroy_json_response(response)
+    #     _LIB.tc_destroy_json_response(response)
     #     return response
+
+
+# def _on_result(request_id: int, result_json: InteropString,
+#                error_json: InteropString, flags: int):
+#     """ Python callback for lib async request """
+#     logger.debug('Async callback fired')
+#     logger.debug(
+#         f'Request ID: {request_id}\n'
+#         f'Result JSON: {result_json}\n'
+#         f'Error JSON: {error_json}\n'
+#         f'Flags: {flags}\n')
+#
+#     if result_json.len > 0:
+#         logger.debug('Result JSON: ', result_json.content)
+#     elif error_json.len > 0:
+#         logger.debug('Error JSON: ', error_json.content)
+#     else:
+#         logger.debug('No response data')
