@@ -127,9 +127,7 @@ class TonContract(object):
 
         return result
 
-    def run_message(
-            self, function_name: str, inputs: Dict = None,
-            full_run: bool = False, time: int = None) -> Dict:
+    def run_message(self, function_name: str, inputs: Dict = None) -> Dict:
         """
         This method is similar to 'deploy_message' but it applies to active
         contracts.
@@ -138,8 +136,6 @@ class TonContract(object):
 
         :param function_name: Contract function name (ABI function)
         :param inputs: Contract function arguments (ABI inputs)
-        :param full_run:
-        :param time:
         :return: Dict
         """
         params = {
@@ -147,9 +143,7 @@ class TonContract(object):
             "abi": self.abi,
             "functionName": function_name,
             "input": inputs or {},
-            "keyPair": self.keypair,
-            "fullRun": full_run,
-            "time": time
+            "keyPair": self.keypair
         }
 
         return self._client.request(
