@@ -19,8 +19,14 @@ class TonContract(object):
         self.image = None
         self.keypair = None
         self.address = None
+        self.balance = None
 
         self._client: (TonClient, None) = None
+
+    @property
+    def id(self) -> str:
+        """ Get contract id """
+        return self.address.split(":")[1]
 
     @property
     def image_b64(self) -> str:
@@ -56,6 +62,16 @@ class TonContract(object):
             with open(path, 'r') as fp:
                 keys = fp.read()
                 self.keypair = json.loads(keys)
+
+    def load(self):
+        """
+        Load contract
+        :return:
+        """
+        params = {"address": self.address}
+        result = self._client.request(method="contracts.load", params=params)
+
+        self.balance = int(result["balanceGrams"])
 
     def deploy_address(
             self, init_params: Dict = None, workchain_id: int = 0) -> str:
@@ -468,3 +484,133 @@ class TonContract(object):
         params = {"bocBase64": message_boc}
         return self._client.request(
             method="contracts.parse.message", params=params)
+
+    def get_function_id(self, function_name: str, inputs: bool = False) -> int:
+        """
+        Get contract function id.
+
+        :param function_name:
+        :param inputs:
+        :return:
+        """
+        params = {
+            "abi": self.abi,
+            "function": function_name,
+            "input": inputs
+        }
+
+        result = self._client.request(
+            method="contracts.function.id", params=params)
+
+        return result["id"]
+
+    def find_shard(self, shards: [dict]) -> Dict:
+        """
+        :param shards: Shard dict is {"workchain_id": int, "shard": str}
+        :return:
+        """
+        params = {
+            "address": self.address,
+            "shards": shards
+        }
+
+        return self._client.request(
+            method="contracts.find.shard", params=params)
+
+    def send_message(self, message: Dict) -> Dict:
+        """
+        Method sends messages to the node without waiting for the result.
+
+        :param message: Message dict is
+                {"address": str, "messageId": str, "messageBodyBase64": str,
+                "expire": int|None}
+        :return:
+        """
+        return self._client.request(
+            method="contracts.send.message", params=message)
+
+    def process_message(
+            self, function_name: str, message: Dict,
+            infinite_wait: bool = False) -> Dict:
+        """
+        Method sends messages to the node and waits for the result.
+
+        :param function_name:
+        :param message: Message dict is
+                {"address": str, "messageId": str, "messageBodyBase64": str,
+                "expire": int|None}
+        :param infinite_wait:
+        :return:
+        """
+        params = {
+            "abi": self.abi,
+            "functionName": function_name,
+            "message": message,
+            "infiniteWait": infinite_wait
+        }
+        return self._client.request(
+            method="contracts.process.message", params=params)
+
+    def process_transaction(
+            self, function_name: str, transaction: dict) -> Dict:
+        """
+        :param function_name:
+        :param transaction: Transaction dict
+        :return:
+        """
+        params = {
+            "address": self.address,
+            "abi": self.abi,
+            "functionName": function_name,
+            "transaction": transaction
+        }
+
+        return self._client.request(
+            method="contracts.process.transaction", params=params)
+
+    def wait_transaction(
+            self, function_name: str, message: Dict, transaction: Dict,
+            infinite_wait: bool = False) -> Dict:
+        """
+        :param function_name:
+        :param message: Message dict is
+                {"address": str, "messageId": str, "messageBodyBase64": str,
+                "expire": int|None}
+        :param transaction: Transaction dict after 'send_message'
+        :param infinite_wait:
+        :return:
+        """
+        params = {
+            "abi": self.abi,
+            "functionName": function_name,
+            "message": message,
+            "messageProcessingState": transaction,
+            "infiniteWait": infinite_wait
+        }
+
+        return self._client.request(
+            method="contracts.wait.transaction", params=params)
+
+    def tvm_get(
+            self, boc: str, code: str, data: str, function_name: str,
+            inputs: Dict = None) -> Dict:
+        """
+        :param boc: Base64
+        :param code: Base64
+        :param data: Base64
+        :param function_name:
+        :param inputs:
+        :return:
+        """
+        params = {
+            "bocBase64": boc,
+            "codeBase64": code,
+            "dataBase64": data,
+            "functionName": function_name,
+            "input": inputs or {},
+            "address": self.address,
+            "balance": hex(self.balance or 0),
+            "lastPaid": None  # TODO: add to contract
+        }
+
+        return self._client.request(method="tvm.get", params=params)

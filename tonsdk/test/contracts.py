@@ -232,6 +232,57 @@ class TestPiggyBankContract(unittest.TestCase):
         result = self.contract.parse_message(message_boc=message_boc)
         self.assertDictEqual(result, {"dst": "0:668b5c83056ebf1852cc7af4e61c8a421056c0311f035a39e5baf7ce28b14728"})
 
+    def test_function_id(self):
+        fn_id = self.contract.get_function_id(function_name="getVersion")
+        self.assertEqual(fn_id, 1511640466)
+
+    def test_load(self):
+        self.contract.load()
+        self.assertIsInstance(self.contract.balance, int)
+
+    def test_find_shard(self):
+        shards = [
+            {
+              "workchain_id": 0,
+              "shard": "0800000000000000"
+            },
+            {
+              "workchain_id": 0,
+              "shard": "1800000000000000"
+            }
+        ]
+        result = self.contract.find_shard(shards=shards)
+        self.assertIsNone(result)
+
+    def test_send_message(self):
+        message = self.contract.run_message(function_name="getVersion")
+        result = self.contract.send_message(message=message)
+        self.assertEqual(list(result.keys()), ["lastBlockId", "sendingTime"])
+
+    def test_process_message(self):
+        message = self.contract.run_message(function_name="getVersion")
+        result = self.contract.process_message(
+            function_name="getVersion", message=message)
+        self.assertEqual("fees" in list(result.keys()), True)
+
+    def test_process_transaction(self):
+        message = self.contract.run_message(function_name="getVersion")
+        transaction = self.contract.process_message(
+            function_name="getVersion", message=message)
+
+        processed = self.contract.process_transaction(
+            function_name="getVersion", transaction=transaction)
+        self.assertEqual("fees" in list(processed.keys()), True)
+
+    def test_wait_transaction(self):
+        message = self.contract.run_message(function_name="getVersion")
+        transaction = self.contract.send_message(message=message)
+
+        result = self.contract.wait_transaction(
+            function_name="getVersion", message=message,
+            transaction=transaction)
+        self.assertEqual("fees" in list(result.keys()), True)
+
 
 if __name__ == '__main__':
     unittest.main()
