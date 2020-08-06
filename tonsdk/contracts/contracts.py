@@ -10,6 +10,10 @@ class TonContract(object):
     Work with TON contracts.
     https://github.com/tonlabs/TON-SDK/wiki/Core-Library-JSON-API
     """
+    TYPE_ADDRESS_B64 = "Base64"
+    TYPE_ADDRESS_HEX = "Hex"
+    TYPE_ADDRESS_ID = "AccountId"
+
     def __init__(self):
         self.abi = None
         self.image = None
@@ -52,6 +56,47 @@ class TonContract(object):
             with open(path, 'r') as fp:
                 keys = fp.read()
                 self.keypair = json.loads(keys)
+
+    def deploy_address(
+            self, init_params: Dict = None, workchain_id: int = 0) -> str:
+        """
+        Get contract address.
+
+        :param init_params:
+        :param workchain_id:
+        :return: address
+        """
+        params = {
+            "abi": self.abi,
+            "initParams": init_params or {},
+            "imageBase64": self.image_b64,
+            "keyPair": self.keypair,
+            "workchainId": workchain_id
+        }
+
+        address = self._client.request(
+            method="contracts.deploy.address", params=params)
+        self.address = address
+
+        return address
+
+    def convert_address(self, to: str, b64_params: dict = None) -> str:
+        """
+        :param to: Convert to. One of 'AccountId', 'Hex', 'Base64'
+        :param b64_params: Convert params when converting to base64.
+                           {url: bool, test: bool, bounce: bool}
+        :return:
+        """
+        params = {
+            "address": self.address,
+            "convertTo": to,
+            "base64Params": b64_params
+        }
+
+        result = self._client.request(
+            method="contracts.address.convert", params=params)
+
+        return result["address"]
 
     def deploy_message(
             self, constructor_params: Dict = None, constructor_header: Dict = None,
@@ -118,6 +163,24 @@ class TonContract(object):
 
         return self._client.request(
             method="contracts.deploy.encode_unsigned_message", params=params)
+
+    def deploy_data(
+            self, init_params: Dict = None, workchain_id: int = 0) -> Dict:
+        """
+        :param init_params:
+        :param workchain_id:
+        :return:
+        """
+        params = {
+            "abi": self.abi or {},
+            "initParams": init_params or {},
+            "imageBase64": self.image_b64,
+            "publicKeyHex": self.keypair["public"],
+            "workchainId": workchain_id
+        }
+
+        return self._client.request(
+            method="contracts.deploy.data", params=params)
 
     def deploy(
             self, constructor_params: Dict = None,
@@ -205,8 +268,6 @@ class TonContract(object):
         """
         Creates only a message body with parameters encoded according
         to the ABI.
-        This method supports SETCODE and deploy of one contract by
-        another contract.
 
         :param function_name:
         :param internal:
@@ -249,6 +310,51 @@ class TonContract(object):
 
         return self._client.request(method="contracts.run", params=params)
 
+    def run_local(
+            self, function_name: str, inputs: Dict = None,
+            full_run: bool = False, time: int = None) -> Dict:
+        """
+        :param function_name:
+        :param inputs:
+        :param full_run:
+        :param time:
+        :return:
+        """
+        params = {
+            "address": self.address,
+            "abi": self.abi,
+            "functionName": function_name,
+            "input": inputs or {},
+            "keyPair": self.keypair or {},
+            "fullRun": full_run,
+            "time": time
+        }
+
+        return self._client.request(
+            method="contracts.run.local", params=params)
+
+    def run_local_message(
+            self, function_name: str, message: str, full_run: bool = False,
+            time: int = None) -> Dict:
+        """
+        :param function_name:
+        :param message: Message base64
+        :param full_run:
+        :param time:
+        :return:
+        """
+        params = {
+            "address": self.address,
+            "abi": self.abi,
+            "functionName": function_name,
+            "messageBase64": message,
+            "fullRun": full_run,
+            "time": time
+        }
+
+        return self._client.request(
+            method="contracts.run.local.msg", params=params)
+
     def run_output(
             self, function_name: str, body: str, internal: bool = False) -> Dict:
         """
@@ -286,6 +392,49 @@ class TonContract(object):
 
         return self._client.request(method="contracts.run.fee", params=params)
 
+    def run_fee_message(self, message: str) -> dict:
+        """
+        :param message: Message base64
+        :return:
+        """
+        params = {
+            "address": self.address,
+            "messageBase64": message
+        }
+
+        return self._client.request(
+            method="contracts.run.fee.msg", params=params)
+
+    def run_unknown_input(self, body: str, internal: bool = False) -> Dict:
+        """
+        :param body: Body base64
+        :param internal:
+        :return:
+        """
+        params = {
+            "abi": self.abi,
+            "bodyBase64": body,
+            "internal": internal
+        }
+
+        return self._client.request(
+            method="contracts.run.unknown.input", params=params)
+
+    def run_unknown_output(self, body: str, internal: bool = False) -> Dict:
+        """
+        :param body: Body base64
+        :param internal:
+        :return:
+        """
+        params = {
+            "abi": self.abi,
+            "bodyBase64": body,
+            "internal": internal
+        }
+
+        return self._client.request(
+            method="contracts.run.unknown.output", params=params)
+
     def sign_message(
             self, unsigned_base64: str, sign_base64: str, expire: int = None) \
             -> Dict:
@@ -308,3 +457,14 @@ class TonContract(object):
 
         return self._client.request(
             method="contracts.encode_message_with_sign", params=params)
+
+    def parse_message(self, message_boc: str) -> Dict:
+        """
+        Parse message from BOC
+
+        :param message_boc: Message BOC base64
+        :return:
+        """
+        params = {"bocBase64": message_boc}
+        return self._client.request(
+            method="contracts.parse.message", params=params)
