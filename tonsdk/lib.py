@@ -61,11 +61,9 @@ class TonClient(object):
 
     def _request(self, method_name, params=None) -> Dict:
         """
-        Args:
-            method_name (str): SDK method name
-            params (any): Method params
-        Returns:
-            dict
+        :param method_name: SDK method name
+        :param params: Method params
+        :return: Dict
         """
         method_name = InteropString.from_string(method_name)
         params = InteropString.from_string(json.dumps(params or {}))
@@ -92,14 +90,15 @@ class TonClient(object):
     def _str_type_dict(self, string: str, fmt: str) -> Dict:
         """
         Generates dict for API params, based on string format
-        Args:
-            string (str): Any string
-            fmt (str): One of 'TYPE_x' constants
-        Returns:
-            dict
+
+        :param string: Any string
+        :param fmt: One of 'TYPE_x' constants
+        :return: Dict
         """
         if fmt not in [self.TYPE_BASE64, self.TYPE_HEX, self.TYPE_TEXT]:
-            raise ValueError("One of 'base64, hex, text' should be provided for 'fmt' param")
+            raise ValueError(
+                "One of 'base64, hex, text' should be provided "
+                "for 'fmt' param")
         return {fmt: string}
 
     def request(self, method: str, params=None, raise_exception=True):
@@ -112,10 +111,8 @@ class TonClient(object):
 
     def random_generate_bytes(self, length: int) -> str:
         """
-        Args:
-            length (int):
-        Returns:
-            str
+        :param length:
+        :return: str
         """
         params = {"length": length}
         return self.request(
@@ -123,10 +120,8 @@ class TonClient(object):
 
     def derive_sign_keys(self, mnemonic: str) -> Dict:
         """
-        Args:
-            mnemonic (str): Mnemonic phrase
-        Returns:
-            dict
+        :param mnemonic: Mnemonic phrase
+        :return: Dict
         """
         params = {"phrase": mnemonic, "wordCount": len(mnemonic.split(" "))}
         return self.request(
@@ -134,11 +129,9 @@ class TonClient(object):
 
     def ton_crc16(self, string: str, string_fmt: str) -> int:
         """
-        Args:
-            string (str): String as hex, base64 or plain text
-            string_fmt (str): String type ('TonClient.TYPE_x' constants)
-        Returns:
-            int
+        :param string: String as hex, base64 or plain text
+        :param string_fmt: String type ('TonClient.TYPE_x' constants)
+        :return: int
         """
         params = self._str_type_dict(string=string, fmt=string_fmt)
         return self.request(method='crypto.ton_crc16', params=params)
@@ -146,23 +139,21 @@ class TonClient(object):
     def mnemonic_generate(self, word_count=24) -> str:
         """
         Generate random mnemonic
-        Args:
-            word_count (int):
-        Returns:
-            str
+
+        :param word_count:
+        :return: str
         """
         params = {"wordCount": word_count}
         return self.request(
             method='crypto.mnemonic.from.random', params=params)
 
-    def mnemonic_from_entropy(self, entropy: str, entropy_fmt: str, word_count=24) -> str:
+    def mnemonic_from_entropy(
+            self, entropy: str, entropy_fmt: str, word_count=24) -> str:
         """
-        Args:
-            entropy (str): String as hex, base64 or plain text
-            entropy_fmt (str): Entropy string type (TonClient.TYPE_x)
-            word_count (int):
-        Returns:
-            str
+        :param entropy: String as hex, base64 or plain text
+        :param entropy_fmt: Entropy string type (TonClient.TYPE_x)
+        :param word_count:
+        :return: str
         """
         params = {
             "wordCount": word_count,
@@ -171,12 +162,10 @@ class TonClient(object):
         return self.request(
             method="crypto.mnemonic.from.entropy", params=params)
 
-    def mnemonic_verify(self, mnemonic) -> bool:
+    def mnemonic_verify(self, mnemonic: str) -> bool:
         """
-        Args:
-            mnemonic (str):
-        Returns:
-            bool
+        :param mnemonic:
+        :return: bool
         """
         params = {"phrase": mnemonic, "wordCount": len(mnemonic.split(" "))}
         return self.request(method='crypto.mnemonic.verify', params=params)
@@ -186,11 +175,9 @@ class TonClient(object):
 
     def sha512(self, string: str, string_fmt: str) -> str:
         """
-        Args:
-            string (str): String as hex, base64 or plain text
-            string_fmt (str): String type (TonClient.TYPE_x)
-        Returns:
-            str
+        :param string: String as hex, base64 or plain text
+        :param string_fmt: String type (TonClient.TYPE_x)
+        :return: str
         """
         params = {
             "message": self._str_type_dict(string=string, fmt=string_fmt)
@@ -199,11 +186,9 @@ class TonClient(object):
 
     def sha256(self, string: str, string_fmt: str) -> str:
         """
-        Args:
-            string (str): String as hex, base64 or plain text
-            string_fmt (str): Entropy string type (TonClient.TYPE_x)
-        Returns:
-            str
+        :param string: String as hex, base64 or plain text
+        :param string_fmt: Entropy string type (TonClient.TYPE_x)
+        :return: str
         """
         params = {
             "message": self._str_type_dict(string=string, fmt=string_fmt)
@@ -214,22 +199,20 @@ class TonClient(object):
             self, data: str, n: int, r: int, p: int, dk_len: int, salt: str,
             salt_fmt: str, password: str, password_fmt: str) -> str:
         """
-        Args:
-            data (str): Data to encrypt
-            n (int): The CPU/Memory cost parameter. Must be larger than 1,
-                    a power of 2, and less than 2^(128 * r / 8)
-            r (int): The parameter specifies block size
-            p (int): The parallelization parameter. Is a positive integer
-                    less than or equal to ((2^32-1) * 32) / (128 * r)
-            dk_len (int): The intended output length. Is the length in octets
-                    of the key to be derived ("keyLength"); it is a positive
-                    integer less than or equal to (2^32 - 1) * 32.
-            salt (str): Salt string
-            salt_fmt (str): Salt string type (TonClient.TYPE_x)
-            password (str): Password string
-            password_fmt (str): Password string type (TonClient.TYPE_x)
-        Returns:
-            str
+        :param data: Data to encrypt
+        :param n: The CPU/Memory cost parameter. Must be larger than 1,
+                a power of 2, and less than 2^(128 * r / 8)
+        :param r: The parameter specifies block size
+        :param p: The parallelization parameter. Is a positive integer
+                less than or equal to ((2^32-1) * 32) / (128 * r)
+        :param dk_len: The intended output length. Is the length in octets
+                of the key to be derived ("keyLength"); it is a positive
+                integer less than or equal to (2^32 - 1) * 32.
+        :param salt: Salt string
+        :param salt_fmt: Salt string type (TonClient.TYPE_x)
+        :param password: Password string
+        :param password_fmt: Password string type (TonClient.TYPE_x)
+        :return: str
         """
         params = {
             "data": data,
@@ -244,19 +227,15 @@ class TonClient(object):
 
     def keystore_add(self, keypair: Dict) -> str:
         """
-        Args:
-            keypair (dict): Keypair dict {"public": str, "secret": str}
-        Returns:
-            str: index in store
+        :param keypair: Keypair dict {"public": str, "secret": str}
+        :return: str
         """
         return self.request(method='crypto.keystore.add', params=keypair)
 
-    def keystore_remove(self, index):
+    def keystore_remove(self, index: str):
         """
-        Args:
-            index (str, int): Keystore index to be removed
-        Returns:
-            None or exception
+        :param index: Keystore index to be removed
+        :return:
         """
         self.request(method='crypto.keystore.remove', params=str(index))
 
@@ -267,10 +246,9 @@ class TonClient(object):
     def hdkey_xprv_from_mnemonic(self, mnemonic: str) -> str:
         """
         Get BIP32 key from mnemonic
-        Args:
-            mnemonic (str):
-        Returns:
-            str
+
+        :param mnemonic:
+        :return: str
         """
         params = {"phrase": mnemonic, "wordCount": len(mnemonic.split(" "))}
         return self.request(
@@ -279,10 +257,9 @@ class TonClient(object):
     def hdkey_xprv_secret(self, bip32_key: str) -> str:
         """
         Get private key from BIP32 key
-        Args:
-            bip32_key (str):
-        Returns:
-            str
+
+        :param bip32_key:
+        :return: str
         """
         params = {"serialized": bip32_key}
         return self.request(method='crypto.hdkey.xprv.secret', params=params)
@@ -290,21 +267,18 @@ class TonClient(object):
     def hdkey_xprv_public(self, bip32_key: str) -> str:
         """
         Get public key from BIP32 key
-        Args:
-            bip32_key (str):
-        Returns:
-            str
+
+        :param bip32_key:
+        :return: str
         """
         params = {"serialized": bip32_key}
         return self.request(method='crypto.hdkey.xprv.public', params=params)
 
     def hdkey_xprv_derive_path(self, bip32_key: str, derive_path: str) -> str:
         """
-        Args:
-            bip32_key (str):
-            derive_path (str):
-        Returns:
-            str
+        :param bip32_key:
+        :param derive_path:
+        :return: str
         """
         params = {"serialized": bip32_key, 'path': derive_path}
         return self.request(
@@ -312,30 +286,24 @@ class TonClient(object):
 
     def hdkey_xprv_derive(self, bip32_key: str, index: int) -> str:
         """
-        Args:
-            bip32_key (str):
-            index (int):
-        Returns:
-            str
+        :param bip32_key:
+        :param index:
+        :return: str
         """
         params = {"serialized": bip32_key, 'index': index}
         return self.request(method='crypto.hdkey.xprv.derive', params=params)
 
     def factorize(self, number: str) -> Dict:
         """
-        Args:
-            number (str):
-        Returns:
-            dict
+        :param number:
+        :return: Dict
         """
         return self.request(method='crypto.math.factorize', params=number)
 
     def ton_public_key_string(self, public_key: str) -> str:
         """
-        Args:
-            public_key (str):
-        Returns:
-            str
+        :param public_key:
+        :return: str
         """
         return self.request(
             method='crypto.ton_public_key_string', params=public_key)
@@ -346,12 +314,10 @@ class TonClient(object):
 
     def modular_power(self, base: str, exponent: str, modulus: str) -> str:
         """
-        Args:
-            base (str):
-            exponent (str):
-            modulus (str):
-        Returns:
-            str
+        :param base:
+        :param exponent:
+        :param modulus:
+        :return: str
         """
         params = {'base': base, 'exponent': exponent, 'modulus': modulus}
         return self.request(method='crypto.math.modularPower', params=params)
@@ -367,10 +333,9 @@ class TonClient(object):
     def nacl_sign_keypair_from_secret_key(self, secret_key: str) -> Dict:
         """
         Generate nacl sign keypair from secret key
-        Args:
-            secret_key (str):
-        Returns:
-            dict
+
+        :param secret_key:
+        :return: Dict
         """
         return self.request(
             method='crypto.nacl.sign.keypair.fromSecretKey', params=secret_key)
@@ -383,15 +348,13 @@ class TonClient(object):
             self, nonce: str, their_public: str, secret_key: str, message: str,
             message_fmt: str, output_fmt: str = BOX_OUTPUT_HEX) -> str:
         """
-        Args:
-            nonce (str):
-            their_public (str):
-            secret_key (str):
-            message (str): Message as hex, base64 or plain text
-            message_fmt (str): Message string type (TonClient.TYPE_x)
-            output_fmt (str):
-        Returns:
-            str
+        :param nonce:
+        :param their_public:
+        :param secret_key:
+        :param message:
+        :param message_fmt:
+        :param output_fmt:
+        :return: str
         """
         params = {
             "nonce": nonce,
@@ -407,15 +370,13 @@ class TonClient(object):
             message: str, message_fmt: str, output_fmt: str = BOX_OUTPUT_TEXT)\
             -> str:
         """
-        Args:
-            nonce (str):
-            their_public (str):
-            secret_key (str):
-            message (str): Message as hex, base64 or plain text
-            message_fmt (str): Message string type (TonClient.TYPE_x)
-            output_fmt (str): Output format for opened message
-        Returns:
-            str
+        :param nonce:
+        :param their_public:
+        :param secret_key:
+        :param message:
+        :param message_fmt:
+        :param output_fmt:
+        :return: str
         """
         params = {
             "nonce": nonce,
@@ -430,13 +391,11 @@ class TonClient(object):
             self, key: str, message: str, message_fmt: str,
             output_fmt: str = BOX_OUTPUT_HEX) -> str:
         """
-        Args:
-            key (str):
-            message (str): Message as hex, base64 or plain text
-            message_fmt (str): Message string type (TonClient.TYPE_x)
-            output_fmt (str):
-        Returns:
-            str
+        :param key:
+        :param message:
+        :param message_fmt:
+        :param output_fmt:
+        :return: str
         """
         params = {
             "key": key,
@@ -449,13 +408,11 @@ class TonClient(object):
             self, key: str, message: str, message_fmt: str,
             output_fmt: str = BOX_OUTPUT_HEX) -> str:
         """
-        Args:
-            key (str):
-            message (str): Message as hex, base64 or plain text
-            message_fmt (str): Message string type (TonClient.TYPE_x)
-            output_fmt (str):
-        Returns:
-            str
+        :param key:
+        :param message:
+        :param message_fmt:
+        :param output_fmt:
+        :return: str
         """
         params = {
             "key": key,
@@ -468,13 +425,11 @@ class TonClient(object):
             self, key: str, message: str, message_fmt: str,
             output_fmt: str = BOX_OUTPUT_HEX) -> str:
         """
-        Args:
-            key (str):
-            message (str): Message as hex, base64 or plain text
-            message_fmt (str): Message string type (TonClient.TYPE_x)
-            output_fmt (str):
-        Returns:
-            str
+        :param key:
+        :param message:
+        :param message_fmt:
+        :param output_fmt:
+        :return: str
         """
         params = {
             "key": key,
@@ -487,14 +442,12 @@ class TonClient(object):
             self, nonce: str, their_public: str, message: str,
             message_fmt: str, output_fmt: str = BOX_OUTPUT_HEX) -> str:
         """
-        Args:
-            nonce (str):
-            their_public (str):
-            message (str): Message as hex, base64 or plain text
-            message_fmt (str): Message string type (TonClient.TYPE_x)
-            output_fmt (str)
-        Returns:
-            str
+        :param nonce:
+        :param their_public:
+        :param message:
+        :param message_fmt:
+        :param output_fmt:
+        :return: str
         """
         params = {
             "nonce": nonce,
@@ -509,15 +462,13 @@ class TonClient(object):
             message: str, message_fmt: str, output_fmt: str = BOX_OUTPUT_TEXT)\
             -> str:
         """
-        Args:
-            nonce (str):
-            their_public (str):
-            secret_key (str):
-            message (str): Message as hex, base64 or plain text
-            message_fmt (str): Message string type (TonClient.TYPE_x)
-            output_fmt (str):
-        Returns:
-            str
+        :param nonce:
+        :param their_public:
+        :param secret_key:
+        :param message:
+        :param message_fmt:
+        :param output_fmt:
+        :return: str
         """
         params = {
             "nonce": nonce,
