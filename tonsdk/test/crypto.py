@@ -2,14 +2,14 @@ import unittest
 import base64
 import logging
 
-from tonsdk.lib import TonClient
+from tonsdk.lib import TonClient, DEVNET_BASE_URL
 
 logging.basicConfig(level=logging.INFO)
 
 
 class TestCrypto(unittest.TestCase):
     def setUp(self) -> None:
-        self.client = TonClient()
+        self.client = TonClient(servers=[DEVNET_BASE_URL])
 
         self.mnemonic = "machine logic master small before pole ramp ankle stage trash pepper success oxygen unhappy engine muscle party oblige situate cement fame keep inform lemon"
         self.keypair = {
@@ -193,3 +193,35 @@ class TestCrypto(unittest.TestCase):
         keypair = self.client.nacl_box_keypair_from_secret_key(
             key=self.keypair["secret"])
         self.assertEqual(keypair, self.keypair_nacl_sign)
+
+    def test_nacl_box(self):
+        # TODO: Got an error 'Either Key or Keystore Handle must be specified'
+        pass
+
+    def test_nacl_sign(self):
+        signed = self.client.nacl_sign(
+            key="".join(self.keypair_nacl_sign.values()), message="Test",
+            message_fmt=TonClient.TYPE_TEXT)
+        self.assertEqual(signed, "a070fb8ecbcfcc283b999290a099d7821b3c2f8a86ec1ac1e6b0da4d5a005f997dda5a2d8cc17a97ba80906ee6cc29690403ecbeacdf730112abaf1f3f07440354657374")
+
+    def test_nacl_secret_box_open(self):
+        # TODO: Got an error 'Invalid key size 1. Expected 24.'
+        pass
+
+    def test_nacl_sign_detached(self):
+        signed = self.client.nacl_sign_detached(
+            key="".join(self.keypair_nacl_sign.values()), message="Test",
+            message_fmt=TonClient.TYPE_TEXT)
+        self.assertEqual(signed, "a070fb8ecbcfcc283b999290a099d7821b3c2f8a86ec1ac1e6b0da4d5a005f997dda5a2d8cc17a97ba80906ee6cc29690403ecbeacdf730112abaf1f3f074403")
+
+    def test_nacl_secret_box(self):
+        # TODO: Got an error 'Invalid key size 1. Expected 24.'
+        pass
+
+    def test_nacl_box_open(self):
+        # TODO: Got an error 'Invalid key size 1. Expected 24.'
+        pass
+
+    def test_nacl_sign_open(self):
+        # TODO: ...
+        pass
