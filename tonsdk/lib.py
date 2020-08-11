@@ -499,6 +499,27 @@ class TonClient(object):
         }
         return self.request(method="crypto.nacl.sign.open", params=params)
 
+    def query(
+            self, table: str, filter: Dict, result: str, order: Dict = None,
+            limit: int = None) -> any:
+        """
+        :param table:
+        :param filter: {"field_name": {"rule": "condition"}}
+        :param result:
+        :param order: {"path": str (field name), "direction": str (ASC|DESC)}
+        :param limit:
+        :return:
+        """
+        params = {
+            "table": table,
+            "filter": json.dumps(filter),
+            "result": result,
+            "order": order,
+            "limit": limit
+        }
+
+        return self.request(method="queries.query", params=params)
+
     # async def _request_async(self, method_name, params: Dict, req_id: int,
     #                          cb: Callable = _on_result):
     #     logger.debug('Create request (async)')
