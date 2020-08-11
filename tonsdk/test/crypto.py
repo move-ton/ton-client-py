@@ -195,8 +195,21 @@ class TestCrypto(unittest.TestCase):
         self.assertEqual(keypair, self.keypair_nacl_sign)
 
     def test_nacl_box(self):
-        # TODO: Got an error 'Either Key or Keystore Handle must be specified'
-        pass
+        box = self.client.nacl_box(
+            nonce="cd7f99924bf422544046e83595dd5803f17536f5c9a11746",
+            their_public=self.keypair["public"],
+            secret_key=self.keypair["secret"], message="Test",
+            message_fmt=TonClient.TYPE_TEXT)
+        self.assertEqual(box, "0501af8cc17d74c283eb4b54f72cbca44502a443")
+
+    def test_nacl_box_open(self):
+        box = "0501af8cc17d74c283eb4b54f72cbca44502a443"
+        opened = self.client.nacl_box_open(
+            nonce="cd7f99924bf422544046e83595dd5803f17536f5c9a11746",
+            their_public=self.keypair["public"],
+            secret_key=self.keypair["secret"], message=box,
+            message_fmt=TonClient.TYPE_HEX)
+        self.assertEqual(opened, "Test")
 
     def test_nacl_sign(self):
         signed = self.client.nacl_sign(
@@ -204,24 +217,33 @@ class TestCrypto(unittest.TestCase):
             message_fmt=TonClient.TYPE_TEXT)
         self.assertEqual(signed, "a070fb8ecbcfcc283b999290a099d7821b3c2f8a86ec1ac1e6b0da4d5a005f997dda5a2d8cc17a97ba80906ee6cc29690403ecbeacdf730112abaf1f3f07440354657374")
 
-    def test_nacl_secret_box_open(self):
-        # TODO: Got an error 'Invalid key size 1. Expected 24.'
-        pass
-
     def test_nacl_sign_detached(self):
         signed = self.client.nacl_sign_detached(
             key="".join(self.keypair_nacl_sign.values()), message="Test",
             message_fmt=TonClient.TYPE_TEXT)
         self.assertEqual(signed, "a070fb8ecbcfcc283b999290a099d7821b3c2f8a86ec1ac1e6b0da4d5a005f997dda5a2d8cc17a97ba80906ee6cc29690403ecbeacdf730112abaf1f3f074403")
 
-    def test_nacl_secret_box(self):
-        # TODO: Got an error 'Invalid key size 1. Expected 24.'
-        pass
-
-    def test_nacl_box_open(self):
-        # TODO: Got an error 'Invalid key size 1. Expected 24.'
-        pass
-
     def test_nacl_sign_open(self):
         # TODO: ...
+        # message = "a070fb8ecbcfcc283b999290a099d7821b3c2f8a86ec1ac1e6b0da4d5a005f997dda5a2d8cc17a97ba80906ee6cc29690403ecbeacdf730112abaf1f3f074403"
+        # opened = self.client.nacl_sign_open(
+        #     key=self.keypair_nacl_sign["public"], message=message,
+        #     message_fmt=TonClient.TYPE_HEX)
+        # print(opened)
         pass
+
+    def test_nacl_secret_box(self):
+        box = self.client.nacl_secret_box(
+            nonce="cd7f99924bf422544046e83595dd5803f17536f5c9a11746",
+            their_public=self.keypair["public"], message="Test",
+            message_fmt=TonClient.TYPE_TEXT)
+        self.assertEqual(box, "9bb36837fc6bf41e1ac1698f2de3d51db7db0c4f")
+
+    def test_nacl_secret_box_open(self):
+        box = "9bb36837fc6bf41e1ac1698f2de3d51db7db0c4f"
+        opened = self.client.nacl_secret_box_open(
+            nonce="cd7f99924bf422544046e83595dd5803f17536f5c9a11746",
+            their_public=self.keypair["public"],
+            secret_key=self.keypair["secret"], message=box,
+            message_fmt=TonClient.TYPE_HEX)
+        self.assertEqual(opened, "Test")
