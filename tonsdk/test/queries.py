@@ -32,13 +32,10 @@ class TestQueries(unittest.TestCase):
         # Subscribe for query
         table = "blocks"
         condition = {"workchain_id": {"eq": 0}}
-        order = {"path": "gen_utime", "direction": "DESC"}
-        limit = 2
         result = "id gen_utime"
 
         handle = CLIENT.query_subscribe(
-            table=table, filter=condition, result=result, order=order,
-            limit=limit)
+            table=table, filter=condition, result=result)
 
         # Get query.next
         for i in range(5):

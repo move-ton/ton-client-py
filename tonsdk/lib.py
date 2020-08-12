@@ -546,22 +546,17 @@ class TonClient(object):
         return result["result"]
 
     def query_subscribe(
-            self, table: str, filter: Dict, result: str, order: Dict = None,
-            limit: int = None) -> int:
+            self, table: str, filter: Dict, result: str) -> int:
         """
         :param table:
         :param filter:
         :param result:
-        :param order:
-        :param limit:
         :return: Handle index
         """
         params = {
             "table": table,
             "filter": json.dumps(filter),
-            "result": result,
-            "order": order,
-            "limit": limit
+            "result": result
         }
         result = self.request(method="queries.subscribe", params=params)
 
