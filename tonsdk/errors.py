@@ -1,0 +1,2 @@
+class TonException(Exception):
+    pass

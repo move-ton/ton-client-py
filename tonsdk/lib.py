@@ -5,7 +5,7 @@ import logging
 import platform
 from typing import Dict
 
-from tonsdk.ton_types import InteropString, InteropJsonResponse
+from tonsdk.ctypes import InteropString, InteropJsonResponse
 
 logger = logging.getLogger('ton')
 
@@ -108,33 +108,6 @@ class TonClient(object):
             raise Exception(result["result"])
 
         return result["result"]
-
-    def random_generate_bytes(self, length: int) -> str:
-        """
-        :param length:
-        :return: str
-        """
-        params = {"length": length}
-        return self.request(
-            method="crypto.random.generateBytes", params=params)
-
-    def derive_sign_keys(self, mnemonic: str) -> Dict:
-        """
-        :param mnemonic: Mnemonic phrase
-        :return: Dict
-        """
-        params = {"phrase": mnemonic, "wordCount": len(mnemonic.split(" "))}
-        return self.request(
-            method="crypto.mnemonic.derive.sign.keys", params=params)
-
-    def ton_crc16(self, string: str, string_fmt: str) -> int:
-        """
-        :param string: String as hex, base64 or plain text
-        :param string_fmt: String type ('TonClient.TYPE_x' constants)
-        :return: int
-        """
-        params = self._str_type_dict(string=string, fmt=string_fmt)
-        return self.request(method='crypto.ton_crc16', params=params)
 
     def mnemonic_generate(self, word_count=24) -> str:
         """

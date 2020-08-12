@@ -3,19 +3,22 @@ import base64
 import logging
 
 from tonsdk.lib import TonClient, DEVNET_BASE_URL
+from tonsdk.crypto import TonCrypto
+from tonsdk.types import KeyPair, FmtString
 
 logging.basicConfig(level=logging.INFO)
 
 
 class TestCrypto(unittest.TestCase):
     def setUp(self) -> None:
+        self.crypto = TonCrypto(client=TonClient(servers=[DEVNET_BASE_URL]))
         self.client = TonClient(servers=[DEVNET_BASE_URL])
 
         self.mnemonic = "machine logic master small before pole ramp ankle stage trash pepper success oxygen unhappy engine muscle party oblige situate cement fame keep inform lemon"
-        self.keypair = {
+        self.keypair = KeyPair(**{
             "public": "2e750ea795aad6e04ae1544132619c6a5e1356c36db60532320dae6aa656cf2e",
             "secret": "7ee962326304f9f88d5048fabdde7921411b1aad6400ef984c85a0a9cb3b1a7c"
-        }
+        })
         self.public_b64 = "PuYudQ6nlarW4ErhVEEyYZxqXhNWw222BTIyDa5qplbPLjlF"
         self.bip32_key = "xprv9s21ZrQH143K41qESFSVMwMgA2qvjYdjJo4wz9QWgH2G5yiFG5Ep8rVZsm2zn87CwBR7GYjJY57GLs529NhXsRvpm9M9vJ62WD7tA5J6gPs"
         self.bip32_secret = "8a5f38321a53581415f11fb7e056ef703136b4e58d491bd702985db42dec25f4"
@@ -36,27 +39,30 @@ class TestCrypto(unittest.TestCase):
         self.text_valid_sha256 = "532eaabd9574880dbf76b9b8cc00832c20a6ec113d682299550d7a6e0f345e25"
 
     def test_random_generate_bytes(self):
-        bts = self.client.random_generate_bytes(length=8)
+        bts = self.crypto.random_generate_bytes(length=8)
         self.assertEqual(len(bts), 16)
 
     def test_derive_sign_keys(self):
-        keys = self.client.derive_sign_keys(mnemonic=self.mnemonic)
-        self.assertEqual(keys, self.keypair)
+        key_pair = self.crypto.derive_sign_keys(mnemonic=self.mnemonic)
+        self.assertIsInstance(key_pair, KeyPair)
+        self.assertEqual(key_pair.as_dict, self.keypair.as_dict)
 
     def test_ton_crc16(self):
+        # Prepare FmtString object
+        fmt_string = FmtString(string=self.text_plain)
+
         # CRC from plain text
-        crc = self.client.ton_crc16(
-            string=self.text_plain, string_fmt=TonClient.TYPE_TEXT)
+        crc = self.crypto.ton_crc16(fmt_string=fmt_string.as_text)
         self.assertEqual(crc, self.text_valid_crc16)
 
         # CRC from hex
-        crc = self.client.ton_crc16(
-            string=self.text_hex, string_fmt=TonClient.TYPE_HEX)
+        fmt_string.string = self.text_hex
+        crc = self.crypto.ton_crc16(fmt_string=fmt_string.as_hex)
         self.assertEqual(crc, self.text_valid_crc16)
 
         # CRC from base64
-        crc = self.client.ton_crc16(
-            string=self.text_base64, string_fmt=TonClient.TYPE_BASE64)
+        fmt_string.string = self.text_base64
+        crc = self.crypto.ton_crc16(fmt_string=fmt_string.as_base64)
         self.assertEqual(crc, self.text_valid_crc16)
 
     def test_mnemonic_generate(self):
