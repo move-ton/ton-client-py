@@ -10,10 +10,14 @@ from tonsdk.bindings.types import TCOnResponseT, TCResponseT, TCStringT
 from tonsdk.errors import TonException
 
 
-class TonRequestMixin:
-    def __init__(self):
-        """ Dummy method for class logic flow """
-        self._ctx = None
+class TonModule(object):
+    """
+    Base TON Module class.
+    All modules, such as 'crypto', 'contracts', etc. should be inherited
+    from this class.
+    """
+    def __init__(self, ctx: ctypes.c_int32):
+        self._ctx = ctx
         self._async_request_id = 1
 
     @staticmethod
@@ -73,14 +77,3 @@ class TonRequestMixin:
 
         self._async_request_id += 1
         return await future
-
-
-class TonModule(TonRequestMixin):
-    """
-    Base TON Module class.
-    All modules, such as 'crypto', 'contracts', etc. should be inherited
-    from this class.
-    """
-    def __init__(self, ctx: ctypes.c_int32):
-        super(TonModule, self).__init__()
-        self._ctx = ctx
