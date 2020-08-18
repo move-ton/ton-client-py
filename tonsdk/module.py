@@ -20,16 +20,23 @@ class TonRequestMixin:
         self._async_request_id = 1
 
     @staticmethod
-    def _prepare_params(arg, **kwargs):
+    def _prepare_params(params_or_str, **kwargs):
         """ Prepare params to pass to request """
-        return json.dumps(arg if arg else kwargs or {})
+        if isinstance(params_or_str, dict):
+            params_or_str = {**params_or_str, **kwargs}
+        elif params_or_str is None:
+            params_or_str = kwargs or {}
 
-    def request(self, method: str, arg: Any = None, **kwargs) -> Any:
+        return json.dumps(params_or_str)
+
+    def request(
+            self, method: str,
+            params_or_str: Union[str, Dict[str, Any]] = None, **kwargs) -> Any:
         """ Fire TON lib request. Raise on error. """
         # Make request, get response pointer and read it
-        params_json = self._prepare_params(arg, **kwargs)
+        request_params = self._prepare_params(params_or_str, **kwargs)
         response_ptr = tc_json_request(
-            ctx=self._ctx, method=method, params_json=params_json)
+            ctx=self._ctx, method=method, params_json=request_params)
         response = tc_read_json_response(handle=response_ptr)
 
         # Copy response data and destroy response pointer
@@ -42,7 +49,9 @@ class TonRequestMixin:
 
         return result_json
 
-    async def request_async(self, method: str, arg: Any = None, **kwargs):
+    async def request_async(
+            self, method: str,
+            params_or_str: Union[str, Dict[str, Any]] = None, **kwargs):
         loop = asyncio.get_running_loop()
         future = loop.create_future()
 
@@ -60,10 +69,10 @@ class TonRequestMixin:
                 'flags': flags
             })
 
-        params_json = self._prepare_params(arg, **kwargs)
+        request_params = self._prepare_params(params_or_str, **kwargs)
         tc_json_request_async(
             ctx=self._ctx, method=method, request_id=self._async_request_id,
-            callback=_cb, params_json=params_json)
+            callback=_cb, params_json=request_params)
 
         self._async_request_id += 1
         return await future
