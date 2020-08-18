@@ -1,8 +1,8 @@
 from typing import Dict
 
 from tonsdk.bindings.lib import tc_create_context, tc_destroy_context
-from tonsdk.crypto.module import TonCrypto
-from tonsdk.mixins import TonRequestMixin
+from tonsdk.crypto import TonCrypto
+from tonsdk.module import TonRequestMixin
 
 DEVNET_BASE_URL = 'net.ton.dev'
 MAINNET_BASE_URL = 'main.ton.dev'
@@ -22,6 +22,7 @@ TON_CLIENT_DEFAULT_SETUP = {
 class TonClient(TonRequestMixin):
     """ Main client class to create object of """
     def __init__(self, **config):
+        super(TonClient, self).__init__()
         self._ctx = tc_create_context()
         self.crypto = TonCrypto(ctx=self._ctx)
         self.setup({**TON_CLIENT_DEFAULT_SETUP, **config})

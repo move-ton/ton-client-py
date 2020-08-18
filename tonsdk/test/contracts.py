@@ -2,7 +2,7 @@ import os
 import unittest
 
 from tonsdk.lib import TonClient, DEVNET_BASE_URL
-from tonsdk.contracts.contracts import TonContract
+from tonsdk.contracts import TonContract
 
 
 SAMPLES_DIR = os.path.join(os.path.dirname(__file__), "samples")

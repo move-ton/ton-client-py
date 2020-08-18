@@ -1,7 +1,11 @@
-from __future__ import annotations
 import json
 from io import StringIO
 from typing import Dict
+
+NACL_OUTPUT_TXT = "Text"
+NACL_OUTPUT_HEX = "Hex"
+NACL_OUTPUT_HEX_UP = "HexUppercase"
+NACL_OUTPUT_B64 = "Base64"
 
 
 class KeyPair(object):
@@ -19,7 +23,7 @@ class KeyPair(object):
         return bytes.fromhex(f"{self.secret}{self.public}")
 
     @staticmethod
-    def load(path: str, is_binary: bool) -> KeyPair:
+    def load(path: str, is_binary: bool) -> "KeyPair":
         """ Load keypair from file """
         if is_binary:
             with open(path, "rb") as fp:
@@ -41,7 +45,7 @@ class KeyPair(object):
                 json.dump(self.dict, fp)
 
     @staticmethod
-    def load_io(io: StringIO, as_binary: bool = False) -> KeyPair:
+    def load_io(io: StringIO, as_binary: bool = False) -> "KeyPair":
         """ Load keypair from StringIO """
         data = io.getvalue()
         keys = json.loads(data) \
@@ -68,37 +72,3 @@ class FmtString(str):
     @property
     def base64(self) -> Dict[str, str]:
         return {"base64": self}
-
-
-class NaclBox(object):
-    OUTPUT_TEXT = "Text"
-    OUTPUT_HEX = "Hex"
-    OUTPUT_HEX_UP = "HexUppercase"
-    OUTPUT_BASE64 = "Base64"
-
-    def __init__(
-            self, key: str, message: str, output: str = OUTPUT_HEX):
-        """
-        :param key: Key can be either secret or public, depending on situation
-        :param message: Message string. Use one of 'as_' methods to prepare
-                        message
-        :param output: Box output format
-        """
-        self.key = key
-        self.message = FmtString(message)
-        self.output = output
-
-    def as_text(self) -> NaclBox:
-        """ Box message as FmtString.text """
-        self.message = self.message.text
-        return self
-
-    def as_hex(self) -> NaclBox:
-        """ Box message as FmtString.hex string """
-        self.message = self.message.hex
-        return self
-
-    def as_base64(self) -> NaclBox:
-        """ Box message as FmtString.base64 """
-        self.message = self.message.base64
-        return self

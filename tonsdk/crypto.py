@@ -1,7 +1,7 @@
-from typing import Dict, Union
+from typing import Dict
 
 from tonsdk.module import TonModule
-from tonsdk.crypto.types import KeyPair, NaclBox
+from tonsdk.types import KeyPair, NACL_OUTPUT_HEX
 
 
 class TonCrypto(TonModule):
@@ -215,75 +215,101 @@ class TonCrypto(TonModule):
         return KeyPair(**response)
 
     def nacl_box(
-            self, nonce: str, their_public: str, box: NaclBox) -> str:
+                self, nonce: str, their_public: str, secret: str,
+                message_fmt: Dict[str, str], output_fmt: str = NACL_OUTPUT_HEX
+            ) -> str:
         """
         :param nonce:
         :param their_public:
-        :param box:
+        :param secret:
+        :param message_fmt:
+        :param output_fmt:
         :return:
         """
         return self.request(
-            method="crypto.nacl.box", nonce=nonce,
-            theirPublicKey=their_public, secretKey=box.key,
-            message=box.message, outputEncoding=box.output)
+            method="crypto.nacl.box", nonce=nonce, theirPublicKey=their_public,
+            secretKey=secret, message=message_fmt, outputEncoding=output_fmt)
 
     def nacl_box_open(
-            self, nonce: str, their_public: str, box: NaclBox) -> str:
+                self, nonce: str, their_public: str, secret: str,
+                message_fmt: Dict[str, str], output_fmt: str = NACL_OUTPUT_HEX
+            ) -> str:
         """
         :param nonce:
         :param their_public:
-        :param box:
+        :param secret:
+        :param message_fmt:
+        :param output_fmt:
         :return:
         """
         return self.request(
             method="crypto.nacl.box.open", nonce=nonce,
-            theirPublicKey=their_public, secretKey=box.key,
-            message=box.message, outputEncoding=box.output)
+            theirPublicKey=their_public, secretKey=secret, message=message_fmt,
+            outputEncoding=output_fmt)
 
-    def nacl_sign(self, box: NaclBox) -> str:
+    def nacl_sign(
+            self, secret: str, message_fmt: Dict[str, str],
+            output_fmt: str = NACL_OUTPUT_HEX) -> str:
         """
-        :param box:
+        :param secret:
+        :param message_fmt:
+        :param output_fmt:
         :return:
         """
         return self.request(
-            method="crypto.nacl.sign", key=box.key, message=box.message,
-            outputEncoding=box.output)
+            method="crypto.nacl.sign", key=secret, message=message_fmt,
+            outputEncoding=output_fmt)
 
-    def nacl_sign_open(self, box: NaclBox) -> str:
+    def nacl_sign_open(
+            self, public: str, message_fmt: Dict[str, str],
+            output_fmt: str = NACL_OUTPUT_HEX) -> str:
         """
-        :param box:
+        :param public:
+        :param message_fmt:
+        :param output_fmt:
         :return:
         """
         return self.request(
-            method="crypto.nacl.sign.open", key=box.key,
-            message=box.message, outputEncoding=box.output)
+            method="crypto.nacl.sign.open", key=public, message=message_fmt,
+            outputEncoding=output_fmt)
 
-    def nacl_sign_detached(self, box: NaclBox) -> str:
+    def nacl_sign_detached(
+            self, secret: str, message_fmt: Dict[str, str],
+            output_fmt: str = NACL_OUTPUT_HEX) -> str:
         """
-        :param box:
+        :param secret:
+        :param message_fmt:
+        :param output_fmt:
         :return:
         """
         return self.request(
-            method="crypto.nacl.sign.detached", key=box.key,
-            message=box.message, outputEncoding=box.output)
+            method="crypto.nacl.sign.detached", key=secret,
+            message=message_fmt, outputEncoding=output_fmt)
 
-    def nacl_secret_box(self, nonce: str, box: NaclBox) -> str:
+    def nacl_secret_box(
+            self, nonce: str, key: str, message_fmt: Dict[str, str],
+            output_fmt: str = NACL_OUTPUT_HEX) -> str:
         """
         :param nonce:
-        :param box:
+        :param key:
+        :param message_fmt:
+        :param output_fmt:
         :return:
         """
         return self.request(
-            method="crypto.nacl.secret.box", nonce=nonce, key=box.key,
-            message=box.message, outputEncoding=box.output)
+            method="crypto.nacl.secret.box", nonce=nonce, key=key,
+            message=message_fmt, outputEncoding=output_fmt)
 
-    def nacl_secret_box_open(self, nonce: str, box: NaclBox) -> str:
+    def nacl_secret_box_open(
+            self, nonce: str, key: str, message_fmt: Dict[str, str],
+            output_fmt: str = NACL_OUTPUT_HEX) -> str:
         """
         :param nonce:
-        :param box:
+        :param key:
+        :param message_fmt:
+        :param output_fmt:
         :return:
         """
         return self.request(
-            method="crypto.nacl.secret.box.open", nonce=nonce,
-            key=box.key, message=box.message,
-            outputEncoding=box.output)
+            method="crypto.nacl.secret.box.open", nonce=nonce, key=key,
+            message=message_fmt, outputEncoding=output_fmt)

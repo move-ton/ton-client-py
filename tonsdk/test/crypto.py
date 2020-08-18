@@ -5,7 +5,8 @@ import logging
 from io import StringIO
 
 from tonsdk.client import TonClient, DEVNET_BASE_URL
-from tonsdk.crypto.types import KeyPair, FmtString, NaclBox
+from tonsdk.types import KeyPair, FmtString, NACL_OUTPUT_TXT, NACL_OUTPUT_B64, \
+    NACL_OUTPUT_HEX_UP
 from tonsdk.errors import TonException
 
 logging.basicConfig(level=logging.INFO)
@@ -73,8 +74,6 @@ class TestCrypto(unittest.TestCase):
             "public": "2e750ea795aad6e04ae1544132619c6a5e1356c36db60532320dae6aa656cf2e",
             "secret": "7ee962326304f9f88d5048fabdde7921411b1aad6400ef984c85a0a9cb3b1a7c2e750ea795aad6e04ae1544132619c6a5e1356c36db60532320dae6aa656cf2e"
         })  # From 'mnemonic_keypair.secret'
-        self.nacl_box = NaclBox(
-            key=self.keypair_nacl.secret, message="Test").as_text()
 
         self.text_plain = "Test"
         self.text_hex = self.text_plain.encode().hex()
@@ -320,7 +319,9 @@ class TestCrypto(unittest.TestCase):
     def test_nacl_box(self):
         box = client.crypto.nacl_box(
             nonce="cd7f99924bf422544046e83595dd5803f17536f5c9a11746",
-            their_public=self.keypair_nacl_random.public, box=self.nacl_box)
+            their_public=self.keypair_nacl_random.public,
+            secret=self.keypair_nacl.secret,
+            message_fmt=FmtString(self.text_plain).text)
         self.assertEqual(box, "091b6f2905d706e9506a4ed3597b7cf6fdd63ca1")
 
     def test_nacl_box_open(self):
@@ -328,50 +329,49 @@ class TestCrypto(unittest.TestCase):
         nonce = "cd7f99924bf422544046e83595dd5803f17536f5c9a11746"
         # Message from 'test_nacl_box'
         message = "091b6f2905d706e9506a4ed3597b7cf6fdd63ca1"
-        nacl_box = NaclBox(
-            key=self.keypair_nacl_random.secret, message=message,
-            output=NaclBox.OUTPUT_TEXT).as_hex()
 
         opened = client.crypto.nacl_box_open(
-            nonce=nonce, their_public=self.keypair_nacl.public, box=nacl_box)
+            nonce=nonce, their_public=self.keypair_nacl.public,
+            secret=self.keypair_nacl_random.secret,
+            message_fmt=FmtString(message).hex, output_fmt=NACL_OUTPUT_TXT)
         self.assertEqual(opened, "Test")
 
     def test_nacl_sign(self):
-        self.nacl_box.key = self.keypair_nacl_sign.secret
-        self.nacl_box.output = NaclBox.OUTPUT_BASE64
-        signed = client.crypto.nacl_sign(box=self.nacl_box)
+        signed = client.crypto.nacl_sign(
+            secret=self.keypair_nacl_sign.secret,
+            message_fmt=FmtString(self.text_plain).text,
+            output_fmt=NACL_OUTPUT_B64)
         self.assertEqual(signed, "VI2KBqLgEHWqcvAXJi4WdWKzkF3p3eXBnAyy2rgpBgTb3HYsOPOpt028mkXzPMoqxC6fLA/Chfk0JWkbtDl5AlRlc3Q=")
 
     def test_nacl_sign_open(self):
         # Message from 'test_nacl_sign'
         message = "VI2KBqLgEHWqcvAXJi4WdWKzkF3p3eXBnAyy2rgpBgTb3HYsOPOpt028mkXzPMoqxC6fLA/Chfk0JWkbtDl5AlRlc3Q="
-        box = NaclBox(
-            key=self.keypair_nacl_sign.public, message=message,
-            output=NaclBox.OUTPUT_TEXT).as_base64()
-
-        opened = client.crypto.nacl_sign_open(box=box)
+        opened = client.crypto.nacl_sign_open(
+            public=self.keypair_nacl_sign.public,
+            message_fmt=FmtString(message).base64, output_fmt=NACL_OUTPUT_TXT)
         self.assertEqual(opened, "Test")
 
     def test_nacl_sign_detached(self):
-        self.nacl_box.key = self.keypair_nacl_sign.secret
-        self.nacl_box.output = NaclBox.OUTPUT_HEX_UP
-        signed = client.crypto.nacl_sign_detached(self.nacl_box)
+        signed = client.crypto.nacl_sign_detached(
+            secret=self.keypair_nacl_sign.secret,
+            message_fmt=FmtString(self.text_plain).text,
+            output_fmt=NACL_OUTPUT_HEX_UP)
         self.assertEqual(signed, "548D8A06A2E01075AA72F017262E167562B3905DE9DDE5C19C0CB2DAB8290604DBDC762C38F3A9B74DBC9A45F33CCA2AC42E9F2C0FC285F93425691BB4397902")
 
     def test_nacl_secret_box(self):
         box = client.crypto.nacl_secret_box(
             nonce="cd7f99924bf422544046e83595dd5803f17536f5c9a11746",
-            box=self.nacl_box)
-        self.assertEqual(box, "2291ee3ab6f40091aa9ede55a345572ca0418dc6")
+            key=self.bip32_key_secret,
+            message_fmt=FmtString(self.text_plain).text)
+        self.assertEqual(box, "61753436f5b07522c9aeda8e8508c586f03f11e5")
 
     def test_nacl_secret_box_open(self):
         # Nonce from 'test_nacl_secret_box'
         nonce = "cd7f99924bf422544046e83595dd5803f17536f5c9a11746"
         # Box from 'test_nacl_secret_box'
-        message = "2291ee3ab6f40091aa9ede55a345572ca0418dc6"
+        message = "61753436f5b07522c9aeda8e8508c586f03f11e5"
 
-        box = NaclBox(
-            key=self.keypair_nacl.secret, message=message,
-            output=NaclBox.OUTPUT_TEXT).as_hex()
-        opened = client.crypto.nacl_secret_box_open(nonce=nonce, box=box)
+        opened = client.crypto.nacl_secret_box_open(
+            nonce=nonce, key=self.bip32_key_secret,
+            message_fmt=FmtString(message).hex, output_fmt=NACL_OUTPUT_TXT)
         self.assertEqual(opened, "Test")
