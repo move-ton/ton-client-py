@@ -42,20 +42,21 @@ class TCResponseT(ctypes.Structure):
         return json.loads(self.content)
 
 
-class TCResponseFlagsT(ctypes.Structure):
-    __fields__ = [
-        ("tc_response_finished", ctypes.c_int)
-    ]
-
-    def __init__(self):
-        super(TCResponseFlagsT, self).__init__()
-        self.tc_response_finished = 1
+# TODO: Research when and where it is used
+# class TCResponseFlagsT(ctypes.Structure):
+#     __fields__ = [
+#         ("tc_response_finished", ctypes.c_int)
+#     ]
+#
+#     def __init__(self):
+#         super(TCResponseFlagsT, self).__init__()
+#         self.tc_response_finished = 1
 
 
 TCResponseTPointer = ctypes.POINTER(TCResponseT)
 TCOnResponseT = ctypes.CFUNCTYPE(
     ctypes.c_void_p,
     ctypes.c_int32,
-    ctypes.POINTER(TCStringT),
-    ctypes.POINTER(TCStringT),
+    TCStringT,
+    TCStringT,
     ctypes.c_int32)

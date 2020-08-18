@@ -63,11 +63,3 @@ def tc_json_request_async(
     params_json = TCStringT.from_string(string=params_json)
 
     _LIB.tc_json_request_async(ctx, method, params_json, request_id, callback)
-
-
-# TODO: 'tc_on_response_t' as decorator for people or something else
-@TCOnResponseT
-def __tc_on_response_t(
-        request_id: ctypes.c_int32, result_json: TCStringT,
-        error_json: TCStringT, flags: ctypes.c_int32):
-    pass

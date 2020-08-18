@@ -1,3 +1,4 @@
+import asyncio
 from typing import Dict
 
 from tonsdk.bindings.lib import tc_create_context, tc_destroy_context
@@ -35,3 +36,12 @@ class TonClient(TonRequestMixin):
 
     def destroy_context(self):
         tc_destroy_context(ctx=self._ctx)
+
+
+async def main():
+    t = TonClient(servers=[DEVNET_BASE_URL])
+    print(await t.request_async('crypto.mnemonic.from.random', wordCount=12))
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
