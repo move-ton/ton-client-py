@@ -2,7 +2,7 @@ import ctypes
 import json
 
 
-class InteropString(ctypes.Structure):
+class TCStringT(ctypes.Structure):
     _fields_ = [
         ('content', ctypes.c_char_p),
         ('len', ctypes.c_int, 32)
@@ -11,13 +11,13 @@ class InteropString(ctypes.Structure):
     @staticmethod
     def from_string(string: str):
         string = string.encode()
-        return InteropString(ctypes.c_char_p(string), len(string))
+        return TCStringT(ctypes.c_char_p(string), len(string))
 
 
-class InteropJsonResponse(ctypes.Structure):
+class TCResponseT(ctypes.Structure):
     _fields_ = [
-        ('result_json', InteropString),
-        ('error_json', InteropString)
+        ('result_json', TCStringT),
+        ('error_json', TCStringT)
     ]
 
     def __str__(self):
@@ -42,9 +42,20 @@ class InteropJsonResponse(ctypes.Structure):
         return json.loads(self.content)
 
 
-ResultCb = ctypes.CFUNCTYPE(
+class TCResponseFlagsT(ctypes.Structure):
+    __fields__ = [
+        ("tc_response_finished", ctypes.c_int)
+    ]
+
+    def __init__(self):
+        super(TCResponseFlagsT, self).__init__()
+        self.tc_response_finished = 1
+
+
+TCResponseTPointer = ctypes.POINTER(TCResponseT)
+TCOnResponseT = ctypes.CFUNCTYPE(
     ctypes.c_void_p,
     ctypes.c_int32,
-    ctypes.POINTER(InteropString),
-    ctypes.POINTER(InteropString),
+    ctypes.POINTER(TCStringT),
+    ctypes.POINTER(TCStringT),
     ctypes.c_int32)
