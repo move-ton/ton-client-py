@@ -1,6 +1,5 @@
 import asyncio
 import ctypes
-import logging
 
 import json
 from typing import Any, Dict, Union
@@ -9,8 +8,6 @@ from tonsdk.bindings.lib import tc_json_request, tc_read_json_response, \
     tc_destroy_json_response, tc_json_request_async
 from tonsdk.bindings.types import TCOnResponseT, TCResponseT, TCStringT
 from tonsdk.errors import TonException
-
-logger = logging.getLogger("ton")
 
 
 class TonRequestMixin:

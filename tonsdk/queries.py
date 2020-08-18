@@ -47,7 +47,7 @@ class TonQueryBuilder(object):
             try:
                 field, condition = field.split("__")
             except ValueError:
-                raise TonException(f"Incorrect '{field}' field syntax")
+                raise ValueError(f"Incorrect '{field}' field syntax")
 
             if not self._filter.get(field):
                 self._filter[field] = {}
