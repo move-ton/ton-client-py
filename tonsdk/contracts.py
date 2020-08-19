@@ -1,122 +1,62 @@
-import base64
-import json
-from typing import Dict
+from typing import Dict, Any, List, Union
 
-from tonsdk.lib import TonClient
+from tonsdk.module import TonModule
+from tonsdk.types import KeyPair, TonMessage, TonUnsignedMessage
 
 
-class TonContract(object):
+class TonContract(TonModule):
     """
-    Work with TON contracts.
-    https://github.com/tonlabs/TON-SDK/wiki/Core-Library-JSON-API
+    Free TON contracts SDK API implementation
+    https://github.com/tonlabs/TON-SDK/wiki/
     """
-    TYPE_ADDRESS_B64 = "Base64"
-    TYPE_ADDRESS_HEX = "Hex"
-    TYPE_ADDRESS_ID = "AccountId"
-
-    def __init__(self):
-        self.abi = None
-        self.image = None
-        self.keypair = None
-        self.address = None
-        self.balance = None
-
-        self._client: (TonClient, None) = None
-
-    @property
-    def id(self) -> str:
-        """ Get contract id """
-        return self.address.split(":")[1]
-
-    @property
-    def image_b64(self) -> str:
-        """ Base64 contract image representation """
-        return base64.b64encode(self.image).decode("utf8")
-
-    def set_client(self, client: TonClient):
-        """ Set client for contract """
-        self._client = client
-
-    def setup_client(self, settings: dict):
-        """ Setup client with custom settings """
-        self._client.setup(settings)
-
-    def load_abi(self, path: str):
-        """ Load contract ABI from file """
-        with open(path, 'r') as fp:
-            abi = fp.read()
-            self.abi = json.loads(abi)
-
-    def load_image(self, path: str):
-        """ Load contract from code file """
-        with open(path, 'rb') as fp:
-            self.image = fp.read()
-
-    def load_keypair(self, path: str, binary: bool):
-        """ Load keys from json or binary file """
-        if binary:
-            with open(path, 'rb') as fp:
-                keys = fp.read().hex()
-                self.keypair = {"public": keys[64:], "secret": keys[:64]}
-        else:
-            with open(path, 'r') as fp:
-                keys = fp.read()
-                self.keypair = json.loads(keys)
-
-    def load(self):
+    def load(self, address: str) -> Dict[str, str]:
         """
         Load contract
+        :param address:
         :return:
         """
-        params = {"address": self.address}
-        result = self._client.request(method="contracts.load", params=params)
-
-        self.balance = int(result["balanceGrams"])
+        return self.request(method="contracts.load", address=address)
 
     def deploy_address(
-            self, init_params: Dict = None, workchain_id: int = 0) -> str:
+                self, abi: Dict[str, Any], image_b64: str, keypair: KeyPair,
+                init_params: Dict[str, Any] = None, workchain_id: int = None
+            ) -> str:
         """
-        Get contract address.
-
+        Get contract address
+        :param abi:
+        :param image_b64:
+        :param keypair:
         :param init_params:
         :param workchain_id:
-        :return: address
+        :return: Address
         """
-        params = {
-            "abi": self.abi,
-            "initParams": init_params or {},
-            "imageBase64": self.image_b64,
-            "keyPair": self.keypair,
-            "workchainId": workchain_id
-        }
+        return self.request(
+            method="contracts.deploy.address", abi=abi,
+            initParams=init_params or {}, imageBase64=image_b64,
+            keyPair=keypair.dict, workchainId=workchain_id)
 
-        address = self._client.request(
-            method="contracts.deploy.address", params=params)
-        self.address = address
-
-        return address
-
-    def convert_address(self, to: str, b64_params: dict = None) -> str:
+    def address_convert(
+            self, address: str, to: str,
+            b64_params: Dict[str, bool] = None) -> str:
         """
+        :param address:
         :param to: Convert to. One of 'AccountId', 'Hex', 'Base64'
         :param b64_params: Convert params when converting to base64.
-                           {url: bool, test: bool, bounce: bool}
+                           Example: {url: bool, test: bool, bounce: bool}
+                           All keys must be specified.
         :return:
         """
-        params = {
-            "address": self.address,
-            "convertTo": to,
-            "base64Params": b64_params
-        }
-
-        result = self._client.request(
-            method="contracts.address.convert", params=params)
-
-        return result["address"]
+        response = self.request(
+            method="contracts.address.convert", address=address, convertTo=to,
+            base64Params=b64_params)
+        return response["address"]
 
     def deploy_message(
-            self, constructor_params: Dict = None, constructor_header: Dict = None,
-            init_params: Dict = None, workchain_id: int = None) -> Dict:
+            self, abi: Dict[str, Any], image_b64: str, keypair: KeyPair,
+            constructor_params: Dict[str, Any] = None,
+            constructor_header: Dict[str, Any] = None,
+            init_params: Dict[str, Any] = None,
+            workchain_id: int = None, try_index: int = None) -> TonMessage:
         """
         This method is a part of the standard deploy script and is used to
         create a message to the blockchain to get a contract address before
@@ -125,86 +65,9 @@ class TonContract(object):
         It returns an address in raw format. In TON you need contract
         address before an actual deploy to send [test] tokens to it.
         Given the gas logic, you cannot deploy a contract with zero balance.
-
-        :param constructor_params: Contract constructor arguments
-        :param constructor_header: Contract constructor header
-        :param init_params: Additional parameters in a form of an
-                object that are saved right to the Persistent Storage (c4)
-                during deployment. This field determines the contract address
-                (in combination with the contract code). In previous versions
-                it only included the public key, but now it can store
-                additional data.
-        :param workchain_id: Default will be 0
-        :return: Dict
-        """
-        params = {
-            "constructorParams": constructor_params or {},
-            "constructorHeader": constructor_header or {},
-            "initParams": init_params or {},
-            "abi": self.abi,
-            "imageBase64": self.image_b64,
-            "keyPair": self.keypair,
-            "workchainId": workchain_id
-        }
-
-        result = self._client.request(
-            method="contracts.deploy.message", params=params)
-        self.address = result["address"]
-
-        return result
-
-    def deploy_message_unsigned(
-            self, constructor_params: Dict = None, init_params: Dict = None) \
-            -> Dict:
-        """
-        This function allows creating a separate deploy message
-        without a signature.
-        You may need this function if in your architecture signing is
-        performed at an HSM or some kind of offline hardware wallet where
-        the private key is stored.
-        The method creates a byte block that has to be signed via a specific
-        cryptographic method.
-
-        :param constructor_params:
-        :param init_params:
-        :return:
-        """
-        params = {
-            "abi": self.abi,
-            "constructorParams": constructor_params or {},
-            "initParams": init_params or {},
-            "imageBase64": self.image_b64,
-            "publicKeyHex": self.keypair["public"]
-        }
-
-        return self._client.request(
-            method="contracts.deploy.encode_unsigned_message", params=params)
-
-    def deploy_data(
-            self, init_params: Dict = None, workchain_id: int = 0) -> Dict:
-        """
-        :param init_params:
-        :param workchain_id:
-        :return:
-        """
-        params = {
-            "abi": self.abi or {},
-            "initParams": init_params or {},
-            "imageBase64": self.image_b64,
-            "publicKeyHex": self.keypair["public"],
-            "workchainId": workchain_id
-        }
-
-        return self._client.request(
-            method="contracts.deploy.data", params=params)
-
-    def deploy(
-            self, constructor_params: Dict = None,
-            constructor_header: Dict = None, init_params: Dict = None,
-            workchain_id: int = None, try_index: str = None) -> Dict:
-        """
-        Deploy contract to blockchain
-
+        :param abi:
+        :param image_b64:
+        :param keypair:
         :param constructor_params: Contract constructor arguments
         :param constructor_header: Contract constructor header
         :param init_params: Additional parameters in a form of an
@@ -215,95 +78,179 @@ class TonContract(object):
                 additional data.
         :param workchain_id: Default will be 0
         :param try_index:
-        :return: Dict
+        :return:
         """
-        params = {
-            "constructorParams": constructor_params or {},
-            "constructorHeader": constructor_header or {},
-            "initParams": init_params or {},
-            "abi": self.abi,
-            "imageBase64": self.image_b64,
-            "keyPair": self.keypair,
-            "workchainId": workchain_id,
-            "tryIndex": try_index
-        }
+        response = self.request(
+            method="contracts.deploy.message", abi=abi, imageBase64=image_b64,
+            keyPair=keypair.dict, constructorParams=constructor_params or {},
+            constructorHeader=constructor_header, initParams=init_params,
+            workchainId=workchain_id, tryIndex=try_index)
+        return TonMessage.from_response(response=response)
 
-        result = self._client.request(method="contracts.deploy", params=params)
-        self.address = result["address"]
+    def deploy_encode_unsigned_message(
+            self, abi: Dict[str, Any], image_b64: str, public: str,
+            constructor_header: Dict[str, Any] = None,
+            constructor_params: Dict[str, Any] = None,
+            init_params: Dict = None, workchain_id: int = None,
+            try_index: int = None) -> TonUnsignedMessage:
+        """
+        This function allows creating a separate deploy message
+        without a signature.
+        You may need this function if in your architecture signing is
+        performed at an HSM or some kind of offline hardware wallet where
+        the private key is stored.
+        The method creates a byte block that has to be signed via a specific
+        cryptographic method.
+        :param abi:
+        :param image_b64:
+        :param public: Public key as hex string
+        :param constructor_header:
+        :param constructor_params:
+        :param init_params:
+        :param workchain_id:
+        :param try_index:
+        :return:
+        """
+        response = self.request(
+            method="contracts.deploy.encode_unsigned_message", abi=abi,
+            imageBase64=image_b64, publicKeyHex=public,
+            constructorHeader=constructor_header,
+            constructorParams=constructor_params or {}, initParams=init_params,
+            workchainId=workchain_id, tryIndex=try_index)
 
-        return result
+        message = TonUnsignedMessage.from_response(
+            response=response["encoded"])
+        message.address = response["addressHex"]
+        return message
 
-    def run_message(self, function_name: str, inputs: Dict = None) -> Dict:
+    def deploy_data(
+            self, public: str, abi: Dict[str, Any] = None,
+            image_b64: str = None, init_params: Dict[str, Any] = None,
+            workchain_id: int = None) -> Dict[str, Any]:
+        """
+        :param abi:
+        :param image_b64:
+        :param public: Public key as hex string
+        :param init_params:
+        :param workchain_id:
+        :return:
+        """
+        return self.request(
+            method="contracts.deploy.data", abi=abi, imageBase64=image_b64,
+            publicKeyHex=public, initParams=init_params,
+            workchainId=workchain_id)
+
+    def deploy(
+            self, abi: Dict[str, Any], image_b64: str, keypair: KeyPair,
+            constructor_params: Dict[str, Any] = None,
+            constructor_header: Dict[str, Any] = None,
+            init_params: Dict[str, Any] = None, workchain_id: int = None,
+            try_index: str = None) -> Dict[str, Any]:
+        """
+        Deploy contract to blockchain
+        :param abi:
+        :param image_b64:
+        :param keypair:
+        :param constructor_params: Contract constructor arguments
+        :param constructor_header: Contract constructor header
+        :param init_params: Additional parameters in a form of an
+                object that are saved right to the Persistent Storage (c4)
+                during deployment. This field determines the contract address
+                (in combination with the contract code). In previous versions
+                it only included the public key, but now it can store
+                additional data.
+        :param workchain_id: Default will be 0
+        :param try_index:
+        :return:
+        """
+        return self.request(
+            method="contracts.deploy", abi=abi, imageBase64=image_b64,
+            keyPair=keypair.dict, constructorParams=constructor_params or {},
+            constructorHeader=constructor_header, initParams=init_params,
+            workchainId=workchain_id, tryIndex=try_index)
+
+    def run_message(
+            self, address: str, abi: Dict[str, Any], function_name: str,
+            headers: Dict[str, Any] = None, inputs: Dict[str, Any] = None,
+            keypair: KeyPair = None, try_index: int = None) -> TonMessage:
         """
         This method is similar to 'deploy_message' but it applies to active
         contracts.
         It yields a TONContractMessage message body and the ID of public
         contract function that was called, not the contract address.
-
+        :param abi:
+        :param address:
+        :param keypair:
         :param function_name: Contract function name (ABI function)
         :param inputs: Contract function arguments (ABI inputs)
-        :return: Dict
+        :param headers:
+        :param try_index:
+        :return:
         """
-        params = {
-            "address": self.address,
-            "abi": self.abi,
-            "functionName": function_name,
-            "input": inputs or {},
-            "keyPair": self.keypair
-        }
+        if keypair:
+            keypair = keypair.dict
 
-        return self._client.request(
-            method="contracts.run.message", params=params)
+        response = self.request(
+            method="contracts.run.message", address=address, abi=abi,
+            functionName=function_name, header=headers, input=inputs or {},
+            keypair=keypair, tryIndex=try_index)
+        return TonMessage.from_response(response=response)
 
-    def run_message_unsigned(
-            self, function_name: str, inputs: Dict = None) -> Dict:
+    def run_encode_unsigned_message(
+            self, address: str, abi: Dict[str, Any], function_name: str,
+            headers: Dict[str, Any] = None, inputs: Dict[str, Any] = None,
+            try_index: int = None) -> TonUnsignedMessage:
         """
         This method works similarly to the 'deploy_message_unsigned', but
         it is designed to create a message returning the ID of the public
         contract function that is called without a signature.
         This method is another one that can be used in a distributed
         architecture (when messages are signed externally).
-
+        :param abi:
+        :param address:
         :param function_name:
         :param inputs:
+        :param headers:
+        :param try_index:
         :return:
         """
-        params = {
-            "address": self.address,
-            "abi": self.abi,
-            "functionName": function_name,
-            "input": inputs or {}
-        }
+        response = self.request(
+            method="contracts.run.encode_unsigned_message", address=address,
+            abi=abi, functionName=function_name, header=headers,
+            input=inputs or {}, tryIndex=try_index)
 
-        return self._client.request(
-            method="contracts.run.encode_unsigned_message", params=params)
+        message = TonUnsignedMessage.from_response(response=response)
+        message.address = address
+        return message
 
     def run_body(
-            self, function_name: str, internal: bool = False,
-            inputs: Dict = None) -> str:
+            self, abi: Dict[str, Any], function_name: str,
+            headers: Dict[str, Any] = None, inputs: Dict[str, Any] = None,
+            keypair: KeyPair = None, internal: bool = False) -> str:
         """
         Creates only a message body with parameters encoded according
         to the ABI.
-
+        :param abi:
+        :param keypair:
         :param function_name:
         :param internal:
         :param inputs:
+        :param headers:
         :return:
         """
-        params = {
-            "abi": self.abi,
-            "function": function_name,
-            "params": inputs or {},
-            "internal": internal,
-            "keyPair": self.keypair or {}
-        }
+        if keypair:
+            keypair = keypair.dict
 
-        result = self._client.request(
-            method="contracts.run.body", params=params)
-
+        result = self.request(
+            method="contracts.run.body", abi=abi, function=function_name,
+            header=headers, params=inputs or {}, internal=internal,
+            keyPair=keypair)
         return result["bodyBase64"]
 
-    def run(self, function_name: str, inputs: Dict = None) -> Dict:
+    def run(
+            self, address: str, abi: Dict[str, Any], function_name: str,
+            headers: Dict[str, Any] = None, inputs: Dict[str, Any] = None,
+            keypair: KeyPair = None, try_index: int = None) -> Dict[str, Any]:
         """
         This method is used to call contract methods within the blockchain.
         Calling run creates a message with the following serialized parameters
@@ -311,306 +258,286 @@ class TonContract(object):
         ABI rules.
         After the message is sent run waits for it to be executed and returns
         a JSON-object with the resulting parameters.
-
+        :param abi:
+        :param address:
+        :param keypair:
         :param function_name: Contract function name (ABI function)
         :param inputs: Contract function arguments (ABI inputs)
-        :return: Dict
-        """
-        params = {
-            "address": self.address,
-            "abi": self.abi,
-            "functionName": function_name,
-            "input": inputs or {},
-            "keyPair": self.keypair
-        }
-
-        return self._client.request(method="contracts.run", params=params)
-
-    def run_local(
-            self, function_name: str, inputs: Dict = None,
-            full_run: bool = False, time: int = None) -> Dict:
-        """
-        :param function_name:
-        :param inputs:
-        :param full_run:
-        :param time:
+        :param headers:
+        :param try_index:
         :return:
         """
-        params = {
-            "address": self.address,
-            "abi": self.abi,
-            "functionName": function_name,
-            "input": inputs or {},
-            "keyPair": self.keypair or {},
-            "fullRun": full_run,
-            "time": time
-        }
+        if keypair:
+            keypair = keypair.dict
 
-        return self._client.request(
-            method="contracts.run.local", params=params)
+        return self.request(
+            method="contracts.run", address=address, abi=abi,
+            functionName=function_name, header=headers, input=inputs or {},
+            keyPair=keypair, tryIndex=try_index)
 
     def run_local_message(
-            self, function_name: str, message: str, full_run: bool = False,
-            time: int = None) -> Dict:
+            self, address: str, message_b64: str, account: str = None,
+            abi: Dict[str, Any] = None, function_name: str = None,
+            full_run: bool = False, time: int = None) -> Dict[str, Any]:
         """
-        :param function_name:
-        :param message: Message base64
+        :param abi:
+        :param address:
+        :param account:
+        :param function_name: This attr is required, if 'abi' was provided
+        :param message_b64: Message body base64
         :param full_run:
         :param time:
         :return:
         """
-        params = {
-            "address": self.address,
-            "abi": self.abi,
-            "functionName": function_name,
-            "messageBase64": message,
-            "fullRun": full_run,
-            "time": time
-        }
+        return self.request(
+            method="contracts.run.local.msg", address=address,
+            messageBase64=message_b64, account=account, abi=abi,
+            functionName=function_name, fullRun=full_run, time=time)
 
-        return self._client.request(
-            method="contracts.run.local.msg", params=params)
+    def run_local(
+            self, address: str, abi: str, function_name: str,
+            headers: Dict[str, Any] = None, inputs: Dict[str, Any] = None,
+            account: str = None, keypair: KeyPair = None,
+            full_run: bool = False, time: int = None) -> Dict[str, Any]:
+        """
+        :param address:
+        :param abi:
+        :param function_name:
+        :param headers:
+        :param inputs:
+        :param account:
+        :param keypair:
+        :param full_run:
+        :param time:
+        :return:
+        """
+        if keypair:
+            keypair = keypair.dict
+
+        return self.request(
+            method="contracts.run.local", address=address, abi=abi,
+            functionName=function_name, header=headers, input=inputs or {},
+            account=account, keyPair=keypair, fullRun=full_run, time=time)
 
     def run_output(
-            self, function_name: str, body: str, internal: bool = False) -> Dict:
+            self, abi: Dict[str, Any], function_name: str, body_b64: str,
+            internal: bool = False) -> Dict[str, Any]:
         """
         Decode a response message from a called contract.
-
+        :param abi:
         :param function_name:
-        :param body: Base64 body
+        :param body_b64: Message base64 body
         :param internal:
         :return:
         """
-        params = {
-            "abi": self.abi,
-            "functionName": function_name,
-            "bodyBase64": body,
-            "internal": internal
-        }
-
-        result = self._client.request(
-            method="contracts.run.output", params=params)
-
+        result = self.request(
+            method="contracts.run.output", abi=abi, functionName=function_name,
+            bodyBase64=body_b64, internal=internal)
         return result["output"]
 
-    def run_fee(self, function_name: str, inputs: Dict = None) -> Dict:
+    def run_fee(
+            self, address: str, abi: Dict[str, Any], function_name: str,
+            headers: Dict[str, Any] = None, inputs: Dict[str, Any] = None,
+            keypair: KeyPair = None, try_index: int = None) -> Dict[str, Any]:
         """
+        :param address:
+        :param abi:
         :param function_name:
+        :param headers:
         :param inputs:
+        :param keypair:
+        :param try_index:
         :return:
         """
-        params = {
-            "address": self.address,
-            "abi": self.abi,
-            "functionName": function_name,
-            "input": inputs or {}
-        }
+        if keypair:
+            keypair = keypair.dict
 
-        return self._client.request(method="contracts.run.fee", params=params)
+        return self.request(
+            method="contracts.run.fee", address=address, abi=abi,
+            functionName=function_name, header=headers, input=inputs or {},
+            keyPair=keypair, tryIndex=try_index)
 
-    def run_fee_message(self, message: str) -> dict:
+    def run_fee_message(
+            self, address: str, message_b64: str, account: str = None,
+            abi: [str, Dict] = None, function_name: str = None,
+            full_run: bool = False, time: int = None) -> Dict[str, Any]:
         """
-        :param message: Message base64
+        :param address:
+        :param message_b64: Message body base64
+        :param account:
+        :param abi:
+        :param function_name:
+        :param full_run:
+        :param time:
         :return:
         """
-        params = {
-            "address": self.address,
-            "messageBase64": message
-        }
+        return self.request(
+            method="contracts.run.fee.msg", address=address,
+            messageBase64=message_b64, account=account, abi=abi,
+            functionName=function_name, fullRun=full_run, time=time)
 
-        return self._client.request(
-            method="contracts.run.fee.msg", params=params)
-
-    def run_unknown_input(self, body: str, internal: bool = False) -> Dict:
+    def run_unknown_input(
+            self, abi: Dict[str, Any], body_b64: str,
+            internal: bool = False) -> Dict[str, Any]:
         """
-        :param body: Body base64
+        :param abi:
+        :param body_b64: Body base64
         :param internal:
         :return:
         """
-        params = {
-            "abi": self.abi,
-            "bodyBase64": body,
-            "internal": internal
-        }
+        return self.request(
+            method="contracts.run.unknown.input", abi=abi, bodyBase64=body_b64,
+            internal=internal)
 
-        return self._client.request(
-            method="contracts.run.unknown.input", params=params)
-
-    def run_unknown_output(self, body: str, internal: bool = False) -> Dict:
+    def run_unknown_output(
+            self, abi: Dict[str, Any], body_b64: str,
+            internal: bool = False) -> Dict[str, Any]:
         """
-        :param body: Body base64
+        :param abi:
+        :param body_b64: Body base64
         :param internal:
         :return:
         """
-        params = {
-            "abi": self.abi,
-            "bodyBase64": body,
-            "internal": internal
-        }
+        return self.request(
+            method="contracts.run.unknown.output", abi=abi,
+            bodyBase64=body_b64, internal=internal)
 
-        return self._client.request(
-            method="contracts.run.unknown.output", params=params)
-
-    def sign_message(
-            self, unsigned_base64: str, sign_base64: str, expire: int = None) \
-            -> Dict:
+    def encode_message_with_sign(
+            self, abi: Dict[str, Any], message: TonUnsignedMessage,
+            public: str = None) -> TonMessage:
         """
         This method can also be used used in distributed architectures
         where message signing is carried out externally.
-
-        :param unsigned_base64:
-        :param sign_base64:
-        :param expire:
+        :param abi:
+        :param message:
+        :param public: Public key as hex string
         :return:
         """
-        params = {
-            "abi": self.abi,
-            "unsignedBytesBase64": unsigned_base64,
-            "signBytesBase64": sign_base64,
-            "publicKeyHex": self.keypair["public"],
-            "expire": expire
-        }
+        response = self.request(
+            method="contracts.encode_message_with_sign", abi=abi,
+            publicKeyHex=public, **message.to_request)
+        return TonMessage.from_response(response=response)
 
-        return self._client.request(
-            method="contracts.encode_message_with_sign", params=params)
-
-    def parse_message(self, message_boc: str) -> Dict:
+    def parse_message(self, boc_b64: str) -> Dict[str, Any]:
         """
         Parse message from BOC
-
-        :param message_boc: Message BOC base64
+        :param boc_b64: Message BOC base64
         :return:
         """
-        params = {"bocBase64": message_boc}
-        return self._client.request(
-            method="contracts.parse.message", params=params)
+        return self.request(
+            method="contracts.parse.message", bocBase64=boc_b64)
 
-    def get_function_id(self, function_name: str, inputs: bool = False) -> int:
+    def function_id(
+            self, abi: Dict[str, Any], function_name: str,
+            inputs: bool = False) -> int:
         """
         Get contract function id.
-
+        :param abi:
         :param function_name:
         :param inputs:
         :return:
         """
-        params = {
-            "abi": self.abi,
-            "function": function_name,
-            "input": inputs
-        }
-
-        result = self._client.request(
-            method="contracts.function.id", params=params)
-
+        result = self.request(
+            method="contracts.function.id", abi=abi, function=function_name,
+            input=inputs)
         return result["id"]
 
-    def find_shard(self, shards: [dict]) -> Dict:
+    def find_shard(
+                self, address: str, shards: List[Dict[str, Union[int, str]]]
+            ) -> Dict[str, Any]:
         """
+        :param address:
         :param shards: Shard dict is {"workchain_id": int, "shard": str}
         :return:
         """
-        params = {
-            "address": self.address,
-            "shards": shards
-        }
+        return self.request(
+            method="contracts.find.shard", address=address, shards=shards)
 
-        return self._client.request(
-            method="contracts.find.shard", params=params)
-
-    def send_message(self, message: Dict) -> Dict:
+    def send_message(self, message: TonMessage) -> Dict[str, Any]:
         """
         Method sends messages to the node without waiting for the result.
-
-        :param message: Message dict is
-                {"address": str, "messageId": str, "messageBodyBase64": str,
-                "expire": int|None}
+        :param message:
         :return:
         """
-        return self._client.request(
-            method="contracts.send.message", params=message)
+        return self.request(
+            method="contracts.send.message", **message.to_request)
 
     def process_message(
-            self, function_name: str, message: Dict,
-            infinite_wait: bool = False) -> Dict:
+                self, message: TonMessage, abi: Dict[str, Any] = None,
+                function_name: str = None, infinite_wait: bool = False
+            ) -> Dict[str, Any]:
         """
         Method sends messages to the node and waits for the result.
-
-        :param function_name:
-        :param message: Message dict is
-                {"address": str, "messageId": str, "messageBodyBase64": str,
-                "expire": int|None}
+        :param function_name: Required if argument 'abi' was provided
+        :param message:
+        :param abi:
         :param infinite_wait:
         :return:
         """
-        params = {
-            "abi": self.abi,
-            "functionName": function_name,
-            "message": message,
-            "infiniteWait": infinite_wait
-        }
-        return self._client.request(
-            method="contracts.process.message", params=params)
+        return self.request(
+            method="contracts.process.message", abi=abi,
+            functionName=function_name, infiniteWait=infinite_wait,
+            message=message.to_request)
 
     def process_transaction(
-            self, function_name: str, transaction: dict) -> Dict:
+                self, address: str, transaction: Dict[str, Any],
+                abi: Dict[str, Any] = None, function_name: str = None
+            ) -> Dict[str, Any]:
         """
-        :param function_name:
-        :param transaction: Transaction dict
+        :param address:
+        :param abi:
+        :param function_name: Required if argument 'abi' was provided
+        :param transaction: Transaction dict. Can be retrieved from key
+                    'transaction' of dict, which is returned by
+                    'run', 'process_message' methods.
         :return:
         """
-        params = {
-            "address": self.address,
-            "abi": self.abi,
-            "functionName": function_name,
-            "transaction": transaction
-        }
-
-        return self._client.request(
-            method="contracts.process.transaction", params=params)
+        return self.request(
+            method="contracts.process.transaction", address=address,
+            transaction=transaction, abi=abi, functionName=function_name)
 
     def wait_transaction(
-            self, function_name: str, message: Dict, transaction: Dict,
-            infinite_wait: bool = False) -> Dict:
+            self, message: TonMessage, state: Dict[str, Union[str, int]],
+            abi: Dict[str, Any] = None, function_name: str = None,
+            infinite_wait: bool = False) -> Dict[str, Any]:
         """
-        :param function_name:
         :param message: Message dict is
                 {"address": str, "messageId": str, "messageBodyBase64": str,
                 "expire": int|None}
-        :param transaction: Transaction dict after 'send_message'
+        :param state: Message processing state dict. It is returned from
+                    'send_message' method.
+                    Example: {"lastBlockId": str, "sendingTime": int}
+        :param function_name: Required if argument 'abi' was provided
+        :param abi:
         :param infinite_wait:
         :return:
         """
-        params = {
-            "abi": self.abi,
-            "functionName": function_name,
-            "message": message,
-            "messageProcessingState": transaction,
-            "infiniteWait": infinite_wait
-        }
-
-        return self._client.request(
-            method="contracts.wait.transaction", params=params)
+        return self.request(
+            method="contracts.wait.transaction", message=message.to_request,
+            messageProcessingState=state, abi=abi, functionName=function_name,
+            infiniteWait=infinite_wait)
 
     def tvm_get(
-            self, boc: str, code: str, data: str, function_name: str,
-            inputs: Dict = None) -> Dict:
+            self, function_name: str, boc_b64: str = None,
+            code_b64: str = None, data_b64: str = None,
+            inputs: Dict[str, Any] = None, address: str = None,
+            balance: str = None, last_paid: int = None) -> Dict[str, Any]:
         """
-        :param boc: Base64
-        :param code: Base64
-        :param data: Base64
         :param function_name:
+        :param boc_b64: BOC base64
+        :param code_b64: Code base64
+        :param data_b64: Data base64
         :param inputs:
+        :param address:
+        :param balance:
+        :param last_paid:
         :return:
         """
-        params = {
-            "bocBase64": boc,
-            "codeBase64": code,
-            "dataBase64": data,
-            "functionName": function_name,
-            "input": inputs or {},
-            "address": self.address,
-            "balance": hex(self.balance or 0),
-            "lastPaid": None  # TODO: add to contract
-        }
+        return self.request(
+            method="tvm.get", functionName=function_name, bocBase64=boc_b64,
+            codeBase64=code_b64, dataBase64=data_b64, input=inputs or {},
+            address=address, balance=balance, lastPaid=last_paid)
 
-        return self._client.request(method="tvm.get", params=params)
+    def resolve_error(self):
+        # TODO: Implement this method
+        raise NotImplementedError

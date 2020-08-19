@@ -1,7 +1,6 @@
 import json
 from typing import Any
 
-from tonsdk.errors import TonException
 from tonsdk.module import TonModule
 
 
@@ -86,7 +85,7 @@ class TonQueryBuilder(object):
 
 
 class TonQuery(TonModule):
-    """ Free TON queries SDK implementation """
+    """ Free TON queries SDK API implementation """
     def query(self, query: TonQueryBuilder) -> Any:
         """
         :param query:

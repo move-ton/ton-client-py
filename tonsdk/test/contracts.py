@@ -1,43 +1,30 @@
+import json
 import os
 import unittest
+import base64
 
-from tonsdk.lib import TonClient, DEVNET_BASE_URL
-from tonsdk.contracts import TonContract
-
+from tonsdk.client import TonClient, DEVNET_BASE_URL
+from tonsdk.errors import TonException
+from tonsdk.types import KeyPair, TonMessage, TonUnsignedMessage
 
 SAMPLES_DIR = os.path.join(os.path.dirname(__file__), "samples")
-CLIENT = TonClient(servers=[DEVNET_BASE_URL])
-CONTRACT = TonContract()
-CONTRACT.set_client(client=CLIENT)
+client = TonClient(servers=[DEVNET_BASE_URL])
 
 
-class TestContractBase(unittest.TestCase):
-    def setUp(self):
-        self.valid_keypair = {
-            "public": "c078fbff6a4daed8ab8d78d2371a99778c4a3a058fd4e4079e093e5a19b44722",
-            "secret": "6fc0531fd1d0a76704cc0e2e1f1e827abb953aa03be39b5fdbebf6dcbfdba14b"
-        }
-        self.valid_image = "te6ccgEBEAEA7wACATQDAQEBwAIAU6AAAAAAAAehIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAIo/wAgwAH0pCBYkvSg4YrtU1gw9KAGBAEK9KQg9KEFABqgAAAAAXDtR2+NMO1XAgEgCAcAHv/wAiHwA/AF0x8B8AHwAQIC3AsJAgFIDQoASxwgggPQkCmCO1E0PQFgED0DPLgZPQFgED0FMj0AMntRwFvjO1XgAgEgDwwCASAODQADNCAAPQgxwLyaNUgxwCRMOAh+QEBgQIA1xjT/zD5EPKo2zCAAI0IfAE8AUyIMcB3NMfAfAB8AGA=="
-        self.contract = TonContract()
+class TestBase(unittest.TestCase):
+    abi_path = None
+    image_path = None
+    keypair_path = None
 
-    def test_load_keypair(self):
-        # Load from binary file
-        self.contract.load_keypair(
-            path=os.path.join(SAMPLES_DIR, 'keys_binary.json'), binary=True)
-        self.assertEqual(self.contract.keypair, self.valid_keypair)
-
-        # Load from json file
-        self.contract.load_keypair(
-            path=os.path.join(SAMPLES_DIR, 'keys_raw.json'), binary=False)
-        self.assertEqual(self.contract.keypair, self.valid_keypair)
-
-    def test_load_image(self):
-        self.contract.load_image(
-            path=os.path.join(SAMPLES_DIR, 'PiggyBank', 'PiggyBank.tvc'))
-        self.assertEqual(self.contract.image_b64, self.valid_image)
+    def setUp(self) -> None:
+        with open(self.abi_path) as fp:
+            self.abi = json.loads(fp.read())
+        with open(self.image_path, "rb") as fp:
+            self.image_b64 = base64.b64encode(fp.read()).decode()
+        self.keypair = KeyPair.load(path=self.keypair_path, is_binary=False)
 
 
-class TestSimpleWalletContract(unittest.TestCase):
+class TestSimpleWalletContract(TestBase):
     """
     Simple wallet contract tests
     """
@@ -46,35 +33,65 @@ class TestSimpleWalletContract(unittest.TestCase):
     keypair_path = os.path.join(SAMPLES_DIR, 'keys_raw.json')
 
     def setUp(self):
-        # Setup contract
-        self.contract = CONTRACT
-        self.contract.load_abi(path=self.abi_path)
-        self.contract.load_image(path=self.image_path)
-        self.contract.load_keypair(path=self.keypair_path, binary=False)
-
+        super(TestSimpleWalletContract, self).setUp()
         self.contract_address = "0:2df86dd43c3fcd8cd9704126a6ecb6439116b39f0f9fb97c239dd67bdb6896b8"
-        self.constructor_params = {}
-        self.init_params = {}
+
+    def test_load(self):
+        result = client.contracts.load(address=self.contract_address)
+        self.assertEqual(result["id"], self.contract_address[2:])
+        self.assertEqual(result["balanceGrams"].isnumeric(), True)
+
+    def test_deploy_address(self):
+        address = client.contracts.deploy_address(
+            abi=self.abi, image_b64=self.image_b64, keypair=self.keypair)
+        self.assertEqual(address, self.contract_address)
+
+    def test_address_convert(self):
+        address = client.contracts.address_convert(
+            address=self.contract_address, to="Base64",
+            b64_params={"url": False, "test": True, "bounce": True})
+        self.assertEqual(address, "kQAt+G3UPD/NjNlwQSam7LZDkRaznw+fuXwjndZ722iWuK11")
+
+        def __callable_to():
+            client.contracts.address_convert(
+                address=self.contract_address, to="Base")
+        self.assertRaises(TonException, __callable_to)
+
+        def __callable_b64():
+            client.contracts.address_convert(
+                address=self.contract_address, to="Base64",
+                b64_params={"url": False, "test": True})
+        self.assertRaises(TonException, __callable_b64)
 
     def test_deploy_message(self):
-        result = self.contract.deploy_message(
-            constructor_params=self.constructor_params,
-            init_params=self.init_params)
+        message = client.contracts.deploy_message(
+            abi=self.abi, image_b64=self.image_b64, keypair=self.keypair)
+        self.assertIsInstance(message, TonMessage)
+        self.assertEqual(message.address, self.contract_address)
 
-        self.assertEqual(result["address"], self.contract_address)
-        self.assertEqual(self.contract.address, self.contract_address)
+    def test_deploy_encode_unsigned_message(self):
+        message = client.contracts.deploy_encode_unsigned_message(
+            abi=self.abi, image_b64=self.image_b64, public=self.keypair.public)
+        self.assertIsInstance(message, TonUnsignedMessage)
+        self.assertIsNotNone(message.unsigned)
+        self.assertIsNotNone(message.sign)
+        self.assertEqual(message.address, self.contract_address)
+
+    def test_deploy_data(self):
+        result = client.contracts.deploy_data(
+            abi=self.abi, image_b64=self.image_b64, public=self.keypair.public)
+        self.assertEqual(result["dataBase64"], "te6ccgEBAgEAKAABAcABAEPQMB4+/9qTa7Yq4140jcamXeMSjoFj9TkB54JPloZtEcig")
+
+        result = client.contracts.deploy_data(public=self.keypair.public)
+        self.assertEqual(result["dataBase64"], "te6ccgEBAgEAKAABAcABAEPQMB4+/9qTa7Yq4140jcamXeMSjoFj9TkB54JPloZtEcig")
 
     def test_deploy(self):
-        result = self.contract.deploy(
-            constructor_params=self.constructor_params,
-            init_params=self.init_params
-        )
-
+        result = client.contracts.deploy(
+            abi=self.abi, image_b64=self.image_b64, keypair=self.keypair)
         self.assertEqual(result["address"], self.contract_address)
-        self.assertEqual(self.contract.address, self.contract_address)
 
 
-class TestPiggyBankContract(unittest.TestCase):
+class TestPiggyBankContract(TestBase):
     """
     Piggy bank contract tests
     """
@@ -83,205 +100,201 @@ class TestPiggyBankContract(unittest.TestCase):
     keypair_path = os.path.join(SAMPLES_DIR, 'keys_raw.json')
 
     def setUp(self):
-        # Setup contract
-        self.contract = CONTRACT
-        self.contract.load_abi(path=self.abi_path)
-        self.contract.load_image(path=self.image_path)
-        self.contract.load_keypair(path=self.keypair_path, binary=False)
+        super(TestPiggyBankContract, self).setUp()
 
         self.contract_address = "0:668b5c83056ebf1852cc7af4e61c8a421056c0311f035a39e5baf7ce28b14728"
         self.owner_address = "0:1ab22c364214e24b782bc4966e23874b1c0cc682e8dba2d24a0561bb27d04221"
         self.constructor_params = {
             "pb_owner": self.owner_address,
-            "pb_limit": 5 * 10**9
+            "pb_limit": 5 * 10 ** 9
         }
-        self.init_params = {}
-
-        # Get and set contract address
-        self.contract.deploy_address(init_params=self.init_params)
-
-    def test_deploy_address(self):
-        address = self.contract.deploy_address(init_params=self.init_params)
-        self.assertEqual(address, self.contract_address)
-        self.assertEqual(self.contract.address, self.contract_address)
-
-    def test_convert_address(self):
-        address = self.contract.convert_address(
-            to=TonContract.TYPE_ADDRESS_B64,
-            b64_params={"url": False, "test": True, "bounce": True})
-        self.assertEqual(address, "kQBmi1yDBW6/GFLMevTmHIpCEFbAMR8DWjnluvfOKLFHKJy/")
-
-    def test_deploy_message(self):
-        result = self.contract.deploy_message(
-            constructor_params=self.constructor_params,
-            init_params=self.init_params)
-
-        self.assertEqual(result["address"], self.contract.address)
-
-    def test_deploy_message_unsigned(self):
-        result = self.contract.deploy_message_unsigned(
-            constructor_params=self.constructor_params,
-            init_params=self.init_params)
-
-        self.assertEqual(result["addressHex"], self.contract.address)
-
-    def test_deploy_data(self):
-        result = self.contract.deploy_data(init_params=self.init_params)
-        self.assertEqual(result["dataBase64"], "te6ccgEBAgEAKAABAcABAEPQMB4+/9qTa7Yq4140jcamXeMSjoFj9TkB54JPloZtEcig")
-
-    def test_deploy(self):
-        result = self.contract.deploy(
-            constructor_params=self.constructor_params,
-            init_params=self.init_params)
-
-        self.assertEqual(result["address"], self.contract.address)
 
     def test_run_message(self):
-        result = self.contract.run_message(function_name="getVersion")
+        message = client.contracts.run_message(
+            abi=self.abi, address=self.contract_address, keypair=self.keypair,
+            function_name="getVersion")
+        self.assertIsInstance(message, TonMessage)
+        self.assertEqual(message.address, self.contract_address)
 
-        self.assertEqual(result["address"], self.contract.address)
-        self.assertEqual(
-            list(result.keys()),
-            ["address", "messageId", "messageBodyBase64", "expire"])
+        message = client.contracts.run_message(
+            address=self.contract_address, abi=self.abi,
+            function_name="getVersion")
+        self.assertIsInstance(message, TonMessage)
+        self.assertEqual(message.address, self.contract_address)
 
-    def test_run_message_unsigned(self):
-        result = self.contract.run_message(function_name="getVersion")
-
-        self.assertEqual(result["address"], self.contract.address)
-        self.assertEqual(
-            list(result.keys()),
-            ["address", "messageId", "messageBodyBase64", "expire"])
+    def test_run_encode_unsigned_message(self):
+        message = client.contracts.run_encode_unsigned_message(
+            abi=self.abi, address=self.contract_address,
+            function_name="getVersion")
+        self.assertIsInstance(message, TonUnsignedMessage)
+        self.assertIsNotNone(message.unsigned)
+        self.assertIsNotNone(message.sign)
+        self.assertEqual(message.address, self.contract_address)
 
     def test_run_body(self):
-        body = self.contract.run_body(function_name="getVersion")
+        body = client.contracts.run_body(
+            abi=self.abi, keypair=self.keypair, function_name="getVersion")
         self.assertEqual("te6ccgEBAQEATwAA" in body, True)
 
-        body = self.contract.run_body(
-            function_name="getVersion", internal=True)
+        body = client.contracts.run_body(
+            abi=self.abi, keypair=self.keypair, function_name="getVersion",
+            internal=True)
         self.assertEqual(body, "te6ccgEBAQEABgAACFoZzZI=")
 
+        body = client.contracts.run_body(
+            abi=self.abi, function_name="getVersion")
+        self.assertIsNotNone(body)
+
     def test_run(self):
-        result = self.contract.run(function_name="getData")
+        result = client.contracts.run(
+            abi=self.abi, address=self.contract_address, keypair=self.keypair,
+            function_name="getData")
         self.assertEqual(result["output"]["value0"], self.owner_address)
 
-    def test_run_local(self):
-        result = self.contract.run_local(function_name="getVersion")
-        self.assertEqual(result["fees"], None)
-
-        result = self.contract.run_local(
-            function_name="getVersion", full_run=True)
-        self.assertNotEqual(result["fees"], None)
+        result = client.contracts.run(
+            address=self.contract_address, abi=self.abi,
+            function_name="getVersion")
+        self.assertEqual(result["output"]["value0"], "0x1")
 
     def test_run_local_message(self):
-        # Message base64 for 'getVersion' function
-        message = self.contract.run_message("getVersion")
-        result = self.contract.run_local_message(
-            function_name="getVersion", message=message["messageBodyBase64"])
-        self.assertEqual(result["fees"], None)
+        message = client.contracts.run_message(
+            address=self.contract_address, abi=self.abi,
+            function_name="getVersion")
 
-        result = self.contract.run_local_message(
-            function_name="getVersion", message=message["messageBodyBase64"],
+        result = client.contracts.run_local_message(
+            address=self.contract_address, message_b64=message.body,
+            abi=self.abi, function_name="getVersion")
+        self.assertEqual(result["output"]["value0"], "0x1")
+        self.assertIsNone(result["fees"])
+
+        result = client.contracts.run_local_message(
+            address=self.contract_address, message_b64=message.body,
             full_run=True)
-        self.assertNotEqual(result["fees"], None)
+        self.assertIsNotNone(result["fees"])
+
+    def test_run_local(self):
+        result = client.contracts.run_local(
+            address=self.contract_address, abi=self.abi,
+            function_name="getVersion")
+        self.assertIsNone(result["fees"])
+
+        result = client.contracts.run_local(
+            address=self.contract_address, abi=self.abi,
+            function_name="getVersion", full_run=True)
+        self.assertIsNotNone(result["fees"])
 
     def test_run_output(self):
-        # Body for 'getVersion' response
+        # Body base64 of 'getVersion' out message
         body = "te6ccgEBAQEAJgAASNoZzZIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQ=="
-        output = self.contract.run_output(
-            function_name="getVersion", body=body)
-        self.assertEqual(list(output.keys())[0], "value0")
+        output = client.contracts.run_output(
+            abi=self.abi, function_name="getVersion", body_b64=body)
+        self.assertEqual(output["value0"], "0x1")
 
     def test_run_fee(self):
-        result = self.contract.run_fee(function_name="getVersion")
-        self.assertEqual(list(result["output"].keys())[0], "value0")
+        result = client.contracts.run_fee(
+            address=self.contract_address, abi=self.abi,
+            function_name="getVersion")
+        self.assertEqual(result["output"]["value0"], "0x1")
 
     def test_run_fee_message(self):
-        message = self.contract.run_message(function_name="getVersion")
-        result = self.contract.run_fee_message(
-            message=message["messageBodyBase64"])
+        message = client.contracts.run_message(
+            address=self.contract_address, abi=self.abi,
+            function_name="getVersion")
 
-        self.assertEqual(bool(result.get("fees")), True)
+        result = client.contracts.run_fee_message(
+            address=self.contract_address, message_b64=message.body)
+        self.assertIsNotNone(result["fees"])
 
     def test_run_unknown_input(self):
-        body = self.contract.run_body(function_name="getVersion")
-        unknown = self.contract.run_unknown_input(body=body)
+        body = client.contracts.run_body(
+            abi=self.abi, function_name="getVersion")
+        unknown = client.contracts.run_unknown_input(
+            abi=self.abi, body_b64=body)
         self.assertEqual(unknown, {"function": "getVersion", "output": {}})
 
     def test_run_unknown_output(self):
-        # Body for 'getVersion' result
+        # Body base64 for 'getVersion' out message
         body = "te6ccgEBAQEAJgAASNoZzZIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQ=="
-        unknown = self.contract.run_unknown_output(body=body)
-        self.assertEqual(unknown["function"], "getVersion")
+        unknown = client.contracts.run_unknown_output(
+            abi=self.abi, body_b64=body)
+        self.assertEqual(unknown, {"function": "getVersion", "output": {"value0": "0x1"}})
 
-    def test_sign_message(self):
+    def test_encode_message_with_sign(self):
         # Create unsigned message
-        result = self.contract.run_message_unsigned(function_name="getVersion")
+        unsigned = client.contracts.run_encode_unsigned_message(
+            address=self.contract_address, abi=self.abi,
+            function_name="getVersion")
 
         # Sign message
-        result = self.contract.sign_message(
-            unsigned_base64=result["unsignedBytesBase64"],
-            sign_base64=result["bytesToSignBase64"])
-
-        self.assertEqual(result["address"], self.contract.address)
-        self.assertEqual(
-            "te6ccgEBAQEAUQAAnYgAzRa5BgrdfjClmPXpzDkUhCCtgGI" in result["messageBodyBase64"],
-            True)
+        signed = client.contracts.encode_message_with_sign(
+            abi=self.abi, message=unsigned)
+        self.assertIsInstance(signed, TonMessage)
+        self.assertEqual(signed.address, self.contract_address)
 
     def test_parse_message(self):
         message_boc = "te6ccgEBAQEAcQAA3YgAzRa5BgrdfjClmPXpzDkUhCCtgGI+BrRzy3XvnFFijlAGkFJ1s8KnJdQgxR+kLP+yGcqn44lVZeU8uxDkYRvny3R/yxeAzUDFMudyk6jKu2fqeazMGmcUKztS4MSgNFscKAAABc8AC9m5TL3Gng=="
-        result = self.contract.parse_message(message_boc=message_boc)
+        result = client.contracts.parse_message(boc_b64=message_boc)
         self.assertDictEqual(result, {"dst": "0:668b5c83056ebf1852cc7af4e61c8a421056c0311f035a39e5baf7ce28b14728"})
 
     def test_function_id(self):
-        fn_id = self.contract.get_function_id(function_name="getVersion")
+        fn_id = client.contracts.function_id(
+            abi=self.abi, function_name="getVersion")
         self.assertEqual(fn_id, 1511640466)
-
-    def test_load(self):
-        self.contract.load()
-        self.assertIsInstance(self.contract.balance, int)
 
     def test_find_shard(self):
         shards = [
-            {
-              "workchain_id": 0,
-              "shard": "0800000000000000"
-            },
-            {
-              "workchain_id": 0,
-              "shard": "1800000000000000"
-            }
+            {"workchain_id": 0, "shard": "0800000000000000"},
+            {"workchain_id": 0, "shard": "1800000000000000"}
         ]
-        result = self.contract.find_shard(shards=shards)
+        result = client.contracts.find_shard(
+            address=self.contract_address, shards=shards)
         self.assertIsNone(result)
 
     def test_send_message(self):
-        message = self.contract.run_message(function_name="getVersion")
-        result = self.contract.send_message(message=message)
-        self.assertEqual(list(result.keys()), ["lastBlockId", "sendingTime"])
+        message = client.contracts.run_message(
+            address=self.contract_address, abi=self.abi,
+            function_name="getVersion")
+        result = client.contracts.send_message(message=message)
+        self.assertIsNotNone(result.values())
 
     def test_process_message(self):
-        message = self.contract.run_message(function_name="getVersion")
-        result = self.contract.process_message(
-            function_name="getVersion", message=message)
-        self.assertEqual("fees" in list(result.keys()), True)
+        message = client.contracts.run_message(
+            address=self.contract_address, abi=self.abi,
+            function_name="getVersion")
+
+        result_unknown = client.contracts.process_message(message=message)
+        self.assertIsNone(result_unknown["output"])
+
+        output = client.contracts.run_unknown_output(
+            abi=self.abi,
+            body_b64=result_unknown["transaction"]["out_messages"][0]["body"])
+        self.assertEqual(output["output"]["value0"], "0x1")
 
     def test_process_transaction(self):
-        message = self.contract.run_message(function_name="getVersion")
-        transaction = self.contract.process_message(
-            function_name="getVersion", message=message)
-
-        processed = self.contract.process_transaction(
-            function_name="getVersion", transaction=transaction)
-        self.assertEqual("fees" in list(processed.keys()), True)
+        # TODO: Write test
+        result = client.contracts.run(
+            address=self.contract_address, abi=self.abi,
+            function_name="getVersion")
+        processed = client.contracts.process_transaction(
+            address=self.contract_address, transaction=result["transaction"])
 
     def test_wait_transaction(self):
-        message = self.contract.run_message(function_name="getVersion")
-        transaction = self.contract.send_message(message=message)
+        message = client.contracts.run_message(
+            address=self.contract_address, abi=self.abi,
+            function_name="getVersion")
+        state = client.contracts.send_message(message=message)
 
-        result = self.contract.wait_transaction(
-            function_name="getVersion", message=message,
-            transaction=transaction)
-        self.assertEqual("fees" in list(result.keys()), True)
+        unknown_output = client.contracts.wait_transaction(
+            message=message, state=state)
+        self.assertIsNone(unknown_output["output"])
+
+    def test_tvm_get(self):
+        # TODO: Write test
+        pass
+
+    def test_resolve_error(self):
+        # TODO: Write test
+        pass
 
 
 if __name__ == '__main__':

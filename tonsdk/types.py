@@ -1,6 +1,6 @@
 import json
 from io import StringIO
-from typing import Dict
+from typing import Dict, Any
 
 NACL_OUTPUT_TXT = "Text"
 NACL_OUTPUT_HEX = "Hex"
@@ -72,3 +72,55 @@ class FmtString(str):
     @property
     def base64(self) -> Dict[str, str]:
         return {"base64": self}
+
+
+class TonMessage(object):
+    """ TON message """
+    def __init__(
+            self, message_id: str, address: str, body_b64: str,
+            expire: int = None):
+        self.address = address
+        self.id = message_id
+        self.body = body_b64
+        self.expire = expire
+
+    @property
+    def to_request(self):
+        return {
+            "address": self.address,
+            "messageId": self.id,
+            "messageBodyBase64": self.body,
+            "expire": self.expire
+        }
+
+    @staticmethod
+    def from_response(response: Dict[str, Any]) -> "TonMessage":
+        return TonMessage(
+            message_id=response["messageId"], address=response["address"],
+            body_b64=response["messageBodyBase64"], expire=response["expire"])
+
+
+class TonUnsignedMessage(object):
+    """ TON unsigned message """
+    def __init__(
+            self, unsigned_b64: str, sign_b64: str, expire: int = None,
+            address: str = None):
+        self.unsigned = unsigned_b64
+        self.sign = sign_b64
+        self.expire = expire
+        self.address = address
+
+    @property
+    def to_request(self):
+        return {
+            "unsignedBytesBase64": self.unsigned,
+            "signBytesBase64": self.sign,
+            "expire": self.expire
+        }
+
+    @staticmethod
+    def from_response(response: Dict[str, Any]) -> "TonUnsignedMessage":
+        return TonUnsignedMessage(
+            unsigned_b64=response["unsignedBytesBase64"],
+            sign_b64=response["bytesToSignBase64"],
+            expire=response["expire"])

@@ -5,6 +5,7 @@ from tonsdk.bindings.lib import tc_create_context, tc_destroy_context
 from tonsdk.crypto import TonCrypto
 from tonsdk.module import TonModule
 from tonsdk.queries import TonQuery
+from tonsdk.contracts import TonContract
 
 DEVNET_BASE_URL = 'net.ton.dev'
 MAINNET_BASE_URL = 'main.ton.dev'
@@ -39,6 +40,7 @@ class TonClient(object):
         self.base = TonClientBase(ctx=self._ctx)
         self.crypto = TonCrypto(ctx=self._ctx)
         self.queries = TonQuery(ctx=self._ctx)
+        self.contracts = TonContract(ctx=self._ctx)
 
         self.base.setup({**TON_CLIENT_DEFAULT_SETUP, **config})
 

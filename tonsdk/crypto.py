@@ -5,7 +5,7 @@ from tonsdk.types import KeyPair, NACL_OUTPUT_HEX
 
 
 class TonCrypto(TonModule):
-    """ Free TON crypto SDK implementation """
+    """ Free TON crypto SDK API implementation """
     def random_generate_bytes(self, length: int) -> str:
         """
         :param length:
