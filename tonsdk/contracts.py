@@ -1,7 +1,7 @@
 from typing import Dict, Any, List, Union
 
 from tonsdk.module import TonModule
-from tonsdk.types import KeyPair, TonMessage, TonUnsignedMessage
+from tonsdk.types import KeyPair, TonMessage, TonMessageUnsigned
 
 
 class TonContract(TonModule):
@@ -80,19 +80,18 @@ class TonContract(TonModule):
         :param try_index:
         :return:
         """
-        response = self.request(
+        return self.request(
             method="contracts.deploy.message", abi=abi, imageBase64=image_b64,
             keyPair=keypair.dict, constructorParams=constructor_params or {},
             constructorHeader=constructor_header, initParams=init_params,
             workchainId=workchain_id, tryIndex=try_index)
-        return TonMessage.from_response(response=response)
 
     def deploy_encode_unsigned_message(
             self, abi: Dict[str, Any], image_b64: str, public: str,
             constructor_header: Dict[str, Any] = None,
             constructor_params: Dict[str, Any] = None,
             init_params: Dict = None, workchain_id: int = None,
-            try_index: int = None) -> TonUnsignedMessage:
+            try_index: int = None) -> (TonMessageUnsigned, str):
         """
         This function allows creating a separate deploy message
         without a signature.
@@ -117,11 +116,7 @@ class TonContract(TonModule):
             constructorHeader=constructor_header,
             constructorParams=constructor_params or {}, initParams=init_params,
             workchainId=workchain_id, tryIndex=try_index)
-
-        message = TonUnsignedMessage.from_response(
-            response=response["encoded"])
-        message.address = response["addressHex"]
-        return message
+        return response["encoded"], response["addressHex"]
 
     def deploy_data(
             self, public: str, abi: Dict[str, Any] = None,
@@ -190,16 +185,15 @@ class TonContract(TonModule):
         if keypair:
             keypair = keypair.dict
 
-        response = self.request(
+        return self.request(
             method="contracts.run.message", address=address, abi=abi,
             functionName=function_name, header=headers, input=inputs or {},
             keypair=keypair, tryIndex=try_index)
-        return TonMessage.from_response(response=response)
 
     def run_encode_unsigned_message(
             self, address: str, abi: Dict[str, Any], function_name: str,
             headers: Dict[str, Any] = None, inputs: Dict[str, Any] = None,
-            try_index: int = None) -> TonUnsignedMessage:
+            try_index: int = None) -> TonMessageUnsigned:
         """
         This method works similarly to the 'deploy_message_unsigned', but
         it is designed to create a message returning the ID of the public
@@ -214,14 +208,10 @@ class TonContract(TonModule):
         :param try_index:
         :return:
         """
-        response = self.request(
+        return self.request(
             method="contracts.run.encode_unsigned_message", address=address,
             abi=abi, functionName=function_name, header=headers,
             input=inputs or {}, tryIndex=try_index)
-
-        message = TonUnsignedMessage.from_response(response=response)
-        message.address = address
-        return message
 
     def run_body(
             self, abi: Dict[str, Any], function_name: str,
@@ -403,7 +393,7 @@ class TonContract(TonModule):
             bodyBase64=body_b64, internal=internal)
 
     def encode_message_with_sign(
-            self, abi: Dict[str, Any], message: TonUnsignedMessage,
+            self, abi: Dict[str, Any], message: TonMessageUnsigned,
             public: str = None) -> TonMessage:
         """
         This method can also be used used in distributed architectures
@@ -413,10 +403,13 @@ class TonContract(TonModule):
         :param public: Public key as hex string
         :return:
         """
-        response = self.request(
+        if message.get("bytesToSignBase64"):
+            message["signBytesBase64"] = message["bytesToSignBase64"]
+            del message["bytesToSignBase64"]
+
+        return self.request(
             method="contracts.encode_message_with_sign", abi=abi,
-            publicKeyHex=public, **message.to_request)
-        return TonMessage.from_response(response=response)
+            publicKeyHex=public, **message)
 
     def parse_message(self, boc_b64: str) -> Dict[str, Any]:
         """
@@ -460,7 +453,7 @@ class TonContract(TonModule):
         :return:
         """
         return self.request(
-            method="contracts.send.message", **message.to_request)
+            method="contracts.send.message", **message)
 
     def process_message(
                 self, message: TonMessage, abi: Dict[str, Any] = None,
@@ -477,7 +470,7 @@ class TonContract(TonModule):
         return self.request(
             method="contracts.process.message", abi=abi,
             functionName=function_name, infiniteWait=infinite_wait,
-            message=message.to_request)
+            message=message)
 
     def process_transaction(
                 self, address: str, transaction: Dict[str, Any],
@@ -513,7 +506,7 @@ class TonContract(TonModule):
         :return:
         """
         return self.request(
-            method="contracts.wait.transaction", message=message.to_request,
+            method="contracts.wait.transaction", message=message,
             messageProcessingState=state, abi=abi, functionName=function_name,
             infiniteWait=infinite_wait)
 

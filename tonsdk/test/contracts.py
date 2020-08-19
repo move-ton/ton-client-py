@@ -5,7 +5,7 @@ import base64
 
 from tonsdk.client import TonClient, DEVNET_BASE_URL
 from tonsdk.errors import TonException
-from tonsdk.types import KeyPair, TonMessage, TonUnsignedMessage
+from tonsdk.types import KeyPair, TonMessage, TonMessageUnsigned
 
 SAMPLES_DIR = os.path.join(os.path.dirname(__file__), "samples")
 client = TonClient(servers=[DEVNET_BASE_URL])
@@ -66,16 +66,14 @@ class TestSimpleWalletContract(TestBase):
     def test_deploy_message(self):
         message = client.contracts.deploy_message(
             abi=self.abi, image_b64=self.image_b64, keypair=self.keypair)
-        self.assertIsInstance(message, TonMessage)
-        self.assertEqual(message.address, self.contract_address)
+        self.assertEqual(message["address"], self.contract_address)
 
     def test_deploy_encode_unsigned_message(self):
-        message = client.contracts.deploy_encode_unsigned_message(
+        message, address = client.contracts.deploy_encode_unsigned_message(
             abi=self.abi, image_b64=self.image_b64, public=self.keypair.public)
-        self.assertIsInstance(message, TonUnsignedMessage)
-        self.assertIsNotNone(message.unsigned)
-        self.assertIsNotNone(message.sign)
-        self.assertEqual(message.address, self.contract_address)
+        self.assertIsNotNone(message["unsignedBytesBase64"])
+        self.assertIsNotNone(message["bytesToSignBase64"])
+        self.assertEqual(address, self.contract_address)
 
     def test_deploy_data(self):
         result = client.contracts.deploy_data(
@@ -113,23 +111,19 @@ class TestPiggyBankContract(TestBase):
         message = client.contracts.run_message(
             abi=self.abi, address=self.contract_address, keypair=self.keypair,
             function_name="getVersion")
-        self.assertIsInstance(message, TonMessage)
-        self.assertEqual(message.address, self.contract_address)
+        self.assertEqual(message["address"], self.contract_address)
 
         message = client.contracts.run_message(
             address=self.contract_address, abi=self.abi,
             function_name="getVersion")
-        self.assertIsInstance(message, TonMessage)
-        self.assertEqual(message.address, self.contract_address)
+        self.assertEqual(message["address"], self.contract_address)
 
     def test_run_encode_unsigned_message(self):
         message = client.contracts.run_encode_unsigned_message(
             abi=self.abi, address=self.contract_address,
             function_name="getVersion")
-        self.assertIsInstance(message, TonUnsignedMessage)
-        self.assertIsNotNone(message.unsigned)
-        self.assertIsNotNone(message.sign)
-        self.assertEqual(message.address, self.contract_address)
+        self.assertIsNotNone(message["unsignedBytesBase64"])
+        self.assertIsNotNone(message["bytesToSignBase64"])
 
     def test_run_body(self):
         body = client.contracts.run_body(
@@ -162,14 +156,14 @@ class TestPiggyBankContract(TestBase):
             function_name="getVersion")
 
         result = client.contracts.run_local_message(
-            address=self.contract_address, message_b64=message.body,
-            abi=self.abi, function_name="getVersion")
+            address=self.contract_address, function_name="getVersion",
+            message_b64=message["messageBodyBase64"], abi=self.abi)
         self.assertEqual(result["output"]["value0"], "0x1")
         self.assertIsNone(result["fees"])
 
         result = client.contracts.run_local_message(
-            address=self.contract_address, message_b64=message.body,
-            full_run=True)
+            address=self.contract_address,
+            message_b64=message["messageBodyBase64"], full_run=True)
         self.assertIsNotNone(result["fees"])
 
     def test_run_local(self):
@@ -202,7 +196,8 @@ class TestPiggyBankContract(TestBase):
             function_name="getVersion")
 
         result = client.contracts.run_fee_message(
-            address=self.contract_address, message_b64=message.body)
+            address=self.contract_address,
+            message_b64=message["messageBodyBase64"])
         self.assertIsNotNone(result["fees"])
 
     def test_run_unknown_input(self):
@@ -228,8 +223,7 @@ class TestPiggyBankContract(TestBase):
         # Sign message
         signed = client.contracts.encode_message_with_sign(
             abi=self.abi, message=unsigned)
-        self.assertIsInstance(signed, TonMessage)
-        self.assertEqual(signed.address, self.contract_address)
+        self.assertEqual(signed["address"], self.contract_address)
 
     def test_parse_message(self):
         message_boc = "te6ccgEBAQEAcQAA3YgAzRa5BgrdfjClmPXpzDkUhCCtgGI+BrRzy3XvnFFijlAGkFJ1s8KnJdQgxR+kLP+yGcqn44lVZeU8uxDkYRvny3R/yxeAzUDFMudyk6jKu2fqeazMGmcUKztS4MSgNFscKAAABc8AC9m5TL3Gng=="
