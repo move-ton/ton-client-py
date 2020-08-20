@@ -306,10 +306,6 @@ class TestPiggyBankContract(TestBase):
             address=elector_address, function_name="participant_list")
         logger.warning(f"List of participants: {result['output']}")
 
-    def test_resolve_error(self):
-        # TODO: Write test
-        pass
-
 
 if __name__ == '__main__':
     unittest.main()

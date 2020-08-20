@@ -1,4 +1,3 @@
-import json
 from typing import Dict, Any, List, Union
 
 from tonsdk.module import TonModule
@@ -528,6 +527,25 @@ class TonContract(TonModule):
             codeBase64=code_b64, dataBase64=data_b64, input=inputs or [],
             address=address, balance=balance, lastPaid=last_paid)
 
-    def resolve_error(self):
-        # TODO: Implement this method
-        raise NotImplementedError
+    def resolve_error(
+            self, address: str, account: Dict[str, Any], message_b64: str,
+            time: int, error: Dict[str, Any]):
+        """
+        :param address:
+        :param account:
+        :param message_b64:
+        :param time:
+        :param error:
+                struct ApiError {
+                    core_version: String,
+                    source: String,
+                    code: isize,
+                    message: String,
+                    message_processing_state: Option<MessageProcessingState>,
+                    data: serde_json::Value
+                }
+        :return:
+        """
+        return self.request(
+            method="contracts.resolve.error", address=address, account=account,
+            messageBase64=message_b64, time=time, mainError=error)

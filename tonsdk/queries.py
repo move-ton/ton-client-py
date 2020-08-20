@@ -55,13 +55,14 @@ class TonQueryBuilder(object):
 
         return self
 
-    def result(self, *args: str) -> "TonQueryBuilder":
+    def result(self, fields: str = None, *args: str) -> "TonQueryBuilder":
         """
+        :param fields: Fields as str or fields splitted by space
         :param args: Any amount of table field names you want to include
                     in response
         :return:
         """
-        self._result = [*args]
+        self._result = [fields, *args]
         return self
 
     def order(self, field: str) -> "TonQueryBuilder":
