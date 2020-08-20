@@ -2,12 +2,14 @@ import json
 import os
 import unittest
 import base64
+import logging
 
 from tonsdk.client import TonClient, DEVNET_BASE_URL
 from tonsdk.errors import TonException
 from tonsdk.types import KeyPair, FmtString, NACL_OUTPUT_B64
 
 SAMPLES_DIR = os.path.join(os.path.dirname(__file__), "samples")
+logger = logging.getLogger("TonContractsTest")
 client = TonClient(servers=[DEVNET_BASE_URL])
 
 
@@ -295,8 +297,14 @@ class TestPiggyBankContract(TestBase):
         self.assertIsNone(unknown_output["output"])
 
     def test_tvm_get(self):
-        # TODO: Write test
-        pass
+        elector_address = "-1:3333333333333333333333333333333333333333333333333333333333333333"
+        result = client.contracts.tvm_get(
+            address=elector_address, function_name="active_election_id")
+        logger.warning(f"Active election id is: {result['output']}")
+
+        result = client.contracts.tvm_get(
+            address=elector_address, function_name="participant_list")
+        logger.warning(f"List of participants: {result['output']}")
 
     def test_resolve_error(self):
         # TODO: Write test

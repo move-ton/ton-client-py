@@ -1,3 +1,4 @@
+import json
 from typing import Dict, Any, List, Union
 
 from tonsdk.module import TonModule
@@ -509,22 +510,22 @@ class TonContract(TonModule):
     def tvm_get(
             self, function_name: str, boc_b64: str = None,
             code_b64: str = None, data_b64: str = None,
-            inputs: Dict[str, Any] = None, address: str = None,
-            balance: str = None, last_paid: int = None) -> Dict[str, Any]:
+            inputs: List[Any] = None, address: str = None, balance: str = None,
+            last_paid: int = None) -> Dict[str, Any]:
         """
         :param function_name:
         :param boc_b64: BOC base64
         :param code_b64: Code base64
         :param data_b64: Data base64
         :param inputs:
-        :param address:
+        :param address: Required if no contract code or data provided.
         :param balance:
         :param last_paid:
         :return:
         """
         return self.request(
             method="tvm.get", functionName=function_name, bocBase64=boc_b64,
-            codeBase64=code_b64, dataBase64=data_b64, input=inputs or {},
+            codeBase64=code_b64, dataBase64=data_b64, input=inputs or [],
             address=address, balance=balance, lastPaid=last_paid)
 
     def resolve_error(self):
