@@ -403,10 +403,6 @@ class TonContract(TonModule):
         :param public: Public key as hex string
         :return:
         """
-        if message.get("bytesToSignBase64"):
-            message["signBytesBase64"] = message["bytesToSignBase64"]
-            del message["bytesToSignBase64"]
-
         return self.request(
             method="contracts.encode_message_with_sign", abi=abi,
             publicKeyHex=public, **message)

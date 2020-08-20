@@ -5,7 +5,7 @@ import base64
 
 from tonsdk.client import TonClient, DEVNET_BASE_URL
 from tonsdk.errors import TonException
-from tonsdk.types import KeyPair, TonMessage, TonMessageUnsigned
+from tonsdk.types import KeyPair, FmtString, NACL_OUTPUT_B64
 
 SAMPLES_DIR = os.path.join(os.path.dirname(__file__), "samples")
 client = TonClient(servers=[DEVNET_BASE_URL])
@@ -220,10 +220,22 @@ class TestPiggyBankContract(TestBase):
             address=self.contract_address, abi=self.abi,
             function_name="getVersion")
 
+        # Create signature
+        signature = client.crypto.nacl_sign_detached(
+            secret=f"{self.keypair.secret}{self.keypair.public}",
+            message_fmt=FmtString(unsigned["bytesToSignBase64"]).base64,
+            output_fmt=NACL_OUTPUT_B64)
+        unsigned["signBytesBase64"] = signature
+
         # Sign message
         signed = client.contracts.encode_message_with_sign(
             abi=self.abi, message=unsigned)
         self.assertEqual(signed["address"], self.contract_address)
+
+        # Run message
+        result = client.contracts.process_message(
+            message=signed, abi=self.abi, function_name="getVersion")
+        self.assertEqual(result["output"]["value0"], "0x1")
 
     def test_parse_message(self):
         message_boc = "te6ccgEBAQEAcQAA3YgAzRa5BgrdfjClmPXpzDkUhCCtgGI+BrRzy3XvnFFijlAGkFJ1s8KnJdQgxR+kLP+yGcqn44lVZeU8uxDkYRvny3R/yxeAzUDFMudyk6jKu2fqeazMGmcUKztS4MSgNFscKAAABc8AC9m5TL3Gng=="
