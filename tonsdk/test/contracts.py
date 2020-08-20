@@ -279,12 +279,14 @@ class TestPiggyBankContract(TestBase):
         self.assertEqual(output["output"]["value0"], "0x1")
 
     def test_process_transaction(self):
-        # TODO: Write test
         result = client.contracts.run(
             address=self.contract_address, abi=self.abi,
             function_name="getVersion")
+
         processed = client.contracts.process_transaction(
-            address=self.contract_address, transaction=result["transaction"])
+            address=self.contract_address, transaction=result["transaction"],
+            abi=self.abi, function_name="getVersion")
+        self.assertEqual(processed["output"]["value0"], "0x1")
 
     def test_wait_transaction(self):
         message = client.contracts.run_message(
