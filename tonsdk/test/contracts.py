@@ -90,6 +90,20 @@ class TestSimpleWalletContract(TestBase):
             abi=self.abi, image_b64=self.image_b64, keypair=self.keypair)
         self.assertEqual(result["address"], self.contract_address)
 
+    def test_resolve_error(self):
+        inputs = {"dest": "0:1ab22c364214e24b782bc4966e23874b1c0cc682e8dba2d24a0561bb27d04221", "value": 1000000000, "bounce": False}
+        message = client.contracts.run_message(
+            address=self.contract_address, abi=self.abi,
+            function_name="sendTransaction", inputs=inputs)
+        error = {'core_version': '0.25.3', 'source': 'node', 'code': 3025, 'message': 'Contract execution was terminated with error', 'message_processing_state': None, 'data': {'account_address': '0:2df86dd43c3fcd8cd9704126a6ecb6439116b39f0f9fb97c239dd67bdb6896b8', 'config_server': 'net.ton.dev', 'exit_code': 100, 'original_error': {'code': 1012, 'core_version': '0.25.3', 'data': {'message_id': '5794586d5c51015684445eee4b0ab4a40924ad55b82a81199ab787395a58b1ba', 'sending_time': 'Thu, 20 Aug 2020 16:47:12 +0300 (1597931232)', 'timeout': 50000}, 'message': 'Transaction was not produced during the specified timeout', 'message_processing_state': {'lastBlockId': '71761738a2ab096413441d36ed68f47cf523d7eb4e67007bc7e4fbb23012c946', 'sendingTime': 1597931232}, 'source': 'node'}, 'phase': 'computeVm', 'query_url': 'https://net.ton.dev', 'transaction_id': None}}
+        account = {'acc_type': 1, 'balance': '0x1409beb9a', 'balance_other': None, 'boc': 'te6ccgECDwEAAooAAnHAAt+G3UPD/NjNlwQSam7LZDkRaznw+fuXwjndZ722iWuCHoRewvnzvugAAAS0AhvKDUBQJvrmk0ACAQCRwHj7/2pNrtirjXjSNxqZd4xKOgWP1OQHngk+Whm0RyIAAAF0DAQwDuA8ff+1JtdsVca8aRuNTLvGJR0Cx+pyA88Eny0M2iORQAIm/wD0pCAiwAGS9KDhiu1TWDD0oQUDAQr0pCD0oQQAAAIBIAkGAQL/BwH+fyHtRNAg10nCAY4U0//TP9MA1wv/+Gp/+GH4Zvhj+GKOG/QFcPhqcAGAQPQO8r3XC//4YnD4Y3D4Zn/4YeLTAAGOEoECANcYIPkBWPhCIPhl+RDyqN7TPwGOHvhDIbkgnzAg+COBA+iogggbd0Cgud6S+GPggDTyNNjTHwHwAQgADvhHbpLyPN4CASALCgDdvUWq+f/CC3Rx52omgQa6ThAMcKaf/pn+mAa4X//DU//DD8M3wx/DFHDfoCuHw1OADAIHoHeV7rhf/8MTh8Mbh8Mz/8MPFvfCN5Obj8M2j8AHwhfDV8IWRl//wh54Wf/CNnhYB8JQDl/+T2qj/8M8AgEgDgwB8bsV75NfhBbo4X7UTQ0//TP9MA1wv/+Gp/+GH4Zvhj+GLe+kDXDX+V1NHQ03/f1wwAldTR0NIA39H4RSBukjBw3vhKuvLgZPgAIcIAIJcwIfgnbxC53vLgZSEjIsjPhYDKAHPPQM4B+gKAac9Az4HPgclw+wBfA8D/gNADqOF/hCyMv/+EPPCz/4Rs8LAPhKAcv/ye1U3n/4ZwBq3XAi0NYCMdIAMNwhxwCQ4CHXDR+S8jzhUxGQ4cEEIoIQ/////byxkvI84AHwAfhHbpLyPN4=', 'code_hash': '84e5d7c2abb4bff6d7f3402eba34232de6c534b45cb6b4aef0d30a6a031e51e2', 'data_hash': '8a69a508698697e5d82abc45d76a31c24c7c1bdfb84fa6ffe8e6ac9590c4834e', 'id': '0:2df86dd43c3fcd8cd9704126a6ecb6439116b39f0f9fb97c239dd67bdb6896b8', 'last_paid': 1597929437}
+
+        def __call():
+            client.contracts.resolve_error(
+                address=self.contract_address, account=account,
+                message_b64=message["messageBodyBase64"], time=0, error=error)
+        self.assertRaises(TonException, __call)
+
 
 class TestPiggyBankContract(TestBase):
     """
