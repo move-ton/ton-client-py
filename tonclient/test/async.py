@@ -8,7 +8,7 @@ client = TonClient(servers=[DEVNET_BASE_URL])  # Default sync client
 
 
 async def coro():
-    return await client.version()
+    return await client.crypto.ed25519_keypair()
 
 
 if __name__ == "__main__":

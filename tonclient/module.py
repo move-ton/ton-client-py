@@ -2,7 +2,7 @@ import asyncio
 import ctypes
 
 import json
-from typing import Any, Dict, Union, Awaitable
+from typing import Any, Dict, Union, Awaitable, Callable
 
 from tonclient.bindings.lib import tc_json_request, tc_read_json_response, \
     tc_destroy_json_response, tc_json_request_async
@@ -33,14 +33,16 @@ class TonModule(object):
 
     def request(
             self, method: str,
-            params_or_str: Union[str, Dict[str, Any]] = None, **kwargs) -> Any:
+            params_or_str: Union[str, Dict[str, Any]] = None,
+            result_cb: Callable = None, **kwargs) -> Any:
         # Prepare request params
         request_params = self._prepare_params(params_or_str, **kwargs)
 
         # Make sync or async request
         if self.is_async:
             return self._request_async(
-                method=method, request_params=request_params)
+                method=method, request_params=request_params,
+                result_cb=result_cb)
         return self._request(method=method, request_params=request_params)
 
     def _request(self, method: str, request_params: str) -> Any:
@@ -61,7 +63,8 @@ class TonModule(object):
         return result_json
 
     async def _request_async(
-            self, method: str, request_params: str) -> Awaitable:
+            self, method: str, request_params: str,
+            result_cb: Callable = None) -> Awaitable:
         """ Fire TON lib asynchronous request. """
         loop = asyncio.get_running_loop()
         future = loop.create_future()
@@ -74,9 +77,10 @@ class TonModule(object):
             response.result_json = result_json
             response.error_json = error_json
 
+            result = result_cb(response.json) if result_cb else response.json
             future.set_result({
                 'request_id': request_id,
-                'result': response.json,
+                'result': result,
                 'flags': flags
             })
 

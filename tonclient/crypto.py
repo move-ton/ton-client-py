@@ -166,7 +166,14 @@ class TonCrypto(TonModule):
 
     def ed25519_keypair(self) -> KeyPair:
         """ Generate ed25519 keypair """
-        response = self.request(method="crypto.ed25519.keypair")
+        method = "crypto.ed25519.keypair"
+
+        if self.is_async:
+            def __async_result(result: Dict):
+                return KeyPair(**result)
+            return self.request(method=method, result_cb=__async_result)
+
+        response = self.request(method=method)
         return KeyPair(**response)
 
     def math_modular_power(
