@@ -1,7 +1,7 @@
 import asyncio
 import logging
 
-from tonsdk.client import TonClient, DEVNET_BASE_URL
+from tonclient.client import TonClient, DEVNET_BASE_URL
 
 logger = logging.getLogger("TONAsyncTests")
 client = TonClient(servers=[DEVNET_BASE_URL])  # Default sync client

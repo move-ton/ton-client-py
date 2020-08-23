@@ -4,10 +4,10 @@ import ctypes
 import json
 from typing import Any, Dict, Union, Awaitable
 
-from tonsdk.bindings.lib import tc_json_request, tc_read_json_response, \
+from tonclient.bindings.lib import tc_json_request, tc_read_json_response, \
     tc_destroy_json_response, tc_json_request_async
-from tonsdk.bindings.types import TCOnResponseT, TCResponseT, TCStringT
-from tonsdk.errors import TonException
+from tonclient.bindings.types import TCOnResponseT, TCResponseT, TCStringT
+from tonclient.errors import TonException
 
 
 class TonModule(object):

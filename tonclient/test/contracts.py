@@ -4,9 +4,9 @@ import unittest
 import base64
 import logging
 
-from tonsdk.client import TonClient, DEVNET_BASE_URL
-from tonsdk.errors import TonException
-from tonsdk.types import KeyPair, FmtString, NACL_OUTPUT_B64
+from tonclient.client import TonClient, DEVNET_BASE_URL
+from tonclient.errors import TonException
+from tonclient.types import KeyPair, FmtString, NACL_OUTPUT_B64
 
 SAMPLES_DIR = os.path.join(os.path.dirname(__file__), "samples")
 logger = logging.getLogger("TonContractsTest")

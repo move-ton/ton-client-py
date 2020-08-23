@@ -1,9 +1,9 @@
 import unittest
 import logging
 
-from tonsdk.client import TonClient, DEVNET_BASE_URL
-from tonsdk.errors import TonException
-from tonsdk.queries import TonQueryBuilder
+from tonclient.client import TonClient, DEVNET_BASE_URL
+from tonclient.errors import TonException
+from tonclient.queries import TonQueryBuilder
 
 logger = logging.getLogger("TonQueriesTest")
 client = TonClient(servers=[DEVNET_BASE_URL])

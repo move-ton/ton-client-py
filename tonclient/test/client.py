@@ -1,7 +1,7 @@
 import unittest
 
-from tonsdk.bindings.lib import LIB_VERSION
-from tonsdk.client import TonClient, DEVNET_BASE_URL
+from tonclient.bindings.lib import LIB_VERSION
+from tonclient.client import TonClient, DEVNET_BASE_URL
 
 
 class TestTonClient(unittest.TestCase):

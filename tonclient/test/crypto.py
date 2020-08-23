@@ -4,10 +4,10 @@ import base64
 import logging
 from io import StringIO
 
-from tonsdk.client import TonClient, DEVNET_BASE_URL
-from tonsdk.types import KeyPair, FmtString, NACL_OUTPUT_TXT, NACL_OUTPUT_B64, \
+from tonclient.client import TonClient, DEVNET_BASE_URL
+from tonclient.types import KeyPair, FmtString, NACL_OUTPUT_TXT, NACL_OUTPUT_B64, \
     NACL_OUTPUT_HEX_UP
-from tonsdk.errors import TonException
+from tonclient.errors import TonException
 
 logging.basicConfig(level=logging.INFO)
 client = TonClient(servers=[DEVNET_BASE_URL])

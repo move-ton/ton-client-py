@@ -1,7 +1,7 @@
 from typing import Dict, Any, List, Union
 
-from tonsdk.module import TonModule
-from tonsdk.types import KeyPair, TonMessage, TonMessageUnsigned
+from tonclient.module import TonModule
+from tonclient.types import KeyPair, TonMessage, TonMessageUnsigned
 
 
 class TonContract(TonModule):

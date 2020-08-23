@@ -1,11 +1,11 @@
 import asyncio
 from typing import Dict
 
-from tonsdk.bindings.lib import tc_create_context, tc_destroy_context
-from tonsdk.crypto import TonCrypto
-from tonsdk.module import TonModule
-from tonsdk.queries import TonQuery
-from tonsdk.contracts import TonContract
+from tonclient.bindings.lib import tc_create_context, tc_destroy_context
+from tonclient.crypto import TonCrypto
+from tonclient.module import TonModule
+from tonclient.queries import TonQuery
+from tonclient.contracts import TonContract
 
 DEVNET_BASE_URL = 'net.ton.dev'
 MAINNET_BASE_URL = 'main.ton.dev'

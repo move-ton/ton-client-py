@@ -1,7 +1,7 @@
 import json
 from typing import Any
 
-from tonsdk.module import TonModule
+from tonclient.module import TonModule
 
 
 class TonQueryBuilder(object):

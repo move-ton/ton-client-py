@@ -1,7 +1,7 @@
 from typing import Dict
 
-from tonsdk.module import TonModule
-from tonsdk.types import KeyPair, NACL_OUTPUT_HEX
+from tonclient.module import TonModule
+from tonclient.types import KeyPair, NACL_OUTPUT_HEX
 
 
 class TonCrypto(TonModule):
