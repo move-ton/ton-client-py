@@ -2,7 +2,7 @@ import asyncio
 import ctypes
 
 import json
-from typing import Any, Dict, Union
+from typing import Any, Dict, Union, Awaitable
 
 from tonsdk.bindings.lib import tc_json_request, tc_read_json_response, \
     tc_destroy_json_response, tc_json_request_async
@@ -16,9 +16,10 @@ class TonModule(object):
     All modules, such as 'crypto', 'contracts', etc. should be inherited
     from this class.
     """
-    def __init__(self, ctx: ctypes.c_int32):
+    def __init__(self, ctx: ctypes.c_int32, is_async: bool = False):
         self._ctx = ctx
         self._async_request_id = 1
+        self.is_async = is_async
 
     @staticmethod
     def _prepare_params(params_or_str, **kwargs):
@@ -33,9 +34,18 @@ class TonModule(object):
     def request(
             self, method: str,
             params_or_str: Union[str, Dict[str, Any]] = None, **kwargs) -> Any:
-        """ Fire TON lib request. Raise on error. """
-        # Make request, get response pointer and read it
+        # Prepare request params
         request_params = self._prepare_params(params_or_str, **kwargs)
+
+        # Make sync or async request
+        if self.is_async:
+            return self._request_async(
+                method=method, request_params=request_params)
+        return self._request(method=method, request_params=request_params)
+
+    def _request(self, method: str, request_params: str) -> Any:
+        """ Fire TON lib synchronous request. Raise on error. """
+        # Make request, get response pointer and read it
         response_ptr = tc_json_request(
             ctx=self._ctx, method=method, params_json=request_params)
         response = tc_read_json_response(handle=response_ptr)
@@ -50,9 +60,9 @@ class TonModule(object):
 
         return result_json
 
-    async def request_async(
-            self, method: str,
-            params_or_str: Union[str, Dict[str, Any]] = None, **kwargs):
+    async def _request_async(
+            self, method: str, request_params: str) -> Awaitable:
+        """ Fire TON lib asynchronous request. """
         loop = asyncio.get_running_loop()
         future = loop.create_future()
 
@@ -70,7 +80,6 @@ class TonModule(object):
                 'flags': flags
             })
 
-        request_params = self._prepare_params(params_or_str, **kwargs)
         tc_json_request_async(
             ctx=self._ctx, method=method, request_id=self._async_request_id,
             callback=_cb, params_json=request_params)
