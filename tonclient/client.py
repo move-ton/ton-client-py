@@ -1,5 +1,5 @@
 import asyncio
-from typing import Dict
+from typing import Dict, Union, Awaitable
 
 from tonclient.bindings.lib import tc_create_context, tc_destroy_context
 from tonclient.crypto import TonCrypto
@@ -24,9 +24,13 @@ TON_CLIENT_DEFAULT_SETUP = {
 
 class TonClientBase(TonModule):
     def setup(self, settings: Dict):
+        # Setup is always performed in sync mode
+        _mode = self.is_async
+        self.is_async = False
         self.request(method="setup", **settings)
+        self.is_async = _mode
 
-    def version(self) -> str:
+    def version(self) -> Union[str, Awaitable]:
         return self.request(method="version")
 
 
@@ -67,12 +71,3 @@ class TonClient(object):
 
     def destroy_context(self):
         tc_destroy_context(ctx=self._ctx)
-
-
-async def main():
-    t = TonClient(servers=[DEVNET_BASE_URL])
-    print(await t.base.request_async('crypto.mnemonic.from.random', wordCount=12))
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
