@@ -82,7 +82,8 @@ class TonModule(object):
             response.result_json = result_json
             response.error_json = error_json
 
-            result = result_cb(response.json) if result_cb else response.json
+            result = result_cb(response.json) \
+                if result_cb and response.is_success else response.json
             future.set_result({
                 'request_id': request_id,
                 'result': result,

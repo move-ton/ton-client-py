@@ -6,7 +6,7 @@ from tonclient.types import KeyPair, NACL_OUTPUT_HEX
 
 class TonCrypto(TonModule):
     """ Free TON crypto SDK API implementation """
-    def random_generate_bytes(self, length: int) -> str:
+    def random_generate_bytes(self, length: int) -> Union[str, Awaitable]:
         """
         :param length:
         :return: Random bytes of provided length as hex str
@@ -14,17 +14,21 @@ class TonCrypto(TonModule):
         return self.request(
             method="crypto.random.generateBytes", length=length)
 
-    def mnemonic_derive_sign_keys(self, mnemonic: str) -> KeyPair:
+    def mnemonic_derive_sign_keys(
+            self, mnemonic: str) -> Union[KeyPair, Awaitable]:
         """
         :param mnemonic: Mnemonic phrase
         :return: KeyPair object
         """
-        response = self.request(
-            method="crypto.mnemonic.derive.sign.keys", phrase=mnemonic,
-            wordCount=len(mnemonic.split(" ")))
-        return KeyPair(**response)
+        def __result_cb(data: Dict) -> KeyPair:
+            return KeyPair(**data)
 
-    def mnemonic_from_random(self, word_count: int = 24) -> str:
+        return self.request(
+            method="crypto.mnemonic.derive.sign.keys", phrase=mnemonic,
+            wordCount=len(mnemonic.split(" ")), result_cb=__result_cb)
+
+    def mnemonic_from_random(
+            self, word_count: int = 24) -> Union[str, Awaitable]:
         """
         Generate random mnemonic.
         :param word_count:
@@ -34,7 +38,8 @@ class TonCrypto(TonModule):
             method="crypto.mnemonic.from.random", wordCount=word_count)
 
     def mnemonic_from_entropy(
-            self, entropy_fmt: Dict[str, str], word_count: int = 24) -> str:
+                self, entropy_fmt: Dict[str, str], word_count: int = 24
+            ) -> Union[str, Awaitable]:
         """
         :param entropy_fmt: FmtString prepared dict
         :param word_count:
@@ -44,7 +49,7 @@ class TonCrypto(TonModule):
             method="crypto.mnemonic.from.entropy", wordCount=word_count,
             entropy=entropy_fmt)
 
-    def mnemonic_verify(self, mnemonic: str) -> bool:
+    def mnemonic_verify(self, mnemonic: str) -> Union[bool, Awaitable]:
         """
         :param mnemonic:
         :return: Is mnemonic phrase valid or not
@@ -53,27 +58,27 @@ class TonCrypto(TonModule):
             method="crypto.mnemonic.verify", phrase=mnemonic,
             wordCount=len(mnemonic.split(" ")))
 
-    def mnemonic_words(self) -> str:
+    def mnemonic_words(self) -> Union[str, Awaitable]:
         """
         :return: BIP39 wordlist as string
         """
         return self.request(method="crypto.mnemonic.words")
 
-    def ton_crc16(self, string_fmt: Dict[str, str]) -> int:
+    def ton_crc16(self, string_fmt: Dict[str, str]) -> Union[int, Awaitable]:
         """
         :param string_fmt: FmtString prepared dict
         :return:
         """
         return self.request(method="crypto.ton_crc16", **string_fmt)
 
-    def sha512(self, string_fmt: Dict[str, str]) -> str:
+    def sha512(self, string_fmt: Dict[str, str]) -> Union[str, Awaitable]:
         """
         :param string_fmt: FmtString prepared dict
         :return:
         """
         return self.request(method="crypto.sha512", message=string_fmt)
 
-    def sha256(self, string_fmt: Dict[str, str]) -> str:
+    def sha256(self, string_fmt: Dict[str, str]) -> Union[str, Awaitable]:
         """
         :param string_fmt: FmtString prepared dict
         :return:
@@ -81,8 +86,9 @@ class TonCrypto(TonModule):
         return self.request(method="crypto.sha256", message=string_fmt)
 
     def scrypt(
-            self, data: str, n: int, r: int, p: int, dk_len: int,
-            salt_fmt: Dict[str, str], password_fmt: Dict[str, str]) -> str:
+                self, data: str, n: int, r: int, p: int, dk_len: int,
+                salt_fmt: Dict[str, str], password_fmt: Dict[str, str]
+            ) -> Union[str, Awaitable]:
         """
         More info about scrypt: https://tools.ietf.org/html/rfc7914
         :param data: Data to encrypt
@@ -102,7 +108,7 @@ class TonCrypto(TonModule):
             method="crypto.scrypt", data=data, salt=salt_fmt,
             password=password_fmt, logN=n, r=r, p=p, dkLen=dk_len)
 
-    def hdkey_xprv_from_mnemonic(self, mnemonic: str) -> str:
+    def hdkey_xprv_from_mnemonic(self, mnemonic: str) -> Union[str, Awaitable]:
         """
         Get BIP32 key from mnemonic
         :param mnemonic:
@@ -112,7 +118,7 @@ class TonCrypto(TonModule):
             method="crypto.hdkey.xprv.from.mnemonic", phrase=mnemonic,
             wordCount=len(mnemonic.split(" ")))
 
-    def hdkey_xprv_secret(self, bip32_key: str) -> str:
+    def hdkey_xprv_secret(self, bip32_key: str) -> Union[str, Awaitable]:
         """
         Get private key from BIP32 key
         :param bip32_key:
@@ -121,7 +127,7 @@ class TonCrypto(TonModule):
         return self.request(
             method="crypto.hdkey.xprv.secret", serialized=bip32_key)
 
-    def hdkey_xprv_public(self, bip32_key: str) -> str:
+    def hdkey_xprv_public(self, bip32_key: str) -> Union[str, Awaitable]:
         """
         Get public key from BIP32 key
         :param bip32_key:
@@ -130,7 +136,8 @@ class TonCrypto(TonModule):
         return self.request(
             method="crypto.hdkey.xprv.public", serialized=bip32_key)
 
-    def hdkey_xprv_derive_path(self, bip32_key: str, derive_path: str) -> str:
+    def hdkey_xprv_derive_path(
+            self, bip32_key: str, derive_path: str) -> Union[str, Awaitable]:
         """
         :param bip32_key:
         :param derive_path:
@@ -140,7 +147,8 @@ class TonCrypto(TonModule):
             method="crypto.hdkey.xprv.derive.path", serialized=bip32_key,
             path=derive_path)
 
-    def hdkey_xprv_derive(self, bip32_key: str, index: int) -> str:
+    def hdkey_xprv_derive(
+            self, bip32_key: str, index: int) -> Union[str, Awaitable]:
         """
         :param bip32_key:
         :param index:
@@ -150,14 +158,14 @@ class TonCrypto(TonModule):
             method="crypto.hdkey.xprv.derive", serialized=bip32_key,
             index=index)
 
-    def factorize(self, number: str) -> Dict[str, str]:
+    def factorize(self, number: str) -> Union[Dict[str, str], Awaitable]:
         """
         :param number:
         :return:
         """
         return self.request("crypto.math.factorize", number)
 
-    def ton_public_key_string(self, public_key: str) -> str:
+    def ton_public_key_string(self, public_key: str) -> Union[str, Awaitable]:
         """
         :param public_key:
         :return:
@@ -166,14 +174,15 @@ class TonCrypto(TonModule):
 
     def ed25519_keypair(self) -> Union[KeyPair, Awaitable]:
         """ Generate ed25519 keypair """
-        def __result_cb(data: Dict):
+        def __result_cb(data: Dict) -> KeyPair:
             return KeyPair(**data)
 
         return self.request(
             method="crypto.ed25519.keypair", result_cb=__result_cb)
 
     def math_modular_power(
-            self, base: int, exponent: int, modulus: int) -> str:
+                self, base: int, exponent: int, modulus: int
+            ) -> Union[str, Awaitable]:
         """
         :param base:
         :param exponent:
@@ -187,40 +196,54 @@ class TonCrypto(TonModule):
             method="crypto.math.modularPower", base=str(base),
             exponent=str(exponent), modulus=str(modulus))
 
-    def nacl_box_keypair(self) -> KeyPair:
+    def nacl_box_keypair(self) -> Union[KeyPair, Awaitable]:
         """ Generate nacl box keypair """
-        response = self.request(method="crypto.nacl.box.keypair")
-        return KeyPair(**response)
+        def __result_cb(data: Dict) -> KeyPair:
+            return KeyPair(**data)
 
-    def nacl_box_keypair_from_secret_key(self, secret_key: str) -> KeyPair:
+        return self.request(
+            method="crypto.nacl.box.keypair", result_cb=__result_cb)
+
+    def nacl_box_keypair_from_secret_key(
+            self, secret_key: str) -> Union[KeyPair, Awaitable]:
         """
         Generate nacl box keypair from secret key
         :param secret_key:
         :return:
         """
-        response = self.request(
-            "crypto.nacl.box.keypair.fromSecretKey", secret_key)
-        return KeyPair(**response)
+        def __result_cb(data: Dict) -> KeyPair:
+            return KeyPair(**data)
 
-    def nacl_sign_keypair(self) -> KeyPair:
+        return self.request(
+            "crypto.nacl.box.keypair.fromSecretKey", secret_key,
+            result_cb=__result_cb)
+
+    def nacl_sign_keypair(self) -> Union[KeyPair, Awaitable]:
         """ Generate nacl sign keypair """
-        response = self.request(method="crypto.nacl.sign.keypair")
-        return KeyPair(**response)
+        def __result_cb(data: Dict) -> KeyPair:
+            return KeyPair(**data)
 
-    def nacl_sign_keypair_from_secret_key(self, secret_key: str) -> KeyPair:
+        return self.request(
+            method="crypto.nacl.sign.keypair", result_cb=__result_cb)
+
+    def nacl_sign_keypair_from_secret_key(
+            self, secret_key: str) -> Union[KeyPair, Awaitable]:
         """
         Generate nacl sign keypair from secret key
         :param secret_key:
         :return:
         """
-        response = self.request(
-            "crypto.nacl.sign.keypair.fromSecretKey", secret_key)
-        return KeyPair(**response)
+        def __result_cb(data: Dict) -> KeyPair:
+            return KeyPair(**data)
+
+        return self.request(
+            "crypto.nacl.sign.keypair.fromSecretKey", secret_key,
+            result_cb=__result_cb)
 
     def nacl_box(
                 self, nonce: str, their_public: str, secret: str,
                 message_fmt: Dict[str, str], output_fmt: str = NACL_OUTPUT_HEX
-            ) -> str:
+            ) -> Union[str, Awaitable]:
         """
         :param nonce:
         :param their_public:
@@ -236,7 +259,7 @@ class TonCrypto(TonModule):
     def nacl_box_open(
                 self, nonce: str, their_public: str, secret: str,
                 message_fmt: Dict[str, str], output_fmt: str = NACL_OUTPUT_HEX
-            ) -> str:
+            ) -> Union[str, Awaitable]:
         """
         :param nonce:
         :param their_public:
@@ -252,7 +275,7 @@ class TonCrypto(TonModule):
 
     def nacl_sign(
             self, secret: str, message_fmt: Dict[str, str],
-            output_fmt: str = NACL_OUTPUT_HEX) -> str:
+            output_fmt: str = NACL_OUTPUT_HEX) -> Union[str, Awaitable]:
         """
         :param secret:
         :param message_fmt:
@@ -265,7 +288,7 @@ class TonCrypto(TonModule):
 
     def nacl_sign_open(
             self, public: str, message_fmt: Dict[str, str],
-            output_fmt: str = NACL_OUTPUT_HEX) -> str:
+            output_fmt: str = NACL_OUTPUT_HEX) -> Union[str, Awaitable]:
         """
         :param public:
         :param message_fmt:
@@ -278,7 +301,7 @@ class TonCrypto(TonModule):
 
     def nacl_sign_detached(
             self, secret: str, message_fmt: Dict[str, str],
-            output_fmt: str = NACL_OUTPUT_HEX) -> str:
+            output_fmt: str = NACL_OUTPUT_HEX) -> Union[str, Awaitable]:
         """
         :param secret:
         :param message_fmt:
@@ -291,7 +314,7 @@ class TonCrypto(TonModule):
 
     def nacl_secret_box(
             self, nonce: str, key: str, message_fmt: Dict[str, str],
-            output_fmt: str = NACL_OUTPUT_HEX) -> str:
+            output_fmt: str = NACL_OUTPUT_HEX) -> Union[str, Awaitable]:
         """
         :param nonce:
         :param key:
@@ -305,7 +328,7 @@ class TonCrypto(TonModule):
 
     def nacl_secret_box_open(
             self, nonce: str, key: str, message_fmt: Dict[str, str],
-            output_fmt: str = NACL_OUTPUT_HEX) -> str:
+            output_fmt: str = NACL_OUTPUT_HEX) -> Union[str, Awaitable]:
         """
         :param nonce:
         :param key:
