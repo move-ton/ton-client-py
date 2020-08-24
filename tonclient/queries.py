@@ -1,5 +1,5 @@
 import json
-from typing import Any
+from typing import Any, Union, Awaitable, Dict
 
 from tonclient.module import TonModule
 
@@ -87,50 +87,63 @@ class TonQueryBuilder(object):
 
 class TonQuery(TonModule):
     """ Free TON queries SDK API implementation """
-    def query(self, query: TonQueryBuilder) -> Any:
+    def query(self, query: TonQueryBuilder) -> Union[Any, Awaitable]:
         """
         :param query:
         :return:
         """
-        result = self.request(
+        def __result_cb(data: Dict) -> Any:
+            return data["result"]
+
+        return self.request(
             method="queries.query", table=query.ql_table,
             filter=query.ql_filter, result=query.ql_result,
-            order=query.ql_order, limit=query.ql_limit)
-        return result["result"]
+            order=query.ql_order, limit=query.ql_limit, result_cb=__result_cb)
 
-    def wait_for(self, query: TonQueryBuilder, timeout: int = None) -> Any:
+    def wait_for(
+                self, query: TonQueryBuilder, timeout: int = None
+            ) -> Union[Any, Awaitable]:
         """
         :param query:
         :param timeout:
         :return:
         """
-        result = self.request(
+        def __result_cb(data: Dict) -> Any:
+            return data["result"]
+
+        return self.request(
             method="queries.wait.for", table=query.ql_table,
             filter=query.ql_filter, result=query.ql_result,
-            order=query.ql_order, limit=query.ql_limit, timeout=timeout)
-        return result["result"]
+            order=query.ql_order, limit=query.ql_limit, timeout=timeout,
+            result_cb=__result_cb)
 
-    def subscribe(self, query: TonQueryBuilder) -> int:
+    def subscribe(self, query: TonQueryBuilder) -> Union[int, Awaitable]:
         """
         Notice that query 'order_by' and 'limit' are not working for this
         method.
         :param query:
         :return: Handle index
         """
-        result = self.request(
-            method="queries.subscribe", table=query.ql_table,
-            filter=query.ql_filter, result=query.ql_result)
-        return result["handle"]
+        def __result_cb(data: Dict) -> Any:
+            return data["handle"]
 
-    def get_next(self, handle: int) -> Any:
+        return self.request(
+            method="queries.subscribe", table=query.ql_table,
+            filter=query.ql_filter, result=query.ql_result,
+            result_cb=__result_cb)
+
+    def get_next(self, handle: int) -> Union[Any, Awaitable]:
         """
         :param handle:
         :return:
         """
-        result = self.request(method="queries.get.next", handle=handle)
-        return result["result"]
+        def __result_cb(data: Dict) -> Any:
+            return data["result"]
 
-    def unsubscribe(self, handle: int) -> None:
+        return self.request(
+            method="queries.get.next", handle=handle, result_cb=__result_cb)
+
+    def unsubscribe(self, handle: int) -> Union[None, Awaitable]:
         """
         :param handle:
         :return:
