@@ -1,4 +1,4 @@
-from typing import Dict, Any, List, Union
+from typing import Dict, Any, List, Union, Awaitable, Tuple
 
 from tonclient.module import TonModule
 from tonclient.types import KeyPair, TonMessage, TonMessageUnsigned
@@ -9,7 +9,7 @@ class TonContract(TonModule):
     Free TON contracts SDK API implementation
     https://github.com/tonlabs/TON-SDK/wiki/
     """
-    def load(self, address: str) -> Dict[str, str]:
+    def load(self, address: str) -> Union[Dict[str, str], Awaitable]:
         """
         Load contract
         :param address:
@@ -20,7 +20,7 @@ class TonContract(TonModule):
     def deploy_address(
                 self, abi: Dict[str, Any], image_b64: str, keypair: KeyPair,
                 init_params: Dict[str, Any] = None, workchain_id: int = None
-            ) -> str:
+            ) -> Union[str, Awaitable]:
         """
         Get contract address
         :param abi:
@@ -37,7 +37,7 @@ class TonContract(TonModule):
 
     def address_convert(
             self, address: str, to: str,
-            b64_params: Dict[str, bool] = None) -> str:
+            b64_params: Dict[str, bool] = None) -> Union[str, Awaitable]:
         """
         :param address:
         :param to: Convert to. One of 'AccountId', 'Hex', 'Base64'
@@ -46,17 +46,20 @@ class TonContract(TonModule):
                            All keys must be specified.
         :return:
         """
-        response = self.request(
+        def __result_cb(data: Dict[str, Any]) -> str:
+            return data["address"]
+
+        return self.request(
             method="contracts.address.convert", address=address, convertTo=to,
-            base64Params=b64_params)
-        return response["address"]
+            base64Params=b64_params, result_cb=__result_cb)
 
     def deploy_message(
-            self, abi: Dict[str, Any], image_b64: str, keypair: KeyPair,
-            constructor_params: Dict[str, Any] = None,
-            constructor_header: Dict[str, Any] = None,
-            init_params: Dict[str, Any] = None,
-            workchain_id: int = None, try_index: int = None) -> TonMessage:
+                self, abi: Dict[str, Any], image_b64: str, keypair: KeyPair,
+                constructor_params: Dict[str, Any] = None,
+                constructor_header: Dict[str, Any] = None,
+                init_params: Dict[str, Any] = None,
+                workchain_id: int = None, try_index: int = None
+            ) -> Union[TonMessage, Awaitable]:
         """
         This method is a part of the standard deploy script and is used to
         create a message to the blockchain to get a contract address before
@@ -87,11 +90,12 @@ class TonContract(TonModule):
             workchainId=workchain_id, tryIndex=try_index)
 
     def deploy_encode_unsigned_message(
-            self, abi: Dict[str, Any], image_b64: str, public: str,
-            constructor_header: Dict[str, Any] = None,
-            constructor_params: Dict[str, Any] = None,
-            init_params: Dict = None, workchain_id: int = None,
-            try_index: int = None) -> (TonMessageUnsigned, str):
+                self, abi: Dict[str, Any], image_b64: str, public: str,
+                constructor_header: Dict[str, Any] = None,
+                constructor_params: Dict[str, Any] = None,
+                init_params: Dict = None, workchain_id: int = None,
+                try_index: int = None
+            ) -> Union[Tuple[TonMessageUnsigned, str], Awaitable]:
         """
         This function allows creating a separate deploy message
         without a signature.
@@ -110,18 +114,22 @@ class TonContract(TonModule):
         :param try_index:
         :return:
         """
-        response = self.request(
+        def __result_cb(
+                data: Dict[str, Any]) -> Tuple[TonMessageUnsigned, str]:
+            return data["encoded"], data["addressHex"]
+
+        return self.request(
             method="contracts.deploy.encode_unsigned_message", abi=abi,
             imageBase64=image_b64, publicKeyHex=public,
             constructorHeader=constructor_header,
             constructorParams=constructor_params or {}, initParams=init_params,
-            workchainId=workchain_id, tryIndex=try_index)
-        return response["encoded"], response["addressHex"]
+            workchainId=workchain_id, tryIndex=try_index,
+            result_cb=__result_cb)
 
     def deploy_data(
             self, public: str, abi: Dict[str, Any] = None,
             image_b64: str = None, init_params: Dict[str, Any] = None,
-            workchain_id: int = None) -> Dict[str, Any]:
+            workchain_id: int = None) -> Union[Dict[str, Any], Awaitable]:
         """
         :param abi:
         :param image_b64:
@@ -140,7 +148,7 @@ class TonContract(TonModule):
             constructor_params: Dict[str, Any] = None,
             constructor_header: Dict[str, Any] = None,
             init_params: Dict[str, Any] = None, workchain_id: int = None,
-            try_index: str = None) -> Dict[str, Any]:
+            try_index: str = None) -> Union[Dict[str, Any], Awaitable]:
         """
         Deploy contract to blockchain
         :param abi:
@@ -165,9 +173,10 @@ class TonContract(TonModule):
             workchainId=workchain_id, tryIndex=try_index)
 
     def run_message(
-            self, address: str, abi: Dict[str, Any], function_name: str,
-            headers: Dict[str, Any] = None, inputs: Dict[str, Any] = None,
-            keypair: KeyPair = None, try_index: int = None) -> TonMessage:
+                self, address: str, abi: Dict[str, Any], function_name: str,
+                headers: Dict[str, Any] = None, inputs: Dict[str, Any] = None,
+                keypair: KeyPair = None, try_index: int = None
+            ) -> Union[TonMessage, Awaitable]:
         """
         This method is similar to 'deploy_message' but it applies to active
         contracts.
@@ -193,7 +202,7 @@ class TonContract(TonModule):
     def run_encode_unsigned_message(
             self, address: str, abi: Dict[str, Any], function_name: str,
             headers: Dict[str, Any] = None, inputs: Dict[str, Any] = None,
-            try_index: int = None) -> TonMessageUnsigned:
+            try_index: int = None) -> Union[TonMessageUnsigned, Awaitable]:
         """
         This method works similarly to the 'deploy_message_unsigned', but
         it is designed to create a message returning the ID of the public
@@ -214,9 +223,10 @@ class TonContract(TonModule):
             input=inputs or {}, tryIndex=try_index)
 
     def run_body(
-            self, abi: Dict[str, Any], function_name: str,
-            headers: Dict[str, Any] = None, inputs: Dict[str, Any] = None,
-            keypair: KeyPair = None, internal: bool = False) -> str:
+                self, abi: Dict[str, Any], function_name: str,
+                headers: Dict[str, Any] = None, inputs: Dict[str, Any] = None,
+                keypair: KeyPair = None, internal: bool = False
+            ) -> Union[str, Awaitable]:
         """
         Creates only a message body with parameters encoded according
         to the ABI.
@@ -228,19 +238,22 @@ class TonContract(TonModule):
         :param headers:
         :return:
         """
+        def __result_cb(data: Dict[str, Any]) -> str:
+            return data["bodyBase64"]
+
         if keypair:
             keypair = keypair.dict
 
-        result = self.request(
+        return self.request(
             method="contracts.run.body", abi=abi, function=function_name,
             header=headers, params=inputs or {}, internal=internal,
-            keyPair=keypair)
-        return result["bodyBase64"]
+            keyPair=keypair, result_cb=__result_cb)
 
     def run(
-            self, address: str, abi: Dict[str, Any], function_name: str,
-            headers: Dict[str, Any] = None, inputs: Dict[str, Any] = None,
-            keypair: KeyPair = None, try_index: int = None) -> Dict[str, Any]:
+                self, address: str, abi: Dict[str, Any], function_name: str,
+                headers: Dict[str, Any] = None, inputs: Dict[str, Any] = None,
+                keypair: KeyPair = None, try_index: int = None
+            ) -> Union[Dict[str, Any], Awaitable]:
         """
         This method is used to call contract methods within the blockchain.
         Calling run creates a message with the following serialized parameters
@@ -266,9 +279,10 @@ class TonContract(TonModule):
             keyPair=keypair, tryIndex=try_index)
 
     def run_local_message(
-            self, address: str, message_b64: str, account: str = None,
-            abi: Dict[str, Any] = None, function_name: str = None,
-            full_run: bool = False, time: int = None) -> Dict[str, Any]:
+                self, address: str, message_b64: str, account: str = None,
+                abi: Dict[str, Any] = None, function_name: str = None,
+                full_run: bool = False, time: int = None
+            ) -> Union[Dict[str, Any], Awaitable]:
         """
         :param abi:
         :param address:
@@ -285,10 +299,11 @@ class TonContract(TonModule):
             functionName=function_name, fullRun=full_run, time=time)
 
     def run_local(
-            self, address: str, abi: str, function_name: str,
-            headers: Dict[str, Any] = None, inputs: Dict[str, Any] = None,
-            account: str = None, keypair: KeyPair = None,
-            full_run: bool = False, time: int = None) -> Dict[str, Any]:
+                self, address: str, abi: str, function_name: str,
+                headers: Dict[str, Any] = None, inputs: Dict[str, Any] = None,
+                account: str = None, keypair: KeyPair = None,
+                full_run: bool = False, time: int = None
+            ) -> Union[Dict[str, Any], Awaitable]:
         """
         :param address:
         :param abi:
@@ -311,7 +326,7 @@ class TonContract(TonModule):
 
     def run_output(
             self, abi: Dict[str, Any], function_name: str, body_b64: str,
-            internal: bool = False) -> Dict[str, Any]:
+            internal: bool = False) -> Union[Dict[str, Any], Awaitable]:
         """
         Decode a response message from a called contract.
         :param abi:
@@ -320,15 +335,18 @@ class TonContract(TonModule):
         :param internal:
         :return:
         """
-        result = self.request(
+        def __result_cb(data: Dict[str, Any]) -> Dict[str, Any]:
+            return data["output"]
+
+        return self.request(
             method="contracts.run.output", abi=abi, functionName=function_name,
-            bodyBase64=body_b64, internal=internal)
-        return result["output"]
+            bodyBase64=body_b64, internal=internal, result_cb=__result_cb)
 
     def run_fee(
-            self, address: str, abi: Dict[str, Any], function_name: str,
-            headers: Dict[str, Any] = None, inputs: Dict[str, Any] = None,
-            keypair: KeyPair = None, try_index: int = None) -> Dict[str, Any]:
+                self, address: str, abi: Dict[str, Any], function_name: str,
+                headers: Dict[str, Any] = None, inputs: Dict[str, Any] = None,
+                keypair: KeyPair = None, try_index: int = None
+            ) -> Union[Dict[str, Any], Awaitable]:
         """
         :param address:
         :param abi:
@@ -348,9 +366,10 @@ class TonContract(TonModule):
             keyPair=keypair, tryIndex=try_index)
 
     def run_fee_message(
-            self, address: str, message_b64: str, account: str = None,
-            abi: [str, Dict] = None, function_name: str = None,
-            full_run: bool = False, time: int = None) -> Dict[str, Any]:
+                self, address: str, message_b64: str, account: str = None,
+                abi: [str, Dict] = None, function_name: str = None,
+                full_run: bool = False, time: int = None
+            ) -> Union[Dict[str, Any], Awaitable]:
         """
         :param address:
         :param message_b64: Message body base64
@@ -368,7 +387,7 @@ class TonContract(TonModule):
 
     def run_unknown_input(
             self, abi: Dict[str, Any], body_b64: str,
-            internal: bool = False) -> Dict[str, Any]:
+            internal: bool = False) -> Union[Dict[str, Any], Awaitable]:
         """
         :param abi:
         :param body_b64: Body base64
@@ -381,7 +400,7 @@ class TonContract(TonModule):
 
     def run_unknown_output(
             self, abi: Dict[str, Any], body_b64: str,
-            internal: bool = False) -> Dict[str, Any]:
+            internal: bool = False) -> Union[Dict[str, Any], Awaitable]:
         """
         :param abi:
         :param body_b64: Body base64
@@ -394,7 +413,7 @@ class TonContract(TonModule):
 
     def encode_message_with_sign(
             self, abi: Dict[str, Any], message: TonMessageUnsigned,
-            public: str = None) -> TonMessage:
+            public: str = None) -> Union[TonMessage, Awaitable]:
         """
         This method can also be used used in distributed architectures
         where message signing is carried out externally.
@@ -407,7 +426,7 @@ class TonContract(TonModule):
             method="contracts.encode_message_with_sign", abi=abi,
             publicKeyHex=public, **message)
 
-    def parse_message(self, boc_b64: str) -> Dict[str, Any]:
+    def parse_message(self, boc_b64: str) -> Union[Dict[str, Any], Awaitable]:
         """
         Parse message from BOC
         :param boc_b64: Message BOC base64
@@ -418,7 +437,7 @@ class TonContract(TonModule):
 
     def function_id(
             self, abi: Dict[str, Any], function_name: str,
-            inputs: bool = False) -> int:
+            inputs: bool = False) -> Union[int, Awaitable]:
         """
         Get contract function id.
         :param abi:
@@ -426,14 +445,16 @@ class TonContract(TonModule):
         :param inputs:
         :return:
         """
-        result = self.request(
+        def __result_cb(data: Dict[str, Any]) -> int:
+            return data["id"]
+
+        return self.request(
             method="contracts.function.id", abi=abi, function=function_name,
-            input=inputs)
-        return result["id"]
+            input=inputs, result_cb=__result_cb)
 
     def find_shard(
                 self, address: str, shards: List[Dict[str, Union[int, str]]]
-            ) -> Dict[str, Any]:
+            ) -> Union[Dict[str, Any], Awaitable]:
         """
         :param address:
         :param shards: Shard dict is {"workchain_id": int, "shard": str}
@@ -442,7 +463,8 @@ class TonContract(TonModule):
         return self.request(
             method="contracts.find.shard", address=address, shards=shards)
 
-    def send_message(self, message: TonMessage) -> Dict[str, Any]:
+    def send_message(
+            self, message: TonMessage) -> Union[Dict[str, Any], Awaitable]:
         """
         Method sends messages to the node without waiting for the result.
         :param message:
@@ -454,7 +476,7 @@ class TonContract(TonModule):
     def process_message(
                 self, message: TonMessage, abi: Dict[str, Any] = None,
                 function_name: str = None, infinite_wait: bool = False
-            ) -> Dict[str, Any]:
+            ) -> Union[Dict[str, Any], Awaitable]:
         """
         Method sends messages to the node and waits for the result.
         :param function_name: Required if argument 'abi' was provided
@@ -471,7 +493,7 @@ class TonContract(TonModule):
     def process_transaction(
                 self, address: str, transaction: Dict[str, Any],
                 abi: Dict[str, Any] = None, function_name: str = None
-            ) -> Dict[str, Any]:
+            ) -> Union[Dict[str, Any], Awaitable]:
         """
         :param address:
         :param abi:
@@ -488,7 +510,7 @@ class TonContract(TonModule):
     def wait_transaction(
             self, message: TonMessage, state: Dict[str, Union[str, int]],
             abi: Dict[str, Any] = None, function_name: str = None,
-            infinite_wait: bool = False) -> Dict[str, Any]:
+            infinite_wait: bool = False) -> Union[Dict[str, Any], Awaitable]:
         """
         :param message: Message dict is
                 {"address": str, "messageId": str, "messageBodyBase64": str,
@@ -510,7 +532,7 @@ class TonContract(TonModule):
             self, function_name: str, boc_b64: str = None,
             code_b64: str = None, data_b64: str = None,
             inputs: List[Any] = None, address: str = None, balance: str = None,
-            last_paid: int = None) -> Dict[str, Any]:
+            last_paid: int = None) -> Union[Dict[str, Any], Awaitable]:
         """
         :param function_name:
         :param boc_b64: BOC base64
@@ -528,8 +550,9 @@ class TonContract(TonModule):
             address=address, balance=balance, lastPaid=last_paid)
 
     def resolve_error(
-            self, address: str, account: Dict[str, Any], message_b64: str,
-            time: int, error: Dict[str, Any]):
+                self, address: str, account: Dict[str, Any], message_b64: str,
+                time: int, error: Dict[str, Any]
+            ) -> Union[Dict[str, Any], Awaitable]:
         """
         :param address:
         :param account:
