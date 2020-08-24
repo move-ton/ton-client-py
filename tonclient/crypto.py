@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Union, Awaitable
 
 from tonclient.module import TonModule
 from tonclient.types import KeyPair, NACL_OUTPUT_HEX
@@ -164,17 +164,13 @@ class TonCrypto(TonModule):
         """
         return self.request("crypto.ton_public_key_string", public_key)
 
-    def ed25519_keypair(self) -> KeyPair:
+    def ed25519_keypair(self) -> Union[KeyPair, Awaitable]:
         """ Generate ed25519 keypair """
-        def __async_result(data: Dict):
+        def __result_cb(data: Dict):
             return KeyPair(**data)
 
-        result = self.request(
-            method="crypto.ed25519.keypair", result_cb=__async_result)
-        if self.is_async:
-            return result
-
-        return KeyPair(**result)
+        return self.request(
+            method="crypto.ed25519.keypair", result_cb=__result_cb)
 
     def math_modular_power(
             self, base: int, exponent: int, modulus: int) -> str:

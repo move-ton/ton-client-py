@@ -39,13 +39,18 @@ class TonModule(object):
         request_params = self._prepare_params(params_or_str, **kwargs)
 
         # Make sync or async request
+        kwargs = {
+            "method": method,
+            "request_params": request_params,
+            "result_cb": result_cb
+        }
         if self.is_async:
-            return self._request_async(
-                method=method, request_params=request_params,
-                result_cb=result_cb)
-        return self._request(method=method, request_params=request_params)
+            return self._request_async(**kwargs)
+        return self._request(**kwargs)
 
-    def _request(self, method: str, request_params: str) -> Any:
+    def _request(
+            self, method: str, request_params: str,
+            result_cb: Callable = None) -> Any:
         """ Fire TON lib synchronous request. Raise on error. """
         # Make request, get response pointer and read it
         response_ptr = tc_json_request(
@@ -60,7 +65,7 @@ class TonModule(object):
         if not is_success:
             raise TonException(result_json)
 
-        return result_json
+        return result_cb(result_json) if result_cb else result_json
 
     async def _request_async(
             self, method: str, request_params: str,
