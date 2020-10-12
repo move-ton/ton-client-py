@@ -1,7 +1,7 @@
 from typing import Dict, Any
 
 from tonclient.module import TonModule
-from tonclient.types import Abi, Signer, DeploySet, CallSet
+from tonclient.types import Abi, Signer, DeploySet, CallSet, StateInitSource
 
 
 class TonAbi(TonModule):
@@ -15,9 +15,20 @@ class TonAbi(TonModule):
         return self.request(
             function_name='abi.decode_message', abi=abi.dict, message=message)
 
-    # TODO: Implement method and test
-    def encode_account(self):
-        pass
+    def encode_account(
+            self, state_init: StateInitSource, balance: int = None,
+            last_trans_lt: int = None, last_paid: int = None
+    ) -> Dict[str, str]:
+        """
+        :param state_init: Source of the account state init
+        :param balance: Initial balance
+        :param last_trans_lt: Initial value for the 'last_trans_lt'
+        :param last_paid: Initial value for the 'last_paid'
+        :return:
+        """
+        return self.request(
+            function_name='abi.encode_account', state_init=state_init.dict,
+            balance=balance, last_trans_lt=last_trans_lt, last_paid=last_paid)
 
     def encode_message(
             self, abi: Abi, signer: Signer, address: str = None,

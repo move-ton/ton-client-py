@@ -71,25 +71,40 @@ class KeyPair(object):
 
 
 class Abi(object):
-    def __init__(self, abi: Union[Dict, int]):
-        self._abi = abi
+    def __init__(self, abi: Union[Dict, str, int], abi_type: str):
+        """
+        :param abi: ABI dict, ABI JSON string or handle
+        :param abi_type: One of 'Serialized', 'Handle'
+        """
+        self.abi = abi
+        self.abi_type = abi_type
 
     @property
     def dict(self):
-        if type(self._abi) is dict:
-            return {'Serialized': self._abi}
-        elif type(self._abi) is int:
-            return {'Handle': self._abi}
-        raise ValueError('ABI should be a dict or int')
+        if type(self.abi) is str:
+            self.abi = json.loads(self.abi)
+        return {self.abi_type: self.abi}
 
     @staticmethod
-    def load(path: str) -> 'Abi':
+    def from_dict(abi: Dict[str, Any]) -> 'Abi':
+        return Abi(abi=abi, abi_type='Serialized')
+
+    @staticmethod
+    def from_json_string(abi_json: str) -> 'Abi':
+        return Abi(abi=json.loads(abi_json), abi_type='Serialized')
+
+    @staticmethod
+    def from_json_path(path: str) -> 'Abi':
         with open(path, 'r') as fp:
-            return Abi(abi=json.loads(fp.read()))
+            return Abi(abi=json.loads(fp.read()), abi_type='Serialized')
+
+    @staticmethod
+    def from_handle(handle: int) -> 'Abi':
+        return Abi(abi=handle, abi_type='Handle')
 
 
 class Signer(object):
-    def __init__(self, data: Union[KeyPair, str, int]):
+    def __init__(self, data: Union[KeyPair, str, int],  data_type: str):
         """
         :param data:
                 - KeyPair: message will be signed using the
@@ -97,18 +112,28 @@ class Signer(object):
                 - str: message will be signed using external methods. Public
                   key must be provided with 'hex' encoding;
                 - int: message will be signed using the provided signing box
+        :param data_type: One of 'WithKeys', 'External', 'Box'
         """
-        self._data = data
+        self.data = data
+        self.data_type = data_type
 
     @property
     def dict(self):
-        if type(self._data) is KeyPair:
-            return {'WithKeys': self._data.dict}
-        elif type(self._data) is str:
-            return {'External': self._data}
-        elif type(self._data) is int:
-            return {'Box': self._data}
-        raise ValueError('Signer should be a Keypair, str or int')
+        if type(self.data) is KeyPair:
+            self.data = self.data.dict
+        return {self.data_type: self.data}
+
+    @staticmethod
+    def from_keypair(keypair: KeyPair) -> 'Signer':
+        return Signer(data=keypair, data_type='WithKeys')
+
+    @staticmethod
+    def from_external(public: str) -> 'Signer':
+        return Signer(data=public, data_type='External')
+
+    @staticmethod
+    def from_box(box: int) -> 'Signer':
+        return Signer(data=box, data_type='Box')
 
 
 class DeploySet(object):
@@ -155,3 +180,86 @@ class CallSet(object):
             'header': self.header,
             'input': self.input
         }
+
+
+class MessageSource(object):
+    def __init__(self, source_type: str, **kwargs):
+        """
+        :param source_type: One of 'Encoded', 'EncodingParams'
+        :param kwargs:
+        """
+        self.source_type = source_type
+        self._kwargs = kwargs
+        for name, value in kwargs.items():
+            setattr(self, name, value)
+
+    @property
+    def dict(self):
+        params = {
+            key: value.dict if hasattr(value, 'dict') else value
+            for key, value in self._kwargs.items()
+        }
+        return {self.source_type: params}
+
+    @staticmethod
+    def from_encoded(message: str, abi: Abi = None) -> 'MessageSource':
+        return MessageSource(source_type='Encoded', message=message, abi=abi)
+
+    @staticmethod
+    def from_encoding_params(**kwargs) -> 'MessageSource':
+        """
+        :param kwargs: The same kwargs as for 'abi.encode_message' method
+        :return:
+        """
+        return MessageSource(source_type='EncodingParams', **kwargs)
+
+
+class StateInitSource(object):
+    def __init__(self, source_type: str, **kwargs):
+        """
+        :param source_type: One of 'Message', 'StateInit', 'Tvc'
+        """
+        self.source_type = source_type
+        self._kwargs = kwargs
+
+    @property
+    def dict(self):
+        return {self.source_type: self._kwargs}
+
+    @staticmethod
+    def from_message(message: MessageSource) -> 'StateInitSource':
+        """
+        :param message: Deploy message
+        :return:
+        """
+        return StateInitSource(source_type='Message', **message.dict)
+
+    @staticmethod
+    def from_state_init(
+            code: str, data: str, library: str = None) -> 'StateInitSource':
+        """
+        :param code: Base64 encoded code BOC
+        :param data: Base64 encoded data BOC
+        :param library: Base64 encoded library BOC
+        :return:
+        """
+        return StateInitSource(
+            source_type='StateInit', code=code, data=data, library=library)
+
+    @staticmethod
+    def from_tvc(
+            tvc: str, public_key: str = None, abi: Abi = None,
+            value: Any = None) -> 'StateInitSource':
+        """
+        :param tvc: Base64 encoded TVC data
+        :param public_key: Hex encoded public key
+        :param abi: Contract ABI
+        :param value: Value to pass. If provided 'abi' is required
+        :return:
+        """
+        init_params = None
+        if abi and value:
+            init_params = {'abi': abi.dict, 'value': value}
+        return StateInitSource(
+            source_type='Tvc', tvc=tvc, public_key=public_key,
+            init_params=init_params)

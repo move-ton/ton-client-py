@@ -10,7 +10,7 @@ logger = logging.getLogger("TonQueriesTest")
 client = TonClient(network={'server_address': DEVNET_BASE_URL})
 
 
-class TestQueries(unittest.TestCase):
+class TestTonNet(unittest.TestCase):
     def test_query_collection(self):
         query = TonQLQuery(collection='blocks_signatures') \
             .set_result('id').set_limit(1)

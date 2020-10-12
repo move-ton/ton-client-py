@@ -43,7 +43,7 @@ class TestKeyPairType(unittest.TestCase):
         stream.close()
 
 
-class TestCrypto(unittest.TestCase):
+class TestTonCrypto(unittest.TestCase):
     def setUp(self) -> None:
         self.mnemonic = 'abuse boss fly battle rubber wasp afraid hamster guide essence vibrant tattoo'
         self.master_xprv = 'xprv9s21ZrQH143K25JhKqEwvJW7QAiVvkmi4WRenBZanA6kxHKtKAQQKwZG65kCyW5jWJ8NY9e3GkRoistUjjcpHNsGBUv94istDPXvqGNuWpC'
