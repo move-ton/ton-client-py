@@ -10,6 +10,8 @@ from tonclient.module import TonModule
 from tonclient.crypto import TonCrypto
 from tonclient.net import TonNet
 from tonclient.abi import TonAbi
+from tonclient.processing import TonProcessing
+from tonclient.utils import TonUtils
 
 DEVNET_BASE_URL = 'net.ton.dev'
 MAINNET_BASE_URL = 'main.ton.dev'
@@ -63,6 +65,8 @@ class TonClient(object):
         self.net = TonNet(ctx=self._ctx, is_async=is_async)
         self.abi = TonAbi(ctx=self._ctx, is_async=is_async)
         self.boc = TonBoc(ctx=self._ctx, is_async=is_async)
+        self.processing = TonProcessing(ctx=self._ctx, is_async=is_async)
+        self.utils = TonUtils(ctx=self._ctx, is_async=is_async)
 
     @property
     def is_async(self):
@@ -76,6 +80,8 @@ class TonClient(object):
         self.net.is_async = value
         self.abi.is_async = value
         self.boc.is_async = value
+        self.processing.is_async = value
+        self.utils.is_async = value
 
     @property
     def version(self):

@@ -263,3 +263,14 @@ class StateInitSource(object):
         return StateInitSource(
             source_type='Tvc', tvc=tvc, public_key=public_key,
             init_params=init_params)
+
+
+class AddressStringFormat(object):
+    AccountId = {'AccountId': {}}
+    Hex = {'Hex': {}}
+
+    @staticmethod
+    def base64(
+            url: bool = False, test: bool = False, bounce: bool = False
+    ) -> Dict[str, Dict[str, bool]]:
+        return {'Base64': {'url': url, 'test': test, 'bounce': bounce}}

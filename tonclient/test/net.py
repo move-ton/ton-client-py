@@ -1,12 +1,10 @@
 import unittest
-import logging
 from datetime import datetime
 
 from tonclient.client import TonClient, DEVNET_BASE_URL
 from tonclient.errors import TonException
 from tonclient.net import TonQLQuery
 
-logger = logging.getLogger("TonQueriesTest")
 client = TonClient(network={'server_address': DEVNET_BASE_URL})
 
 

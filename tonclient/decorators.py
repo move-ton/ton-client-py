@@ -258,3 +258,9 @@ class Response(object):
         def __callback(result):
             return result['config_boc']
         return cls.__pretty(function=function, _callback=__callback)
+
+    @classmethod
+    def convert_address(cls, function):
+        def __callback(result):
+            return result['address']
+        return cls.__pretty(function=function, _callback=__callback)

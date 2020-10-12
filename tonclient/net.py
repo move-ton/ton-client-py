@@ -91,7 +91,7 @@ class TonQLQuery(object):
 
 
 class TonNet(TonModule):
-    """ Free TON queries SDK API implementation """
+    """ Free TON net SDK API implementation """
     @Response.query_collection
     def query_collection(self, query: TonQLQuery) -> Any:
         return self.request(
