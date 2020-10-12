@@ -1,11 +1,14 @@
 import ctypes
+import json
 import os
 import platform
 
-from .types import TCOnResponseT, TCStringT, TCResponseTPointer, TCResponseT
+from typing import Dict, Union
+
+from .types import TCStringData, TCResponseHandler
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-LIB_VERSION = '0.25.3'
+LIB_VERSION = '1.0.0'
 LIB_DIR = os.path.join(BASE_DIR, 'bin')
 LIB_FILENAME = f'ton-rust-client-{LIB_VERSION}'
 
@@ -26,40 +29,45 @@ def _get_lib_path():
 _LIB = ctypes.cdll.LoadLibrary(_get_lib_path())
 
 
-def tc_create_context() -> ctypes.c_int32:
-    return _LIB.tc_create_context()
+def tc_create_context(
+        config: Dict[str, Dict[str, Union[str, int, float]]]
+) -> ctypes.POINTER(ctypes.c_char_p):
+    _config = TCStringData.from_string(string=json.dumps(config))
+
+    _LIB.tc_create_context.restype = ctypes.POINTER(ctypes.c_char_p)
+    return _LIB.tc_create_context(_config)
 
 
 def tc_destroy_context(ctx: ctypes.c_int32):
     _LIB.tc_destroy_context(ctx)
 
 
-def tc_json_request(
-            ctx: ctypes.c_int32, method: str, params_json: str = None
-        ) -> TCResponseTPointer:
+def tc_request(
+        ctx: ctypes.c_int32, function_name: str, request_id: int,
+        response_handler: TCResponseHandler, params_json: str = None):
     # Cast args to ctypes
-    method = TCStringT.from_string(string=method)
-    params_json = TCStringT.from_string(string=params_json)
-
-    _LIB.tc_json_request.restype = TCResponseTPointer
-    return _LIB.tc_json_request(ctx, method, params_json)
-
-
-def tc_read_json_response(handle: TCResponseTPointer) -> TCResponseT:
-    _LIB.tc_read_json_response.restype = TCResponseT
-    return _LIB.tc_read_json_response(handle)
-
-
-def tc_destroy_json_response(handle: TCResponseTPointer):
-    _LIB.tc_destroy_json_response(handle)
-
-
-def tc_json_request_async(
-        ctx: ctypes.c_int32, method: str, request_id: int,
-        callback: TCOnResponseT, params_json: str = None):
-    # Cast args to ctypes
-    method = TCStringT.from_string(string=method)
+    function_name = TCStringData.from_string(string=function_name)
     request_id = ctypes.c_int32(request_id)
-    params_json = TCStringT.from_string(string=params_json)
+    params_json = TCStringData.from_string(string=params_json)
 
-    _LIB.tc_json_request_async(ctx, method, params_json, request_id, callback)
+    _LIB.tc_request(
+        ctx, function_name, params_json, request_id, response_handler)
+
+
+def tc_request_sync(
+        ctx: ctypes.c_int32, function_name: str, params_json: str = None
+) -> ctypes.POINTER(ctypes.c_char_p):
+    function_name = TCStringData.from_string(string=function_name)
+    params_json = TCStringData.from_string(string=params_json)
+
+    _LIB.tc_request_sync.restype = ctypes.POINTER(ctypes.c_char_p)
+    return _LIB.tc_request_sync(ctx, function_name, params_json)
+
+
+def tc_destroy_string(string: ctypes.POINTER(ctypes.c_char_p)):
+    _LIB.tc_destroy_string(string)
+
+
+def tc_read_string(string: ctypes.POINTER(ctypes.c_char_p)) -> TCStringData:
+    _LIB.tc_read_string.restype = TCStringData
+    return _LIB.tc_read_string(string)

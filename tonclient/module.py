@@ -1,13 +1,20 @@
 import asyncio
 import ctypes
+import logging
+import os
 
 import json
-from typing import Any, Dict, Union, Awaitable, Callable
+from json.decoder import JSONDecodeError
+from typing import Any, Dict, Union, Awaitable
 
-from tonclient.bindings.lib import tc_json_request, tc_read_json_response, \
-    tc_destroy_json_response, tc_json_request_async
-from tonclient.bindings.types import TCOnResponseT, TCResponseT, TCStringT
+from tonclient.bindings.lib import tc_request, tc_request_sync, \
+    tc_read_string, tc_destroy_string
+from tonclient.bindings.types import TCStringData, TCResponseHandler, \
+    TCResponseType, TCSyncResponseData
 from tonclient.errors import TonException
+
+logging.basicConfig(level=os.environ.get('LOGLEVEL', 'DEBUG').upper())
+logger = logging.getLogger('TONClient')
 
 
 class TonModule(object):
@@ -22,7 +29,7 @@ class TonModule(object):
         self.is_async = is_async
 
     @staticmethod
-    def _prepare_params(params_or_str, **kwargs):
+    def _prepare_params(params_or_str, **kwargs) -> str:
         """ Prepare params to pass to request """
         if isinstance(params_or_str, dict):
             params_or_str = {**params_or_str, **kwargs}
@@ -32,67 +39,82 @@ class TonModule(object):
         return json.dumps(params_or_str)
 
     def request(
-            self, method: str,
-            params_or_str: Union[str, Dict[str, Any]] = None,
-            result_cb: Callable = None, **kwargs) -> Any:
+            self, function_name: str,
+            params_or_str: Union[str, Dict[str, Any]] = None, **kwargs) -> Any:
+        """ Perform core request """
         # Prepare request params
         request_params = self._prepare_params(params_or_str, **kwargs)
 
         # Make sync or async request
         kwargs = {
-            "method": method,
-            "request_params": request_params,
-            "result_cb": result_cb
+            'function_name': function_name,
+            'request_params': request_params
         }
         if self.is_async:
-            return self._request_async(**kwargs)
-        return self._request(**kwargs)
+            return self._request(**kwargs)
+        return self._request_sync(**kwargs)
 
-    def _request(
-            self, method: str, request_params: str,
-            result_cb: Callable = None) -> Any:
-        """ Fire TON lib synchronous request. Raise on error. """
-        # Make request, get response pointer and read it
-        response_ptr = tc_json_request(
-            ctx=self._ctx, method=method, params_json=request_params)
-        response = tc_read_json_response(handle=response_ptr)
+    def _request_sync(self, function_name: str, request_params: str) -> Any:
+        """ Perform core synchronous request """
+        # Make sync request, get response pointer and parse it
+        response_ptr = tc_request_sync(
+            ctx=self._ctx, function_name=function_name,
+            params_json=request_params)
+        response = TCSyncResponseData(tc_read_string(string=response_ptr))
 
         # Copy response data and destroy response pointer
-        is_success, result_json = (response.is_success, response.json)
-        tc_destroy_json_response(response_ptr)
+        is_success, result, error = (
+            response.is_success, response.result, response.error)
+        tc_destroy_string(string=response_ptr)
 
-        # Process response
         if not is_success:
-            raise TonException(result_json)
+            raise TonException(error=error)
 
-        return result_cb(result_json) if result_cb else result_json
+        return result
 
-    async def _request_async(
-            self, method: str, request_params: str,
-            result_cb: Callable = None) -> Awaitable:
-        """ Fire TON lib asynchronous request. """
-        loop = asyncio.get_running_loop()
-        future = loop.create_future()
+    async def _request(
+            self, function_name: str, request_params: str) -> Awaitable:
+        """ Perform core asynchronous request """
+        async def _receive():
+            """ Coro to wait for all core callbacks """
+            while True:
+                if not responses:
+                    continue
+                if responses[-1]['response_type'] == TCResponseType.Error:
+                    raise TonException(error=responses[-1]['response_data'])
+                if responses[-1]['finished']:
+                    return responses[-1]['response_data']
+                await asyncio.sleep(0.001)
 
-        @TCOnResponseT
-        def _cb(
-                request_id: int, result_json: TCStringT, error_json: TCStringT,
-                flags: int):
-            response = TCResponseT()
-            response.result_json = result_json
-            response.error_json = error_json
+        @TCResponseHandler
+        def _response_handler(
+                request_id: int, response_data: TCStringData,
+                response_type: int, finished: bool):
+            """ Core response handler """
+            try:
+                result = response_data.json
+            except JSONDecodeError:
+                result = response_data.string
 
-            result = result_cb(response.json) \
-                if result_cb and response.is_success else response.json
-            future.set_result({
+            response = {
                 'request_id': request_id,
-                'result': result,
-                'flags': flags
-            })
+                'response_data': result,
+                'response_type': response_type,
+                'finished': finished
+            }
+            logger.debug(response)
+            responses.append(response)
 
-        tc_json_request_async(
-            ctx=self._ctx, method=method, request_id=self._async_request_id,
-            callback=_cb, params_json=request_params)
+        # Create awaitable task to receive all core callbacks and storage
+        # for future responses.
+        task = asyncio.get_running_loop().create_task(_receive())
+        responses = []
+
+        # Perform async core request
+        tc_request(
+            ctx=self._ctx, function_name=function_name,
+            request_id=self._async_request_id,
+            response_handler=_response_handler, params_json=request_params)
 
         self._async_request_id += 1
-        return await future
+        return await task

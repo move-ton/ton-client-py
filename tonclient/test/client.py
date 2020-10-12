@@ -6,10 +6,14 @@ from tonclient.client import TonClient, DEVNET_BASE_URL
 
 class TestTonClient(unittest.TestCase):
     def setUp(self) -> None:
-        self.client = TonClient(servers=[DEVNET_BASE_URL])
+        self.client = TonClient(network={'server_address': DEVNET_BASE_URL})
 
     def test_version(self):
-        self.assertEqual(self.client.version(), LIB_VERSION)
+        self.assertEqual(LIB_VERSION, self.client.version())
+
+    def test_get_api_reference(self):
+        reference = self.client.get_api_reference()
+        self.assertEqual(LIB_VERSION, reference['version'])
 
     def test_destroy_context(self):
         self.client.destroy_context()
