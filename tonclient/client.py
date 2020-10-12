@@ -3,6 +3,7 @@ from typing import Dict, Union
 from tonclient.bindings.lib import tc_create_context, tc_destroy_context, \
     tc_read_string, tc_destroy_string
 from tonclient.bindings.types import TCClientContext, TCSyncResponseData
+from tonclient.boc import TonBoc
 from tonclient.decorators import Response
 from tonclient.errors import TonException
 from tonclient.module import TonModule
@@ -61,6 +62,7 @@ class TonClient(object):
         self.crypto = TonCrypto(ctx=self._ctx, is_async=is_async)
         self.net = TonNet(ctx=self._ctx, is_async=is_async)
         self.abi = TonAbi(ctx=self._ctx, is_async=is_async)
+        self.boc = TonBoc(ctx=self._ctx, is_async=is_async)
 
     @property
     def is_async(self):
@@ -73,6 +75,7 @@ class TonClient(object):
         self.crypto.is_async = value
         self.net.is_async = value
         self.abi.is_async = value
+        self.boc.is_async = value
 
     @property
     def version(self):

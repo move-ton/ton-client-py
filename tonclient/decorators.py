@@ -8,6 +8,7 @@ from tonclient.types import KeyPair
 class Response(object):
     @staticmethod
     def __pretty(function, _callback: Callable[[Any], Any] = None):
+        """ Base decorator function """
         @functools.wraps(function)
         def sync_or_async(*args, **kwargs):
             async def async_wrapper():
@@ -226,4 +227,34 @@ class Response(object):
     def wait_for_collection(cls, function):
         def __callback(result):
             return result['result']
+        return cls.__pretty(function=function, _callback=__callback)
+
+    @classmethod
+    def parse_message(cls, function):
+        def __callback(result):
+            return result['parsed']
+        return cls.__pretty(function=function, _callback=__callback)
+
+    @classmethod
+    def parse_transaction(cls, function):
+        def __callback(result):
+            return result['parsed']
+        return cls.__pretty(function=function, _callback=__callback)
+
+    @classmethod
+    def parse_account(cls, function):
+        def __callback(result):
+            return result['parsed']
+        return cls.__pretty(function=function, _callback=__callback)
+
+    @classmethod
+    def parse_block(cls, function):
+        def __callback(result):
+            return result['parsed']
+        return cls.__pretty(function=function, _callback=__callback)
+
+    @classmethod
+    def get_blockchain_config(cls, function):
+        def __callback(result):
+            return result['config_boc']
         return cls.__pretty(function=function, _callback=__callback)
