@@ -49,6 +49,15 @@ class TestTonAbiAsync(unittest.TestCase):
         with self.assertRaises(TonException):
             client.abi.decode_message(abi=self.events_abi, message='0x0')
 
+    def test_decode_message_body(self):
+        message = 'te6ccgEBAwEAvAABRYgAC31qq9KF9Oifst6LU9U6FQSQQRlCSEMo+A3LN5MvphIMAQHhrd/b+MJ5Za+AygBc5qS/dVIPnqxCsM9PvqfVxutK+lnQEKzQoRTLYO6+jfM8TF4841bdNjLQwIDWL4UVFdxIhdMfECP8d3ruNZAXul5xxahT91swIEkEHph08JVlwmUmQAAAXRnJcuDX1XMZBW+LBKACAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=='
+        parsed = client.boc.parse_message(boc=message)
+        decoded = client.abi.decode_message_body(
+            abi=self.events_abi, body=parsed['body'])
+        self.assertEqual(
+            {'message_type': 'FunctionInput', 'name': 'returnValue', 'value': {'id': '0x0'}, 'header': {'expire': 1599458404, 'time': 1599458364291, 'pubkey': '4c7c408ff1ddebb8d6405ee979c716a14fdd6cc08124107a61d3c25597099499'}},
+            decoded)
+
     def test_encode_message(self):
         deploy_set = DeploySet(tvc=self.events_tvc)
         call_set = CallSet(

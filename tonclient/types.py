@@ -83,7 +83,7 @@ class Abi(object):
     def dict(self):
         if type(self.abi) is str:
             self.abi = json.loads(self.abi)
-        return {self.abi_type: self.abi}
+        return {'type': self.abi_type, 'value': self.abi}
 
     @staticmethod
     def from_dict(abi: Dict[str, Any]) -> 'Abi':
@@ -104,36 +104,44 @@ class Abi(object):
 
 
 class Signer(object):
-    def __init__(self, data: Union[KeyPair, str, int],  data_type: str):
+    def __init__(
+            self, keypair: KeyPair = None, public: str = None,
+            box_handle: int = None):
         """
-        :param data:
-                - KeyPair: message will be signed using the
-                  provided keys;
-                - str: message will be signed using external methods. Public
-                  key must be provided with 'hex' encoding;
-                - int: message will be signed using the provided signing box
-        :param data_type: One of 'WithKeys', 'External', 'Box'
+        :param keypair: message will be signed using the provided keys
+        :param public: message will be signed using external methods.
+                Public key must be provided with 'hex' encoding
+        :param box_handle: message will be signed using the provided
+                signing box
         """
-        self.data = data
-        self.data_type = data_type
+        self.keypair = keypair
+        self.public = public
+        self.box_handle = box_handle
 
     @property
     def dict(self):
-        if type(self.data) is KeyPair:
-            self.data = self.data.dict
-        return {self.data_type: self.data}
+        if self.keypair:
+            return {'type': 'Keys', 'keys': self.keypair.dict}
+        elif self.public:
+            return {'type': 'External', 'public_key': self.public}
+        elif self.box_handle:
+            return {'type': 'SigningBox', 'handle': self.box_handle}
+        else:
+            raise ValueError(
+                "One of 'keypair', 'public_key', 'signing_box_handle' should"
+                "be provided")
 
     @staticmethod
     def from_keypair(keypair: KeyPair) -> 'Signer':
-        return Signer(data=keypair, data_type='WithKeys')
+        return Signer(keypair=keypair)
 
     @staticmethod
     def from_external(public: str) -> 'Signer':
-        return Signer(data=public, data_type='External')
+        return Signer(public=public)
 
     @staticmethod
-    def from_box(box: int) -> 'Signer':
-        return Signer(data=box, data_type='Box')
+    def from_signing_box(box_handle: int) -> 'Signer':
+        return Signer(box_handle=box_handle)
 
 
 class DeploySet(object):
@@ -232,7 +240,7 @@ class StateInitSource(object):
         :param message: Deploy message
         :return:
         """
-        return StateInitSource(source_type='Message', **message.dict)
+        return StateInitSource(source_type='Message', source=message.dict)
 
     @staticmethod
     def from_state_init(

@@ -15,6 +15,19 @@ class TonAbi(TonModule):
         return self.request(
             method='abi.decode_message', abi=abi.dict, message=message)
 
+    def decode_message_body(
+            self, abi: Abi, body: str, is_internal: bool = False
+    ) -> Dict[str, Any]:
+        """
+        :param abi: Contract ABI used to decode
+        :param body: Base64 encoded message body BOC
+        :param is_internal: True if the body belongs to the internal message
+        :return:
+        """
+        return self.request(
+            method='abi.decode_message_body', abi=abi.dict, body=body,
+            is_internal=is_internal)
+
     def encode_account(
             self, state_init: StateInitSource, balance: int = None,
             last_trans_lt: int = None, last_paid: int = None
