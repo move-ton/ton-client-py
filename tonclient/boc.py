@@ -12,7 +12,7 @@ class TonBoc(TonModule):
         :param boc: Base64 encoded BOC
         :return:
         """
-        return self.request(function_name='boc.parse_message', boc=boc)
+        return self.request(method='boc.parse_message', boc=boc)
 
     @Response.parse_transaction
     def parse_transaction(self, boc: str) -> Dict[str, Any]:
@@ -20,7 +20,7 @@ class TonBoc(TonModule):
         :param boc: Base64 encoded BOC
         :return:
         """
-        return self.request(function_name='boc.parse_transaction', boc=boc)
+        return self.request(method='boc.parse_transaction', boc=boc)
 
     @Response.parse_account
     def parse_account(self, boc: str) -> Dict[str, Any]:
@@ -28,7 +28,7 @@ class TonBoc(TonModule):
         :param boc: Base64 encoded BOC
         :return:
         """
-        return self.request(function_name='boc.parse_account', boc=boc)
+        return self.request(method='boc.parse_account', boc=boc)
 
     @Response.parse_block
     def parse_block(self, boc: str) -> Dict[str, Any]:
@@ -36,7 +36,7 @@ class TonBoc(TonModule):
         :param boc: Base64 encoded BOC
         :return:
         """
-        return self.request(function_name='boc.parse_block', boc=boc)
+        return self.request(method='boc.parse_block', boc=boc)
 
     @Response.get_blockchain_config
     def get_blockchain_config(self, block_boc: str) -> str:
@@ -45,4 +45,4 @@ class TonBoc(TonModule):
         :return:
         """
         return self.request(
-            function_name='boc.get_blockchain_config', block_boc=block_boc)
+            method='boc.get_blockchain_config', block_boc=block_boc)

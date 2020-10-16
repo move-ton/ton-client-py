@@ -6,7 +6,8 @@ from tonclient.client import TonClient, DEVNET_BASE_URL
 
 class TestTonClient(unittest.TestCase):
     def setUp(self) -> None:
-        self.client = TonClient(network={'server_address': DEVNET_BASE_URL})
+        self.client = TonClient(
+            network={'server_address': DEVNET_BASE_URL}, is_async=False)
 
     def test_version(self):
         self.assertEqual(LIB_VERSION, self.client.version())

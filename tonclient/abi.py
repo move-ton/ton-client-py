@@ -13,7 +13,7 @@ class TonAbi(TonModule):
         :return:
         """
         return self.request(
-            function_name='abi.decode_message', abi=abi.dict, message=message)
+            method='abi.decode_message', abi=abi.dict, message=message)
 
     def encode_account(
             self, state_init: StateInitSource, balance: int = None,
@@ -27,7 +27,7 @@ class TonAbi(TonModule):
         :return:
         """
         return self.request(
-            function_name='abi.encode_account', state_init=state_init.dict,
+            method='abi.encode_account', state_init=state_init.dict,
             balance=balance, last_trans_lt=last_trans_lt, last_paid=last_paid)
 
     def encode_message(
@@ -53,7 +53,7 @@ class TonAbi(TonModule):
         deploy_set = deploy_set.dict if deploy_set else deploy_set
         call_set = call_set.dict if call_set else call_set
         return self.request(
-            function_name='abi.encode_message', abi=abi.dict,
+            method='abi.encode_message', abi=abi.dict,
             address=address, deploy_set=deploy_set, call_set=call_set,
             signer=signer.dict, processing_try_index=processing_try_index)
 
@@ -68,5 +68,5 @@ class TonAbi(TonModule):
         :return:
         """
         return self.request(
-            function_name='abi.attach_signature', abi=abi.dict,
+            method='abi.attach_signature', abi=abi.dict,
             public_key=public_key, message=message, signature=signature)

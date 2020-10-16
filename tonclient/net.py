@@ -95,7 +95,7 @@ class TonNet(TonModule):
     @Response.query_collection
     def query_collection(self, query: TonQLQuery) -> Any:
         return self.request(
-            function_name='net.query_collection', collection=query.collection,
+            method='net.query_collection', collection=query.collection,
             filter=query.filter, result=query.result, order=query.order,
             limit=query.limit)
 
@@ -103,16 +103,20 @@ class TonNet(TonModule):
     def wait_for_collection(
             self, query: TonQLQuery, timeout: int = None) -> Any:
         return self.request(
-            function_name='net.wait_for_collection',
+            method='net.wait_for_collection',
             collection=query.collection, filter=query.filter,
             result=query.result, timeout=timeout)
 
-    # TODO: Unknown API method
+    @Response.subscribe_collection
     def subscribe_collection(self, query: TonQLQuery) -> int:
+        """ Method is available only in async mode """
+        if not self._client.is_async:
+            raise Exception('This method is available only in async mode')
+
         return self.request(
-            function_name='net.subscribe_collection',
+            method='net.subscribe_collection', is_generator=True,
             collection=query.collection, filter=query.filter,
             result=query.result)
 
     def unsubscribe(self, handle: int):
-        return self.request(function_name='net.unsubscribe', handle=handle)
+        return self.request(method='net.unsubscribe', handle=handle)

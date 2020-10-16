@@ -274,3 +274,8 @@ class AddressStringFormat(object):
             url: bool = False, test: bool = False, bounce: bool = False
     ) -> Dict[str, Dict[str, bool]]:
         return {'Base64': {'url': url, 'test': test, 'bounce': bounce}}
+
+
+class ExecutionMode(object):
+    Full = 'Full'
+    TvmOnly = 'TvmOnly'

@@ -11,6 +11,7 @@ from tonclient.crypto import TonCrypto
 from tonclient.net import TonNet
 from tonclient.abi import TonAbi
 from tonclient.processing import TonProcessing
+from tonclient.tvm import TonTvm
 from tonclient.utils import TonUtils
 
 DEVNET_BASE_URL = 'net.ton.dev'
@@ -38,11 +39,11 @@ CLIENT_DEFAULT_SETUP = {
 class TonClientBase(TonModule):
     @Response.version
     def version(self) -> str:
-        return self.request(function_name='client.version')
+        return self.request(method='client.version')
 
     @Response.get_api_reference
     def get_api_reference(self) -> Dict:
-        return self.request(function_name='client.get_api_reference')
+        return self.request(method='client.get_api_reference')
 
 
 class TonClient(object):
@@ -50,7 +51,7 @@ class TonClient(object):
     def __init__(
             self, network: Dict[str, Union[str, int]] = None,
             crypto: Dict[str, str] = None,
-            abi: Dict[str, Union[int, float]] = None, is_async: bool = False):
+            abi: Dict[str, Union[int, float]] = None, is_async: bool = True):
         super(TonClient, self).__init__()
 
         self._ctx = self.create_context(config={
@@ -59,14 +60,20 @@ class TonClient(object):
             'abi': {**CLIENT_DEFAULT_SETUP['abi'], **(abi or {})}
         })
         self._is_async = is_async
+        self._async_request_id = 1
 
-        self.base = TonClientBase(ctx=self._ctx, is_async=is_async)
-        self.crypto = TonCrypto(ctx=self._ctx, is_async=is_async)
-        self.net = TonNet(ctx=self._ctx, is_async=is_async)
-        self.abi = TonAbi(ctx=self._ctx, is_async=is_async)
-        self.boc = TonBoc(ctx=self._ctx, is_async=is_async)
-        self.processing = TonProcessing(ctx=self._ctx, is_async=is_async)
-        self.utils = TonUtils(ctx=self._ctx, is_async=is_async)
+        self.base = TonClientBase(client=self)
+        self.crypto = TonCrypto(client=self)
+        self.net = TonNet(client=self)
+        self.abi = TonAbi(client=self)
+        self.boc = TonBoc(client=self)
+        self.processing = TonProcessing(client=self)
+        self.utils = TonUtils(client=self)
+        self.tvm = TonTvm(client=self)
+
+    @property
+    def ctx(self):
+        return self._ctx
 
     @property
     def is_async(self):
@@ -75,13 +82,14 @@ class TonClient(object):
     @is_async.setter
     def is_async(self, value: bool):
         self._is_async = value
-        self.base.is_async = value
-        self.crypto.is_async = value
-        self.net.is_async = value
-        self.abi.is_async = value
-        self.boc.is_async = value
-        self.processing.is_async = value
-        self.utils.is_async = value
+
+    @property
+    def async_request_id(self):
+        return self._async_request_id
+
+    @async_request_id.setter
+    def async_request_id(self, value: int):
+        self._async_request_id = value
 
     @property
     def version(self):

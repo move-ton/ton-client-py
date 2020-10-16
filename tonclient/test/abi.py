@@ -9,7 +9,7 @@ from tonclient.types import Abi, KeyPair, DeploySet, CallSet, Signer, \
 
 BASE_DIR = os.path.dirname(__file__)
 SAMPLES_DIR = os.path.join(BASE_DIR, 'samples')
-client = TonClient(network={'server_address': DEVNET_BASE_URL})
+client = TonClient(network={'server_address': DEVNET_BASE_URL}, is_async=False)
 
 
 class TestTonAbi(unittest.TestCase):

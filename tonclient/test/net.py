@@ -5,7 +5,7 @@ from tonclient.client import TonClient, DEVNET_BASE_URL
 from tonclient.errors import TonException
 from tonclient.net import TonQLQuery
 
-client = TonClient(network={'server_address': DEVNET_BASE_URL})
+client = TonClient(network={'server_address': DEVNET_BASE_URL}, is_async=False)
 
 
 class TestTonNet(unittest.TestCase):
@@ -40,6 +40,3 @@ class TestTonNet(unittest.TestCase):
 
         with self.assertRaises(TonException):
             client.net.wait_for_collection(query=query, timeout=1)
-
-    def test_unsubscribe(self):
-        client.net.unsubscribe(handle=100000)

@@ -4,7 +4,7 @@ from tonclient.client import TonClient, DEVNET_BASE_URL
 from tonclient.errors import TonException
 from tonclient.types import AddressStringFormat
 
-client = TonClient(network={'server_address': DEVNET_BASE_URL})
+client = TonClient(network={'server_address': DEVNET_BASE_URL}, is_async=False)
 
 
 class TestTonUtils(unittest.TestCase):

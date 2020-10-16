@@ -17,5 +17,5 @@ class TonUtils(TonModule):
         :return:
         """
         return self.request(
-            function_name='utils.convert_address', address=address,
+            method='utils.convert_address', address=address,
             output_format=output_format)

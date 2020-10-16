@@ -3,7 +3,7 @@ import unittest
 from tonclient.client import TonClient, DEVNET_BASE_URL
 from tonclient.errors import TonException
 
-client = TonClient(network={'server_address': DEVNET_BASE_URL})
+client = TonClient(network={'server_address': DEVNET_BASE_URL}, is_async=False)
 
 
 class TestTonBoc(unittest.TestCase):

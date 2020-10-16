@@ -10,20 +10,20 @@ class Response(object):
     def __pretty(function, _callback: Callable[[Any], Any] = None):
         """ Base decorator function """
         @functools.wraps(function)
-        def sync_or_async(*args, **kwargs):
-            async def async_wrapper():
-                _result = await result
-                return _callback(_result)
+        def response_or_generator(*args, **kwargs):
+            def generator_wrapper():
+                for item in result:
+                    yield _callback(item)
 
-            def sync_wrapper():
+            def response_wrapper():
                 return _callback(result)
 
             result = function(*args, **kwargs)
-            if inspect.iscoroutine(result):
-                return async_wrapper()
-            return sync_wrapper()
+            if inspect.isgenerator(result):
+                return generator_wrapper()
+            return response_wrapper()
 
-        return sync_or_async
+        return response_or_generator
 
     @classmethod
     def version(cls, function):
@@ -230,6 +230,12 @@ class Response(object):
         return cls.__pretty(function=function, _callback=__callback)
 
     @classmethod
+    def subscribe_collection(cls, function):
+        def __callback(result):
+            return result.get('result', result)
+        return cls.__pretty(function=function, _callback=__callback)
+
+    @classmethod
     def parse_message(cls, function):
         def __callback(result):
             return result['parsed']
@@ -263,4 +269,10 @@ class Response(object):
     def convert_address(cls, function):
         def __callback(result):
             return result['address']
+        return cls.__pretty(function=function, _callback=__callback)
+
+    @classmethod
+    def execute_get(cls, function):
+        def __callback(result):
+            return result['output']
         return cls.__pretty(function=function, _callback=__callback)

@@ -43,25 +43,25 @@ def tc_destroy_context(ctx: ctypes.c_int32):
 
 
 def tc_request(
-        ctx: ctypes.c_int32, function_name: str, request_id: int,
+        ctx: ctypes.c_int32, method: str, request_id: int,
         response_handler: TCResponseHandler, params_json: str = None):
     # Cast args to ctypes
-    function_name = TCStringData.from_string(string=function_name)
+    method = TCStringData.from_string(string=method)
     request_id = ctypes.c_int32(request_id)
     params_json = TCStringData.from_string(string=params_json)
 
     _LIB.tc_request(
-        ctx, function_name, params_json, request_id, response_handler)
+        ctx, method, params_json, request_id, response_handler)
 
 
 def tc_request_sync(
-        ctx: ctypes.c_int32, function_name: str, params_json: str = None
+        ctx: ctypes.c_int32, method: str, params_json: str = None
 ) -> ctypes.POINTER(ctypes.c_char_p):
-    function_name = TCStringData.from_string(string=function_name)
+    method = TCStringData.from_string(string=method)
     params_json = TCStringData.from_string(string=params_json)
 
     _LIB.tc_request_sync.restype = ctypes.POINTER(ctypes.c_char_p)
-    return _LIB.tc_request_sync(ctx, function_name, params_json)
+    return _LIB.tc_request_sync(ctx, method, params_json)
 
 
 def tc_destroy_string(string: ctypes.POINTER(ctypes.c_char_p)):

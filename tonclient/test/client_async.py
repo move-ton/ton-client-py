@@ -1,20 +1,19 @@
-import aiounittest
+import unittest
 
 from tonclient.bindings.lib import LIB_VERSION
 from tonclient.client import TonClient, DEVNET_BASE_URL
 
 
-class TestTonClientAsync(aiounittest.AsyncTestCase):
+class TestTonClientAsync(unittest.TestCase):
     def setUp(self) -> None:
-        self.client = TonClient(
-            network={'server_address': DEVNET_BASE_URL}, is_async=True)
+        self.client = TonClient(network={'server_address': DEVNET_BASE_URL})
 
-    async def test_version(self):
-        version = await self.client.version()
+    def test_version(self):
+        version = self.client.version()
         self.assertEqual(LIB_VERSION, version)
 
-    async def test_get_api_reference(self):
-        reference = await self.client.get_api_reference()
+    def test_get_api_reference(self):
+        reference = self.client.get_api_reference()
         self.assertEqual(LIB_VERSION, reference['version'])
 
     def test_destroy_context(self):
