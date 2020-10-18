@@ -2,7 +2,7 @@ import base64
 import os
 import unittest
 
-from tonclient.test.abi import SAMPLES_DIR
+from tonclient.test.test_abi import SAMPLES_DIR
 from tonclient.test.helpers import send_grams, async_core_client
 from tonclient.types import Abi, DeploySet, CallSet, Signer, MessageSource
 
