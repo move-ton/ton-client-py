@@ -2,17 +2,14 @@ import base64
 import os
 import unittest
 
-from tonclient.client import TonClient, DEVNET_BASE_URL
 from tonclient.errors import TonException
+from tonclient.test.helpers import SAMPLES_DIR, async_core_client, \
+    sync_core_client
 from tonclient.types import Abi, KeyPair, DeploySet, CallSet, Signer, \
     MessageSource, StateInitSource
 
-BASE_DIR = os.path.dirname(__file__)
-SAMPLES_DIR = os.path.join(BASE_DIR, 'samples')
-client = TonClient(network={'server_address': DEVNET_BASE_URL}, is_async=False)
 
-
-class TestTonAbi(unittest.TestCase):
+class TestTonAbiAsyncCore(unittest.TestCase):
     def setUp(self) -> None:
         # Events contract params
         self.events_abi = Abi.from_json_path(
@@ -27,33 +24,34 @@ class TestTonAbi(unittest.TestCase):
 
     def test_decode_message(self):
         message = 'te6ccgEBAwEAvAABRYgAC31qq9KF9Oifst6LU9U6FQSQQRlCSEMo+A3LN5MvphIMAQHhrd/b+MJ5Za+AygBc5qS/dVIPnqxCsM9PvqfVxutK+lnQEKzQoRTLYO6+jfM8TF4841bdNjLQwIDWL4UVFdxIhdMfECP8d3ruNZAXul5xxahT91swIEkEHph08JVlwmUmQAAAXRnJcuDX1XMZBW+LBKACAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=='
-        decoded = client.abi.decode_message(
+        decoded = async_core_client.abi.decode_message(
             abi=self.events_abi, message=message)
         self.assertEqual(
             {'message_type': 'FunctionInput', 'name': 'returnValue', 'value': {'id': '0x0'}, 'header': {'expire': 1599458404, 'time': 1599458364291, 'pubkey': '4c7c408ff1ddebb8d6405ee979c716a14fdd6cc08124107a61d3c25597099499'}},
             decoded)
 
         message = 'te6ccgEBAQEAVQAApeACvg5/pmQpY4m61HmJ0ne+zjHJu3MNG8rJxUDLbHKBu/AAAAAAAAAMJL6z6ro48sYvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABA'
-        decoded = client.abi.decode_message(
+        decoded = async_core_client.abi.decode_message(
             abi=self.events_abi, message=message)
         self.assertEqual(
             {'message_type': 'Event', 'name': 'EventThrown', 'value': {'id': '0x0'}, 'header': None},
             decoded)
 
         message = 'te6ccgEBAQEAVQAApeACvg5/pmQpY4m61HmJ0ne+zjHJu3MNG8rJxUDLbHKBu/AAAAAAAAAMKr6z6rxK3xYJAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABA'
-        decoded = client.abi.decode_message(
+        decoded = async_core_client.abi.decode_message(
             abi=self.events_abi, message=message)
         self.assertEqual(
             {'message_type': 'FunctionOutput', 'name': 'returnValue', 'value': {'value0': '0x0'}, 'header': None},
             decoded)
 
         with self.assertRaises(TonException):
-            client.abi.decode_message(abi=self.events_abi, message='0x0')
+            async_core_client.abi.decode_message(
+                abi=self.events_abi, message='0x0')
 
     def test_decode_message_body(self):
         message = 'te6ccgEBAwEAvAABRYgAC31qq9KF9Oifst6LU9U6FQSQQRlCSEMo+A3LN5MvphIMAQHhrd/b+MJ5Za+AygBc5qS/dVIPnqxCsM9PvqfVxutK+lnQEKzQoRTLYO6+jfM8TF4841bdNjLQwIDWL4UVFdxIhdMfECP8d3ruNZAXul5xxahT91swIEkEHph08JVlwmUmQAAAXRnJcuDX1XMZBW+LBKACAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=='
-        parsed = client.boc.parse_message(boc=message)
-        decoded = client.abi.decode_message_body(
+        parsed = async_core_client.boc.parse_message(boc=message)
+        decoded = async_core_client.abi.decode_message_body(
             abi=self.events_abi, body=parsed['body'])
         self.assertEqual(
             {'message_type': 'FunctionInput', 'name': 'returnValue', 'value': {'id': '0x0'}, 'header': {'expire': 1599458404, 'time': 1599458364291, 'pubkey': '4c7c408ff1ddebb8d6405ee979c716a14fdd6cc08124107a61d3c25597099499'}},
@@ -71,7 +69,7 @@ class TestTonAbi(unittest.TestCase):
         signer = Signer.from_external(public=self.keypair.public)
 
         # Create unsigned deployment message
-        unsigned = client.abi.encode_message(
+        unsigned = async_core_client.abi.encode_message(
             abi=self.events_abi, deploy_set=deploy_set, call_set=call_set,
             signer=signer)
         self.assertEqual(
@@ -82,14 +80,14 @@ class TestTonAbi(unittest.TestCase):
             unsigned['data_to_sign'])
 
         # Create detached signature
-        signature = client.crypto.sign(
+        signature = async_core_client.crypto.sign(
             unsigned=unsigned['data_to_sign'], keys=self.keypair)
         self.assertEqual(
             '6272357bccb601db2b821cb0f5f564ab519212d242cf31961fe9a3c50a30b236012618296b4f769355c0e9567cd25b366f3c037435c498c82e5305622adbc70e',
             signature['signature'])
 
         # Attach signature to unsigned message
-        signed = client.abi.attach_signature(
+        signed = async_core_client.abi.attach_signature(
             abi=self.events_abi, public_key=self.keypair.public,
             message=unsigned['message'], signature=signature['signature'])
         self.assertEqual(
@@ -98,7 +96,7 @@ class TestTonAbi(unittest.TestCase):
 
         # Create initially signed message
         signer = Signer.from_keypair(keypair=self.keypair)
-        signed = client.abi.encode_message(
+        signed = async_core_client.abi.encode_message(
             abi=self.events_abi, signer=signer, deploy_set=deploy_set,
             call_set=call_set)
         self.assertEqual(
@@ -115,7 +113,7 @@ class TestTonAbi(unittest.TestCase):
                 'expire': self.events_expire
             })
         signer = Signer.from_external(public=self.keypair.public)
-        unsigned = client.abi.encode_message(
+        unsigned = async_core_client.abi.encode_message(
             abi=self.events_abi, signer=signer, address=address,
             call_set=call_set)
         self.assertEqual(
@@ -126,14 +124,14 @@ class TestTonAbi(unittest.TestCase):
             unsigned['data_to_sign'])
 
         # Create detached signature
-        signature = client.crypto.sign(
+        signature = async_core_client.crypto.sign(
             unsigned=unsigned['data_to_sign'], keys=self.keypair)
         self.assertEqual(
             '5bbfb7f184f2cb5f019400b9cd497eeaa41f3d5885619e9f7d4fab8dd695f4b3a02159a1422996c1dd7d1be67898bc79c6adba6c65a18101ac5f0a2a2bb8910b',
             signature['signature'])
 
         # Attach signature
-        signed = client.abi.attach_signature(
+        signed = async_core_client.abi.attach_signature(
             abi=self.events_abi, public_key=self.keypair.public,
             message=unsigned['message'], signature=signature['signature'])
         self.assertEqual(
@@ -142,7 +140,7 @@ class TestTonAbi(unittest.TestCase):
 
         # Create initially signed message
         signer = Signer.from_keypair(keypair=self.keypair)
-        signed = client.abi.encode_message(
+        signed = async_core_client.abi.encode_message(
             abi=self.events_abi, signer=signer, address=address,
             call_set=call_set)
         self.assertEqual(
@@ -157,7 +155,8 @@ class TestTonAbi(unittest.TestCase):
         state_init_source = StateInitSource.from_message(
             message=message_source)
 
-        encoded = client.abi.encode_account(state_init=state_init_source)
+        encoded = async_core_client.abi.encode_account(
+            state_init=state_init_source)
         self.assertEqual(
             '05beb555e942fa744fd96f45a9ea9d0a8248208ca12421947c06e59bc997d309',
             encoded['id'])
@@ -177,7 +176,8 @@ class TestTonAbi(unittest.TestCase):
             call_set=call_set)
         state_init_source = StateInitSource.from_message(
             message=message_source)
-        encoded = client.abi.encode_account(state_init=state_init_source)
+        encoded = async_core_client.abi.encode_account(
+            state_init=state_init_source)
         self.assertEqual(
             '05beb555e942fa744fd96f45a9ea9d0a8248208ca12421947c06e59bc997d309',
             encoded['id'])
@@ -190,18 +190,61 @@ class TestTonAbi(unittest.TestCase):
                 call_set=call_set)
             state_init_source = StateInitSource.from_message(
                 message=message_source)
-            client.abi.encode_account(state_init=state_init_source)
+            async_core_client.abi.encode_account(state_init=state_init_source)
 
         # Encode account from TVC
         state_init_source = StateInitSource.from_tvc(tvc=self.events_tvc)
-        encoded = client.abi.encode_account(state_init=state_init_source)
+        encoded = async_core_client.abi.encode_account(
+            state_init=state_init_source)
         self.assertNotEqual(
             '05beb555e942fa744fd96f45a9ea9d0a8248208ca12421947c06e59bc997d309',
             encoded['id'])
 
         state_init_source = StateInitSource.from_tvc(
             tvc=self.events_tvc, public_key=self.keypair.public)
-        encoded = client.abi.encode_account(state_init=state_init_source)
+        encoded = async_core_client.abi.encode_account(
+            state_init=state_init_source)
         self.assertEqual(
             '05beb555e942fa744fd96f45a9ea9d0a8248208ca12421947c06e59bc997d309',
             encoded['id'])
+
+
+class TestTonAbiSyncCore(unittest.TestCase):
+    """ Sync core is not recommended to use, so make just a couple of tests """
+    def setUp(self) -> None:
+        # Events contract params
+        self.events_abi = Abi.from_json_path(
+            path=os.path.join(SAMPLES_DIR, 'Events.abi.json'))
+        self.keypair = KeyPair(
+            public='4c7c408ff1ddebb8d6405ee979c716a14fdd6cc08124107a61d3c25597099499',
+            secret='cc8929d635719612a9478b9cd17675a39cfad52d8959e8a177389b8c0b9122a7')
+        with open(os.path.join(SAMPLES_DIR, 'Events.tvc'), 'rb') as fp:
+            self.events_tvc = base64.b64encode(fp.read()).decode()
+        self.events_time = 1599458364291
+        self.events_expire = 1599458404
+
+    def test_decode_message(self):
+        message = 'te6ccgEBAwEAvAABRYgAC31qq9KF9Oifst6LU9U6FQSQQRlCSEMo+A3LN5MvphIMAQHhrd/b+MJ5Za+AygBc5qS/dVIPnqxCsM9PvqfVxutK+lnQEKzQoRTLYO6+jfM8TF4841bdNjLQwIDWL4UVFdxIhdMfECP8d3ruNZAXul5xxahT91swIEkEHph08JVlwmUmQAAAXRnJcuDX1XMZBW+LBKACAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=='
+        decoded = sync_core_client.abi.decode_message(
+            abi=self.events_abi, message=message)
+        self.assertEqual(
+            {'message_type': 'FunctionInput', 'name': 'returnValue', 'value': {'id': '0x0'}, 'header': {'expire': 1599458404, 'time': 1599458364291, 'pubkey': '4c7c408ff1ddebb8d6405ee979c716a14fdd6cc08124107a61d3c25597099499'}},
+            decoded)
+
+        message = 'te6ccgEBAQEAVQAApeACvg5/pmQpY4m61HmJ0ne+zjHJu3MNG8rJxUDLbHKBu/AAAAAAAAAMJL6z6ro48sYvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABA'
+        decoded = sync_core_client.abi.decode_message(
+            abi=self.events_abi, message=message)
+        self.assertEqual(
+            {'message_type': 'Event', 'name': 'EventThrown', 'value': {'id': '0x0'}, 'header': None},
+            decoded)
+
+        message = 'te6ccgEBAQEAVQAApeACvg5/pmQpY4m61HmJ0ne+zjHJu3MNG8rJxUDLbHKBu/AAAAAAAAAMKr6z6rxK3xYJAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABA'
+        decoded = sync_core_client.abi.decode_message(
+            abi=self.events_abi, message=message)
+        self.assertEqual(
+            {'message_type': 'FunctionOutput', 'name': 'returnValue', 'value': {'value0': '0x0'}, 'header': None},
+            decoded)
+
+        with self.assertRaises(TonException):
+            sync_core_client.abi.decode_message(
+                abi=self.events_abi, message='0x0')

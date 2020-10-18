@@ -10,11 +10,15 @@ class TCStringData(ctypes.Structure):
 
     @property
     def string(self):
-        return self.content.decode(errors='replace')[:self.len]
+        if self.len:
+            return self.content[:self.len].decode(errors='replace')
+        return None
 
     @property
     def json(self):
-        return json.loads(self.string)
+        if self.string:
+            return json.loads(self.string)
+        return None
 
     @staticmethod
     def from_string(string: str):

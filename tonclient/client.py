@@ -51,7 +51,15 @@ class TonClient(object):
     def __init__(
             self, network: Dict[str, Union[str, int]] = None,
             crypto: Dict[str, str] = None,
-            abi: Dict[str, Union[int, float]] = None, is_async: bool = True):
+            abi: Dict[str, Union[int, float]] = None,
+            is_core_async: bool = True, is_async: bool = False):
+        """
+        :param network: Client core network config
+        :param crypto: Client core crypto config
+        :param abi: Client core abi config
+        :param is_core_async: Use sync or async core requests
+        :param is_async: Client mode
+        """
         super(TonClient, self).__init__()
 
         self._ctx = self.create_context(config={
@@ -59,8 +67,8 @@ class TonClient(object):
             'crypto': {**CLIENT_DEFAULT_SETUP['crypto'], **(crypto or {})},
             'abi': {**CLIENT_DEFAULT_SETUP['abi'], **(abi or {})}
         })
+        self._is_core_async = is_core_async
         self._is_async = is_async
-        self._async_request_id = 1
 
         self.base = TonClientBase(client=self)
         self.crypto = TonCrypto(client=self)
@@ -76,20 +84,20 @@ class TonClient(object):
         return self._ctx
 
     @property
+    def is_core_async(self):
+        return self._is_core_async
+
+    @is_core_async.setter
+    def is_core_async(self, value: bool):
+        self._is_core_async = value
+
+    @property
     def is_async(self):
         return self._is_async
 
     @is_async.setter
     def is_async(self, value: bool):
         self._is_async = value
-
-    @property
-    def async_request_id(self):
-        return self._async_request_id
-
-    @async_request_id.setter
-    def async_request_id(self, value: int):
-        self._async_request_id = value
 
     @property
     def version(self):

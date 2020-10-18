@@ -4,10 +4,9 @@ from tonclient.bindings.lib import LIB_VERSION
 from tonclient.client import TonClient, DEVNET_BASE_URL
 
 
-class TestTonClient(unittest.TestCase):
+class TestTonClientAsyncCore(unittest.TestCase):
     def setUp(self) -> None:
-        self.client = TonClient(
-            network={'server_address': DEVNET_BASE_URL}, is_async=False)
+        self.client = TonClient(network={'server_address': DEVNET_BASE_URL})
 
     def test_version(self):
         self.assertEqual(LIB_VERSION, self.client.version())
@@ -20,5 +19,18 @@ class TestTonClient(unittest.TestCase):
         self.client.destroy_context()
 
 
-if __name__ == '__main__':
-    unittest.main()
+class TestTonClientSyncCore(unittest.TestCase):
+    """ Sync core is not recommended to use """
+    def setUp(self) -> None:
+        self.client = TonClient(
+            network={'server_address': DEVNET_BASE_URL}, is_core_async=False)
+
+    def test_version(self):
+        self.assertEqual(LIB_VERSION, self.client.version())
+
+    def test_get_api_reference(self):
+        reference = self.client.get_api_reference()
+        self.assertEqual(LIB_VERSION, reference['version'])
+
+    def test_destroy_context(self):
+        self.client.destroy_context()

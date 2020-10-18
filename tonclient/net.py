@@ -109,12 +109,8 @@ class TonNet(TonModule):
 
     @Response.subscribe_collection
     def subscribe_collection(self, query: TonQLQuery) -> int:
-        """ Method is available only in async mode """
-        if not self._client.is_async:
-            raise Exception('This method is available only in async mode')
-
         return self.request(
-            method='net.subscribe_collection', is_generator=True,
+            method='net.subscribe_collection', as_iterable=True,
             collection=query.collection, filter=query.filter,
             result=query.result)
 

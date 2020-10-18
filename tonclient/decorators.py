@@ -13,7 +13,8 @@ class Response(object):
         def response_or_generator(*args, **kwargs):
             def generator_wrapper():
                 for item in result:
-                    yield _callback(item)
+                    item['response_data'] = _callback(item['response_data'])
+                    yield item
 
             def response_wrapper():
                 return _callback(result)
@@ -269,6 +270,12 @@ class Response(object):
     def convert_address(cls, function):
         def __callback(result):
             return result['address']
+        return cls.__pretty(function=function, _callback=__callback)
+
+    @classmethod
+    def send_message(cls, function):
+        def __callback(result):
+            return result['shard_block_id']
         return cls.__pretty(function=function, _callback=__callback)
 
     @classmethod
