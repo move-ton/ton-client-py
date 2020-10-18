@@ -23,3 +23,19 @@ def send_grams(address: str):
         call_set=call_set)
     async_core_client.processing.process_message(
         message=message_source, send_events=False)
+
+
+def run_contract(address: str, abi: Abi, function_name: str, inputs: dict, signer=Signer()):
+    call_set = CallSet(
+        function_name=function_name,
+        inputs=inputs)
+    encoded = async_core_client.abi.encode_message(
+        abi=abi, signer=signer, address=address,
+        call_set=call_set)
+    shard_block_id = async_core_client.processing.send_message(
+        message=encoded["message"], send_events=False)
+    return async_core_client.processing.wait_for_transaction(encoded['message'], shard_block_id, send_events=False,
+                                                             abi=abi)
+
+
+#TODO deploy smart contract

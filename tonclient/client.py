@@ -14,6 +14,8 @@ from tonclient.processing import TonProcessing
 from tonclient.tvm import TonTvm
 from tonclient.utils import TonUtils
 
+#TODO async run
+
 DEVNET_BASE_URL = 'net.ton.dev'
 MAINNET_BASE_URL = 'main.ton.dev'
 
