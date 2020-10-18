@@ -16,7 +16,7 @@ class TonBoc(TonModule):
 
     @Response.parse_transaction
     def parse_transaction(self, boc: str) -> Dict[str, Any]:
-        """
+        self.return_ = """
         :param boc: Base64 encoded BOC
         :return:
         """
