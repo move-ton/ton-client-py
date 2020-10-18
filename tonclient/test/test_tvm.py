@@ -31,7 +31,7 @@ class TestTonTvmAsyncCore(unittest.TestCase):
             abi=abi, signer=signer, deploy_set=deploy_set, call_set=call_set)
 
         # Send grams
-        send_grams(address=deploy_message['address'], bounce=False)
+        send_grams(address=deploy_message['address'])
 
         # Deploy account
         message_source = MessageSource.from_encoded(

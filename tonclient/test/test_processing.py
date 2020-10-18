@@ -29,7 +29,7 @@ class TestTonProcessingAsyncCore(unittest.TestCase):
             deploy_set=self.deploy_set, call_set=call_set)
 
         # Send grams
-        send_grams(address=encoded['address'], bounce=False)
+        send_grams(address=encoded['address'])
 
         # Deploy account
         message_source = MessageSource.from_encoded(
@@ -52,7 +52,7 @@ class TestTonProcessingAsyncCore(unittest.TestCase):
             deploy_set=self.deploy_set, call_set=call_set)
 
         # Send grams
-        send_grams(address=encoded['address'], bounce=False)
+        send_grams(address=encoded['address'])
 
         # Send message
         shard_block_id = async_core_client.processing.send_message(

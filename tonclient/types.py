@@ -126,10 +126,7 @@ class Signer(object):
             return {'type': 'External', 'public_key': self.public}
         elif self.box_handle:
             return {'type': 'SigningBox', 'handle': self.box_handle}
-        else:
-            raise ValueError(
-                "One of 'keypair', 'public_key', 'signing_box_handle' should"
-                "be provided")
+        return {'type': 'None'}
 
     @staticmethod
     def from_keypair(keypair: KeyPair) -> 'Signer':
