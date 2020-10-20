@@ -19,9 +19,22 @@ class Response(object):
             def response_wrapper():
                 return _callback(result)
 
+            async def async_response_wrapper():
+                _result = await result
+                return _callback(_result)
+
+            async def async_generator_wrapper():
+                async for item in result:
+                    item['response_data'] = _callback(item['response_data'])
+                    yield item
+
             result = function(*args, **kwargs)
             if inspect.isgenerator(result):
                 return generator_wrapper()
+            elif inspect.iscoroutine(result):
+                return async_response_wrapper()
+            elif inspect.isasyncgen(result):
+                return async_generator_wrapper()
             return response_wrapper()
 
         return response_or_generator

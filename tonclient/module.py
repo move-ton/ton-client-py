@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 
@@ -70,7 +71,13 @@ class TonModule(object):
             response_handler=self._async_response_handler)
 
         if as_iterable:
+            if self._client.is_async:
+                return self._async_response_generator_coro(
+                    request_id=request_id)
             return self._async_response_generator(request_id=request_id)
+
+        if self._client.is_async:
+            return self._async_response_resolver_coro(request_id=request_id)
         return self._async_response_resolver(request_id=request_id)
 
     def _generate_request_id(self, size: int = 3) -> int:
@@ -102,10 +109,48 @@ class TonModule(object):
                     del self._async_response_map[request_id]
                     return resolved
 
+    async def _async_response_resolver_coro(self, request_id: int) -> Any:
+        read_len = 0
+        resolved = None
+        while True:
+            await asyncio.sleep(0.0001)
+            responses = self._async_response_map[request_id][read_len:]
+            read_len += len(responses)
+            for item in responses:
+                if item['response_type'] == TCResponseType.Error:
+                    del self._async_response_map[request_id]
+                    raise TonException(item['response_data'])
+                if item['response_type'] == TCResponseType.Success:
+                    resolved = item['response_data']
+                if item['finished']:
+                    del self._async_response_map[request_id]
+                    return resolved
+
     def _async_response_generator(self, request_id: int) -> Any:
         read_len = 0
         while True:
             time.sleep(0.0001)
+            responses = self._async_response_map[request_id][read_len:]
+            read_len += len(responses)
+            try:
+                for item in responses:
+                    if item['response_type'] == TCResponseType.Error:
+                        del self._async_response_map[request_id]
+                        raise TonException(item['response_data'])
+                    if item['finished']:
+                        del self._async_response_map[request_id]
+                        if item['response_data']:
+                            yield item
+                        return
+                    yield item
+            except GeneratorExit:
+                del self._async_response_map[request_id]
+                return
+
+    async def _async_response_generator_coro(self, request_id: int) -> Any:
+        read_len = 0
+        while True:
+            await asyncio.sleep(0.0001)
             responses = self._async_response_map[request_id][read_len:]
             read_len += len(responses)
             try:
