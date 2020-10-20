@@ -204,7 +204,7 @@ class MessageSource(object):
             key: value.dict if hasattr(value, 'dict') else value
             for key, value in self._kwargs.items()
         }
-        return {self.source_type: params}
+        return {'type': self.source_type, **params}
 
     @staticmethod
     def from_encoded(message: str, abi: Abi = None) -> 'MessageSource':
@@ -229,7 +229,7 @@ class StateInitSource(object):
 
     @property
     def dict(self):
-        return {self.source_type: self._kwargs}
+        return {'type': self.source_type, **self._kwargs}
 
     @staticmethod
     def from_message(message: MessageSource) -> 'StateInitSource':
@@ -271,14 +271,14 @@ class StateInitSource(object):
 
 
 class AddressStringFormat(object):
-    AccountId = {'AccountId': {}}
-    Hex = {'Hex': {}}
+    AccountId = {'type': 'AccountId'}
+    Hex = {'type': 'Hex'}
 
     @staticmethod
     def base64(
             url: bool = False, test: bool = False, bounce: bool = False
-    ) -> Dict[str, Dict[str, bool]]:
-        return {'Base64': {'url': url, 'test': test, 'bounce': bounce}}
+    ) -> Dict[str, Union[str, bool]]:
+        return {'type': 'Base64', 'url': url, 'test': test, 'bounce': bounce}
 
 
 class ExecutionMode(object):

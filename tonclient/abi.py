@@ -70,6 +70,28 @@ class TonAbi(TonModule):
             address=address, deploy_set=deploy_set, call_set=call_set,
             signer=signer.dict, processing_try_index=processing_try_index)
 
+    def encode_message_body(
+            self, abi: Abi, call_set: CallSet, signer: Signer,
+            is_internal: bool, processing_try_index: int = 0) -> Dict[str, str]:
+        """
+        Encodes message body according to ABI function call
+        :param abi: Contract ABI
+        :param call_set: Function call parameters. Must be specified in
+                non deploy message. In case of deploy message contains
+                parameters of constructor
+        :param signer: Signing parameters
+        :param is_internal: True if internal message body must be encoded
+        :param processing_try_index: Processing try index. Used in message
+                processing with retries. Encoder uses the provided try index
+                to calculate message expiration time. Expiration timeouts will
+                grow with every retry
+        :return:
+        """
+        return self.request(
+            method='abi.encode_message_body', abi=abi.dict,
+            call_set=call_set.dict, signer=signer.dict,
+            is_internal=is_internal, processing_try_index=processing_try_index)
+
     def attach_signature(
             self, abi: Abi, public_key: str, message: str, signature: str
     ) -> Dict[str, str]:
@@ -82,4 +104,18 @@ class TonAbi(TonModule):
         """
         return self.request(
             method='abi.attach_signature', abi=abi.dict,
+            public_key=public_key, message=message, signature=signature)
+
+    def attach_signature_to_message_body(
+            self, abi: Abi, public_key: str, message: str, signature: str
+    ) -> Dict[str, str]:
+        """
+        :param abi: Contract ABI
+        :param public_key: Hex encoded public key
+        :param message: Base64 encoded unsigned message BOC
+        :param signature: Hex encoded signature
+        :return:
+        """
+        return self.request(
+            method='abi.attach_signature_to_message_body', abi=abi.dict,
             public_key=public_key, message=message, signature=signature)
