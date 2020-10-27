@@ -281,6 +281,43 @@ class AddressStringFormat(object):
         return {'type': 'Base64', 'url': url, 'test': test, 'bounce': bounce}
 
 
-class ExecutionMode(object):
-    Full = 'Full'
-    TvmOnly = 'TvmOnly'
+class AccountForExecutor(object):
+    def __init__(
+            self, uninit: bool = False, boc: str = None,
+            unlimited_balance: bool = False):
+        self._uninit = uninit
+        self._boc = boc
+        self._unlimited_balance = unlimited_balance
+
+    @property
+    def dict(self) -> Dict[str, Any]:
+        if self._uninit:
+            return {'type': 'Uninit'}
+        elif self._boc:
+            return {
+                'type': 'Account',
+                'boc': self._boc,
+                'unlimited_balance': self._unlimited_balance
+            }
+        return {'type': 'None'}
+
+    @staticmethod
+    def uninit() -> 'AccountForExecutor':
+        """
+        Emulate uninitialized account to run deploy message
+        :return:
+        """
+        return AccountForExecutor(uninit=True)
+
+    @staticmethod
+    def from_account(
+            boc: str, unlimited_balance: bool = False
+    ) -> 'AccountForExecutor':
+        """
+        :param boc: Base64 encoded account BOC
+        :param unlimited_balance: Flag for running account with the unlimited
+                balance. Can be used to calculate transaction fees without
+                balance check
+        :return:
+        """
+        return AccountForExecutor(boc=boc, unlimited_balance=unlimited_balance)

@@ -27,21 +27,21 @@ class TestTonAbiAsyncCore(unittest.TestCase):
         decoded = async_core_client.abi.decode_message(
             abi=self.events_abi, message=message)
         self.assertEqual(
-            {'body_type': 'Input', 'name': 'returnValue', 'value': {'id': '0x0'}, 'header': {'expire': 1599458404, 'time': 1599458364291, 'pubkey': '4c7c408ff1ddebb8d6405ee979c716a14fdd6cc08124107a61d3c25597099499'}},
+            {'body_type': 'Input', 'name': 'returnValue', 'value': {'id': '0x0000000000000000000000000000000000000000000000000000000000000000'}, 'header': {'expire': 1599458404, 'time': 1599458364291, 'pubkey': '4c7c408ff1ddebb8d6405ee979c716a14fdd6cc08124107a61d3c25597099499'}},
             decoded)
 
         message = 'te6ccgEBAQEAVQAApeACvg5/pmQpY4m61HmJ0ne+zjHJu3MNG8rJxUDLbHKBu/AAAAAAAAAMJL6z6ro48sYvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABA'
         decoded = async_core_client.abi.decode_message(
             abi=self.events_abi, message=message)
         self.assertEqual(
-            {'body_type': 'Event', 'name': 'EventThrown', 'value': {'id': '0x0'}, 'header': None},
+            {'body_type': 'Event', 'name': 'EventThrown', 'value': {'id': '0x0000000000000000000000000000000000000000000000000000000000000000'}, 'header': None},
             decoded)
 
         message = 'te6ccgEBAQEAVQAApeACvg5/pmQpY4m61HmJ0ne+zjHJu3MNG8rJxUDLbHKBu/AAAAAAAAAMKr6z6rxK3xYJAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABA'
         decoded = async_core_client.abi.decode_message(
             abi=self.events_abi, message=message)
         self.assertEqual(
-            {'body_type': 'Output', 'name': 'returnValue', 'value': {'value0': '0x0'}, 'header': None},
+            {'body_type': 'Output', 'name': 'returnValue', 'value': {'value0': '0x0000000000000000000000000000000000000000000000000000000000000000'}, 'header': None},
             decoded)
 
         with self.assertRaises(TonException):
@@ -54,7 +54,7 @@ class TestTonAbiAsyncCore(unittest.TestCase):
         decoded = async_core_client.abi.decode_message_body(
             abi=self.events_abi, body=parsed['body'])
         self.assertEqual(
-            {'body_type': 'Input', 'name': 'returnValue', 'value': {'id': '0x0'}, 'header': {'expire': 1599458404, 'time': 1599458364291, 'pubkey': '4c7c408ff1ddebb8d6405ee979c716a14fdd6cc08124107a61d3c25597099499'}},
+            {'body_type': 'Input', 'name': 'returnValue', 'value': {'id': '0x0000000000000000000000000000000000000000000000000000000000000000'}, 'header': {'expire': 1599458404, 'time': 1599458364291, 'pubkey': '4c7c408ff1ddebb8d6405ee979c716a14fdd6cc08124107a61d3c25597099499'}},
             decoded)
 
     def test_encode_message(self):
@@ -228,21 +228,21 @@ class TestTonAbiSyncCore(unittest.TestCase):
         decoded = sync_core_client.abi.decode_message(
             abi=self.events_abi, message=message)
         self.assertEqual(
-            {'body_type': 'Input', 'name': 'returnValue', 'value': {'id': '0x0'}, 'header': {'expire': 1599458404, 'time': 1599458364291, 'pubkey': '4c7c408ff1ddebb8d6405ee979c716a14fdd6cc08124107a61d3c25597099499'}},
+            {'body_type': 'Input', 'name': 'returnValue', 'value': {'id': '0x0000000000000000000000000000000000000000000000000000000000000000'}, 'header': {'expire': 1599458404, 'time': 1599458364291, 'pubkey': '4c7c408ff1ddebb8d6405ee979c716a14fdd6cc08124107a61d3c25597099499'}},
             decoded)
 
         message = 'te6ccgEBAQEAVQAApeACvg5/pmQpY4m61HmJ0ne+zjHJu3MNG8rJxUDLbHKBu/AAAAAAAAAMJL6z6ro48sYvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABA'
         decoded = sync_core_client.abi.decode_message(
             abi=self.events_abi, message=message)
         self.assertEqual(
-            {'body_type': 'Event', 'name': 'EventThrown', 'value': {'id': '0x0'}, 'header': None},
+            {'body_type': 'Event', 'name': 'EventThrown', 'value': {'id': '0x0000000000000000000000000000000000000000000000000000000000000000'}, 'header': None},
             decoded)
 
         message = 'te6ccgEBAQEAVQAApeACvg5/pmQpY4m61HmJ0ne+zjHJu3MNG8rJxUDLbHKBu/AAAAAAAAAMKr6z6rxK3xYJAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABA'
         decoded = sync_core_client.abi.decode_message(
             abi=self.events_abi, message=message)
         self.assertEqual(
-            {'body_type': 'Output', 'name': 'returnValue', 'value': {'value0': '0x0'}, 'header': None},
+            {'body_type': 'Output', 'name': 'returnValue', 'value': {'value0': '0x0000000000000000000000000000000000000000000000000000000000000000'}, 'header': None},
             decoded)
 
         with self.assertRaises(TonException):

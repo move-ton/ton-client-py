@@ -9,6 +9,7 @@ class TonBoc(TonModule):
     @Response.parse_message
     def parse_message(self, boc: str) -> Dict[str, Any]:
         """
+        Parses message BOC into a JSON
         :param boc: Base64 encoded BOC
         :return:
         """
@@ -17,6 +18,7 @@ class TonBoc(TonModule):
     @Response.parse_transaction
     def parse_transaction(self, boc: str) -> Dict[str, Any]:
         """
+        Parses transaction BOC into a JSON
         :param boc: Base64 encoded BOC
         :return:
         """
@@ -25,6 +27,7 @@ class TonBoc(TonModule):
     @Response.parse_account
     def parse_account(self, boc: str) -> Dict[str, Any]:
         """
+        Parses account BOC into a JSON
         :param boc: Base64 encoded BOC
         :return:
         """
@@ -33,6 +36,7 @@ class TonBoc(TonModule):
     @Response.parse_block
     def parse_block(self, boc: str) -> Dict[str, Any]:
         """
+        Parses block BOC into a JSON
         :param boc: Base64 encoded BOC
         :return:
         """

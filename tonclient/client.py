@@ -1,4 +1,4 @@
-from typing import Dict, Union
+from typing import Dict, Union, Any
 
 from tonclient.bindings.lib import tc_create_context, tc_destroy_context, \
     tc_read_string, tc_destroy_string
@@ -13,8 +13,6 @@ from tonclient.abi import TonAbi
 from tonclient.processing import TonProcessing
 from tonclient.tvm import TonTvm
 from tonclient.utils import TonUtils
-
-#TODO async run
 
 DEVNET_BASE_URL = 'net.ton.dev'
 MAINNET_BASE_URL = 'main.ton.dev'
@@ -41,11 +39,17 @@ CLIENT_DEFAULT_SETUP = {
 class TonClientBase(TonModule):
     @Response.version
     def version(self) -> str:
+        """ Returns Core Library version """
         return self.request(method='client.version')
 
     @Response.get_api_reference
     def get_api_reference(self) -> Dict:
+        """ Returns Core Library API reference """
         return self.request(method='client.get_api_reference')
+
+    @Response.build_info
+    def build_info(self) -> Dict[str, Any]:
+        return self.request(method='client.build_info')
 
 
 class TonClient(object):
@@ -108,6 +112,10 @@ class TonClient(object):
     @property
     def get_api_reference(self):
         return self.base.get_api_reference
+
+    @property
+    def build_info(self):
+        return self.base.build_info
 
     @staticmethod
     def create_context(config: Dict[str, Dict[str, Union[str, int, float]]]):

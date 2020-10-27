@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, Generator
 
 from tonclient.decorators import Response
 from tonclient.module import TonModule
@@ -94,6 +94,7 @@ class TonNet(TonModule):
     """ Free TON net SDK API implementation """
     @Response.query_collection
     def query_collection(self, query: TonQLQuery) -> Any:
+        """ Queries collection data """
         return self.request(
             method='net.query_collection', collection=query.collection,
             filter=query.filter, result=query.result, order=query.order,
@@ -102,17 +103,23 @@ class TonNet(TonModule):
     @Response.wait_for_collection
     def wait_for_collection(
             self, query: TonQLQuery, timeout: int = None) -> Any:
+        """
+        Returns an object that fulfills the conditions or waits for
+        its appearance
+        """
         return self.request(
             method='net.wait_for_collection',
             collection=query.collection, filter=query.filter,
             result=query.result, timeout=timeout)
 
     @Response.subscribe_collection
-    def subscribe_collection(self, query: TonQLQuery) -> int:
+    def subscribe_collection(self, query: TonQLQuery) -> Generator:
+        """ Creates a subscription """
         return self.request(
             method='net.subscribe_collection', as_iterable=True,
             collection=query.collection, filter=query.filter,
             result=query.result)
 
     def unsubscribe(self, handle: int):
+        """ Cancels a subscription """
         return self.request(method='net.unsubscribe', handle=handle)

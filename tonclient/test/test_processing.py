@@ -4,7 +4,7 @@ import unittest
 
 from tonclient.test.test_abi import SAMPLES_DIR
 from tonclient.test.helpers import send_grams, async_core_client
-from tonclient.types import Abi, DeploySet, CallSet, Signer, MessageSource
+from tonclient.types import Abi, DeploySet, CallSet, Signer
 
 
 class TestTonProcessingAsyncCore(unittest.TestCase):
@@ -17,8 +17,6 @@ class TestTonProcessingAsyncCore(unittest.TestCase):
 
     def test_process_message(self):
         # Prepare data for deployment message
-        events_abi = Abi.from_json_path(
-            path=os.path.join(SAMPLES_DIR, 'Events.abi.json'))
         keypair = async_core_client.crypto.generate_random_sign_keys()
         signer = Signer.from_keypair(keypair=keypair)
         call_set = CallSet(
@@ -32,11 +30,37 @@ class TestTonProcessingAsyncCore(unittest.TestCase):
         send_grams(address=encoded['address'])
 
         # Deploy account
-        message_source = MessageSource.from_encoded(
-            message=encoded['message'], abi=events_abi)
         result = async_core_client.processing.process_message(
-            message=message_source, send_events=False)
+            abi=self.events_abi, signer=signer, deploy_set=self.deploy_set,
+            call_set=call_set, send_events=False)
 
+        self.assertEqual([], result['out_messages'])
+        self.assertEqual(
+            {'out_messages': [], 'output': None}, result['decoded'])
+
+    def test_process_message_with_events(self):
+        # Prepare data for deployment message
+        keypair = async_core_client.crypto.generate_random_sign_keys()
+        signer = Signer.from_keypair(keypair=keypair)
+        call_set = CallSet(
+            function_name='constructor', header={'pubkey': keypair.public})
+        # Encode deployment message
+        encoded = async_core_client.abi.encode_message(
+            abi=self.events_abi, signer=signer,
+            deploy_set=self.deploy_set, call_set=call_set)
+
+        # Send grams
+        send_grams(address=encoded['address'])
+
+        # Deploy account
+        generator = async_core_client.processing.process_message(
+            abi=self.events_abi, signer=signer, deploy_set=self.deploy_set,
+            call_set=call_set, send_events=True)
+        events = []
+        for event in generator:
+            events.append(event)
+
+        result = events[-1]['response_data']
         self.assertEqual([], result['out_messages'])
         self.assertEqual(
             {'out_messages': [], 'output': None}, result['decoded'])
@@ -62,6 +86,40 @@ class TestTonProcessingAsyncCore(unittest.TestCase):
         result = async_core_client.processing.wait_for_transaction(
             message=encoded['message'], shard_block_id=shard_block_id,
             send_events=False, abi=self.events_abi)
+        self.assertEqual([], result['out_messages'])
+        self.assertEqual(
+            {'out_messages': [], 'output': None}, result['decoded'])
+
+    def test_wait_for_transaction_with_events(self):
+        # Create deploy message
+        keypair = async_core_client.crypto.generate_random_sign_keys()
+        signer = Signer.from_keypair(keypair=keypair)
+        call_set = CallSet(
+            function_name='constructor', header={'pubkey': keypair.public})
+        encoded = async_core_client.abi.encode_message(
+            abi=self.events_abi, signer=signer,
+            deploy_set=self.deploy_set, call_set=call_set)
+
+        # Send grams
+        send_grams(address=encoded['address'])
+
+        # Send message
+        generator = async_core_client.processing.send_message(
+            message=encoded['message'], send_events=True, abi=self.events_abi)
+        events = []
+        for event in generator:
+            events.append(event)
+        shard_block_id = events[-1]['response_data']
+
+        # Wait for transaction
+        generator = async_core_client.processing.wait_for_transaction(
+            message=encoded['message'], shard_block_id=shard_block_id,
+            send_events=True, abi=self.events_abi)
+        events.clear()
+        for event in generator:
+            events.append(event)
+
+        result = events[-1]['response_data']
         self.assertEqual([], result['out_messages'])
         self.assertEqual(
             {'out_messages': [], 'output': None}, result['decoded'])

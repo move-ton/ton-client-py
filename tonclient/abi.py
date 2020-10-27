@@ -8,6 +8,7 @@ class TonAbi(TonModule):
     """ Free TON abi SDK API implementation """
     def decode_message(self, abi: Abi, message: str) -> Dict[str, Any]:
         """
+        Decodes message body using provided message BOC and ABI
         :param abi: Contract ABI
         :param message: Message BOC
         :return:
@@ -19,6 +20,7 @@ class TonAbi(TonModule):
             self, abi: Abi, body: str, is_internal: bool = False
     ) -> Dict[str, Any]:
         """
+        Decodes message body using provided body BOC and ABI
         :param abi: Contract ABI used to decode
         :param body: Base64 encoded message body BOC
         :param is_internal: True if the body belongs to the internal message
@@ -33,6 +35,7 @@ class TonAbi(TonModule):
             last_trans_lt: int = None, last_paid: int = None
     ) -> Dict[str, str]:
         """
+        Creates account state BOC
         :param state_init: Source of the account state init
         :param balance: Initial balance
         :param last_trans_lt: Initial value for the 'last_trans_lt'
@@ -48,6 +51,7 @@ class TonAbi(TonModule):
             deploy_set: DeploySet = None, call_set: CallSet = None,
             processing_try_index: int = 0) -> Dict[str, str]:
         """
+        Encodes an ABI-compatible message
         :param abi: Contract ABI
         :param address: Contract address. Must be specified in case of
                 non deploy message
@@ -72,7 +76,8 @@ class TonAbi(TonModule):
 
     def encode_message_body(
             self, abi: Abi, call_set: CallSet, signer: Signer,
-            is_internal: bool, processing_try_index: int = 0) -> Dict[str, str]:
+            is_internal: bool, processing_try_index: int = 0
+    ) -> Dict[str, str]:
         """
         Encodes message body according to ABI function call
         :param abi: Contract ABI
@@ -96,6 +101,7 @@ class TonAbi(TonModule):
             self, abi: Abi, public_key: str, message: str, signature: str
     ) -> Dict[str, str]:
         """
+        Combines hex-encoded signature with base64-encoded unsigned message
         :param abi: Contract ABI
         :param public_key: Hex encoded public key
         :param message: Base64 encoded unsigned message BOC

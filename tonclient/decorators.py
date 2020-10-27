@@ -52,6 +52,13 @@ class Response(object):
         return cls.__pretty(function=function, _callback=__callback)
 
     @classmethod
+    def build_info(cls, function):
+        def __callback(result):
+            return result['build_info']
+
+        return cls.__pretty(function=function, _callback=__callback)
+
+    @classmethod
     def sha256(cls, function):
         def __callback(result):
             return result['hash']
@@ -288,11 +295,11 @@ class Response(object):
     @classmethod
     def send_message(cls, function):
         def __callback(result):
-            return result['shard_block_id']
+            return result.get('shard_block_id', result)
         return cls.__pretty(function=function, _callback=__callback)
 
     @classmethod
-    def execute_get(cls, function):
+    def run_get(cls, function):
         def __callback(result):
             return result['output']
         return cls.__pretty(function=function, _callback=__callback)
