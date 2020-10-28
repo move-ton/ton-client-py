@@ -1,6 +1,8 @@
 # TON Client
 Free TON Python 3.6+ binding.
 
+![TonClient](https://github.com/move-ton/ton-client-py/workflows/TonClient/badge.svg?branch=master)
+
 ## Installation
 1. Create python virtual environment using `pipenv` or `virtualenv`
 2. Activate created environment
