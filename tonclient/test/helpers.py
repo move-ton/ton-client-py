@@ -19,5 +19,5 @@ def send_grams(address: str):
         function_name='grant',
         inputs={'addr': address})
     async_core_client.processing.process_message(
-        abi=giver_abi, signer=Signer(), address=GIVER_ADDRESS,
+        abi=giver_abi, signer=Signer.none(), address=GIVER_ADDRESS,
         call_set=call_set, send_events=False)

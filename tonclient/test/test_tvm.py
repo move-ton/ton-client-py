@@ -126,7 +126,7 @@ class TestTonTvmAsyncCore(unittest.TestCase):
     def test_run_executor_acc_none(self):
         message = 'te6ccgEBAQEAXAAAs0gAV2lB0HI8/VEO/pBKDJJJeoOcIh+dL9JzpmRzM8PfdicAPGNEGwRWGaJsR6UYmnsFVC2llSo1ZZN5mgUnCiHf7ZaUBKgXyAAGFFhgAAAB69+UmQS/LjmiQA=='
         result = async_core_client.tvm.run_executor(
-            message=message, account=AccountForExecutor(),
+            message=message, account=AccountForExecutor.none(),
             skip_transaction_check=True)
 
         parsed = async_core_client.boc.parse_account(boc=result['account'])

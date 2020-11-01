@@ -129,6 +129,10 @@ class Signer(object):
         return {'type': 'None'}
 
     @staticmethod
+    def none() -> 'Signer':
+        return Signer()
+
+    @staticmethod
     def from_keypair(keypair: KeyPair) -> 'Signer':
         return Signer(keypair=keypair)
 
@@ -300,6 +304,10 @@ class AccountForExecutor(object):
                 'unlimited_balance': self._unlimited_balance
             }
         return {'type': 'None'}
+
+    @staticmethod
+    def none() -> 'AccountForExecutor':
+        return AccountForExecutor()
 
     @staticmethod
     def uninit() -> 'AccountForExecutor':
