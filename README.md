@@ -2,7 +2,9 @@
 TON SDK Client library Python bindings.
 Works for Python 3.6+ 
 
-![TonClient Ubuntu 20.04](https://github.com/move-ton/ton-client-py/workflows/TonClient%20Ubuntu%2020.04/badge.svg) ![TonClient MacOS Latest](https://github.com/move-ton/ton-client-py/workflows/TonClient%20MacOS%20Latest/badge.svg)
+![PyPI](https://img.shields.io/pypi/v/ton-client-py?label=PyPI)
+![TonClient Ubuntu 20.04](https://github.com/move-ton/ton-client-py/workflows/TonClient%20Ubuntu%2020.04/badge.svg) 
+![TonClient MacOS Latest](https://github.com/move-ton/ton-client-py/workflows/TonClient%20MacOS%20Latest/badge.svg)
 
 ## Installation
 1. Create python virtual environment using `pipenv` or `virtualenv`
