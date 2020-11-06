@@ -1,2 +1,2 @@
 graft tonclient
-
+global-exclude */__pycache__/* *.DS_Store
