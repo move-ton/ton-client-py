@@ -2,8 +2,7 @@ from typing import Dict, Union, List
 
 from tonclient.decorators import Response
 from tonclient.module import TonModule
-from tonclient.types import KeyPair, DEFAULT_MNEMONIC_DICTIONARY, \
-    DEFAULT_MNEMONIC_WORD_COUNT, DEFAULT_HDKEY_DERIVATION_PATH
+from tonclient.types import KeyPair, DEFAULT_HDKEY_DERIVATION_PATH
 
 
 class TonCrypto(TonModule):
@@ -78,8 +77,7 @@ class TonCrypto(TonModule):
             child_index=child_index, hardened=hardened)
 
     @Response.hdkey_derive_from_xprv_path
-    def hdkey_derive_from_xprv_path(
-            self, xprv: str, path: str = DEFAULT_HDKEY_DERIVATION_PATH) -> str:
+    def hdkey_derive_from_xprv_path(self, xprv: str, path: str) -> str:
         """
         Derives the extended private key from the specified key and path.
         :param xprv: Serialized extended private key
@@ -188,8 +186,7 @@ class TonCrypto(TonModule):
             method='crypto.generate_random_bytes', length=length)
 
     @Response.mnemonic_words
-    def mnemonic_words(
-            self, dictionary: int = DEFAULT_MNEMONIC_DICTIONARY) -> str:
+    def mnemonic_words(self, dictionary: int = None) -> str:
         """
         Prints the list of words from the specified dictionary.
         :param dictionary: Dictionary identifier
@@ -200,8 +197,7 @@ class TonCrypto(TonModule):
 
     @Response.mnemonic_from_random
     def mnemonic_from_random(
-            self, dictionary: int = DEFAULT_MNEMONIC_DICTIONARY,
-            word_count: int = DEFAULT_MNEMONIC_WORD_COUNT) -> str:
+            self, dictionary: int = None, word_count: int = None) -> str:
         """
         Generates a random mnemonic from the specified dictionary
         and word count.
@@ -215,8 +211,8 @@ class TonCrypto(TonModule):
 
     @Response.mnemonic_from_entropy
     def mnemonic_from_entropy(
-            self, entropy: str, dictionary: int = DEFAULT_MNEMONIC_DICTIONARY,
-            word_count: int = DEFAULT_MNEMONIC_WORD_COUNT) -> str:
+            self, entropy: str, dictionary: int = None,
+            word_count: int = None) -> str:
         """
         Generates mnemonic from pre-generated entropy.
         :param entropy: Hex encoded entropy bytes
@@ -230,8 +226,8 @@ class TonCrypto(TonModule):
 
     @Response.mnemonic_verify
     def mnemonic_verify(
-            self, phrase: str, dictionary: int = DEFAULT_MNEMONIC_DICTIONARY,
-            word_count: int = DEFAULT_MNEMONIC_WORD_COUNT) -> bool:
+            self, phrase: str, dictionary: int = None,
+            word_count: int = None) -> bool:
         """
         The phrase supplied will be checked for word length and validated
         according to the checksum specified in BIP0039.
@@ -246,9 +242,8 @@ class TonCrypto(TonModule):
 
     @Response.mnemonic_derive_sign_keys
     def mnemonic_derive_sign_keys(
-            self, phrase: str, path: str = DEFAULT_HDKEY_DERIVATION_PATH,
-            dictionary: int = DEFAULT_MNEMONIC_DICTIONARY,
-            word_count: int = DEFAULT_MNEMONIC_WORD_COUNT) -> KeyPair:
+            self, phrase: str, path: str = None, dictionary: int = None,
+            word_count: int = None) -> KeyPair:
         """
         Validates the seed phrase, generates master key and then derives
         the key pair from the master key and the specified path.

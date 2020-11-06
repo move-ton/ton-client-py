@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="ton-client-py",
-    version="1.0.0.4",
+    version="1.0.0.5",
     author="MoveTON",
     author_email="",
     description=u"Python SDK for Free TON",
@@ -21,5 +21,5 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ),
     python_requires='>=3.6',
-    install_requires=['aiounittest']
+    install_requires=[]
 )

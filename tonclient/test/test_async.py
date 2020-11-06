@@ -1,22 +1,24 @@
+import unittest
 import asyncio
 from datetime import datetime
-
-import aiounittest
 
 from tonclient.client import TonClient, DEVNET_BASE_URL
 from tonclient.net import TonQLQuery
 
 
-class TestTonClientAsync(aiounittest.AsyncTestCase):
+class TestTonClientAsync(unittest.TestCase):
     def setUp(self) -> None:
         self.client = TonClient(
             network={'server_address': DEVNET_BASE_URL}, is_async=True)
 
-    async def test_gathering(self):
-        subscribe_results, mnemonics = await asyncio.gather(
-            self._coro_subscription(), self._coro_mnemonics())
-        self.assertGreater(len(subscribe_results), 0)
-        self.assertEqual(10, len(mnemonics))
+    def test_gathering(self):
+        async def __main():
+            subscribe_results, mnemonics = await asyncio.gather(
+                self._coro_subscription(), self._coro_mnemonics())
+            self.assertGreater(len(subscribe_results), 0)
+            self.assertEqual(10, len(mnemonics))
+
+        asyncio.get_event_loop().run_until_complete(__main())
 
     async def _coro_subscription(self):
         now = int(datetime.now().timestamp())
@@ -39,7 +41,7 @@ class TestTonClientAsync(aiounittest.AsyncTestCase):
     async def _coro_mnemonics(self):
         mnemonics = []
         while len(mnemonics) < 10:
-            mnemonics.append(
-                await self.client.crypto.mnemonic_from_random())
+            mnemonic = await self.client.crypto.mnemonic_from_random()
+            mnemonics.append(mnemonic)
             await asyncio.sleep(1)
         return mnemonics

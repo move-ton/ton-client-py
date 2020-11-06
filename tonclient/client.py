@@ -12,6 +12,8 @@ from tonclient.net import TonNet
 from tonclient.abi import TonAbi
 from tonclient.processing import TonProcessing
 from tonclient.tvm import TonTvm
+from tonclient.types import DEFAULT_MNEMONIC_DICTIONARY, \
+    DEFAULT_MNEMONIC_WORD_COUNT, DEFAULT_HDKEY_DERIVATION_PATH
 from tonclient.utils import TonUtils
 
 DEVNET_BASE_URL = 'net.ton.dev'
@@ -20,6 +22,7 @@ MAINNET_BASE_URL = 'main.ton.dev'
 CLIENT_DEFAULT_SETUP = {
     'network': {
         'server_address': 'http://localhost',
+        'network_retries_count': 5,
         'message_retries_count': 5,
         'message_processing_timeout': 40000,
         'wait_for_timeout': 40000,
@@ -27,9 +30,13 @@ CLIENT_DEFAULT_SETUP = {
         'access_key': ''
     },
     'crypto': {
-        'fish_param': ''
+        'mnemonic_dictionary': DEFAULT_MNEMONIC_DICTIONARY,
+        'mnemonic_word_count': DEFAULT_MNEMONIC_WORD_COUNT,
+        'hdkey_derivation_path': DEFAULT_HDKEY_DERIVATION_PATH,
+        'hdkey_compliant': True
     },
     'abi': {
+        'workchain': 0,
         'message_expiration_timeout': 40000,
         'message_expiration_timeout_grow_factor': 1.5
     }

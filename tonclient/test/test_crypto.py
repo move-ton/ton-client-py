@@ -176,6 +176,9 @@ class TestTonCryptoAsyncCore(unittest.TestCase):
             async_core_client.crypto.mnemonic_words(dictionary=100)
 
     def test_mnemonic_from_random(self):
+        mnemonic = async_core_client.crypto.mnemonic_from_random()
+        self.assertEqual(12, len(mnemonic.split(' ')))
+
         for d in range(1, 8):
             for count in [12, 15, 18, 21, 24]:
                 mnemonic = async_core_client.crypto.mnemonic_from_random(
@@ -196,6 +199,10 @@ class TestTonCryptoAsyncCore(unittest.TestCase):
             async_core_client.crypto.mnemonic_from_entropy(entropy='01')
 
     def test_mnemonic_verify(self):
+        mnemonic = async_core_client.crypto.mnemonic_from_random()
+        valid = async_core_client.crypto.mnemonic_verify(phrase=mnemonic)
+        self.assertEqual(True, valid)
+
         for d in range(1, 8):
             for count in [12, 15, 18, 21, 24]:
                 mnemonic = async_core_client.crypto.mnemonic_from_random(
@@ -208,6 +215,11 @@ class TestTonCryptoAsyncCore(unittest.TestCase):
         self.assertEqual(False, valid)
 
     def test_mnemonic_derive_sign_keys(self):
+        mnemonic = async_core_client.crypto.mnemonic_from_random()
+        keypair = async_core_client.crypto.mnemonic_derive_sign_keys(
+            phrase=mnemonic)
+        self.assertIsInstance(keypair, KeyPair)
+
         phrase = 'unit follow zone decline glare flower crisp vocal adapt magic much mesh cherry teach mechanic rain float vicious solution assume hedgehog rail sort chuckle'
         keypair = async_core_client.crypto.mnemonic_derive_sign_keys(
             phrase=phrase, dictionary=MnemonicDictionary.TON, word_count=24)

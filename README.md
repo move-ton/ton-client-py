@@ -11,14 +11,11 @@ Works for Python 3.6+
 ## Installation
 1. Create python virtual environment using `pipenv` or `virtualenv`
 2. Activate created environment
-3. Run `pip install ton-client-py`  
-
-If you encounter problems while installing `aiounittest` just skip this step. It is needed only for running `asyncio` test.
+3. Run `pip install ton-client-py`
 
 ## Tests
 1. Create python virtual environment using `pipenv` or `virtualenv` and activate it
 2. Clone git repository and enter it
-3. Run `python setup.py install`
 3. Run `python -m unittest`
 
 ## Client
