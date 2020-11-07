@@ -2,7 +2,7 @@ from typing import Dict, Union, List
 
 from tonclient.decorators import Response
 from tonclient.module import TonModule
-from tonclient.types import KeyPair, DEFAULT_HDKEY_DERIVATION_PATH
+from tonclient.types import KeyPair
 
 
 class TonCrypto(TonModule):

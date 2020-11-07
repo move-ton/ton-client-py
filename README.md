@@ -33,10 +33,11 @@ client_sync_core = TonClient(is_core_async=False)
 ```
 
 Client is created with default config
-```
-{
+```python
+CLIENT_DEFAULT_SETUP = {
     'network': {
         'server_address': 'http://localhost',
+        'network_retries_count': 5,
         'message_retries_count': 5,
         'message_processing_timeout': 40000,
         'wait_for_timeout': 40000,
@@ -44,9 +45,13 @@ Client is created with default config
         'access_key': ''
     },
     'crypto': {
-        'fish_param': ''
+        'mnemonic_dictionary': 1,
+        'mnemonic_word_count': 12,
+        'hdkey_derivation_path': "m/44'/396'/0'/0/0",
+        'hdkey_compliant': True
     },
     'abi': {
+        'workchain': 0,
         'message_expiration_timeout': 40000,
         'message_expiration_timeout_grow_factor': 1.5
     }
