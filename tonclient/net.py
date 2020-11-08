@@ -6,6 +6,10 @@ from tonclient.module import TonModule
 
 class TonQLQuery(object):
     def __init__(self, collection: str):
+        """
+        :param collection: Collection name (accounts, blocks, transactions,
+                messages, block_signatures)
+        """
         self._collection = collection
         self._filter = {}
         self._result = []
@@ -105,12 +109,14 @@ class TonNet(TonModule):
             self, query: TonQLQuery, timeout: int = None) -> Any:
         """
         Returns an object that fulfills the conditions or waits for
-        its appearance
+        its appearance. Triggers only once.
+        If object that satisfies the `filter` conditions already exists -
+        returns it immediately. If not - waits for insert/update of data
+        withing the specified `timeout`, and returns it
         """
         return self.request(
-            method='net.wait_for_collection',
-            collection=query.collection, filter=query.filter,
-            result=query.result, timeout=timeout)
+            method='net.wait_for_collection', collection=query.collection,
+            filter=query.filter, result=query.result, timeout=timeout)
 
     @Response.subscribe_collection
     def subscribe_collection(self, query: TonQLQuery) -> Generator:

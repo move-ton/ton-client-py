@@ -9,15 +9,14 @@ class TonTvm(TonModule):
     """ Free TON tvm SDK API implementation """
     @Response.run_get
     def run_get(
-            self, account: str, function_name: str,
-            inputs: Any = None, blockchain_config: str = None,
-            block_time: int = None, block_lt: int = None,
-            transaction_lt: int = None) -> Any:
+            self, account: str, function_name: str, inputs: Any = None,
+            blockchain_config: str = None, block_time: int = None,
+            block_lt: int = None, transaction_lt: int = None) -> Any:
         """
         Executes get method and returns data from TVM stack
-        :param account: Base64 encoded account BOC
-        :param function_name:
-        :param inputs:
+        :param account: Account BOC in `base64`
+        :param function_name: Function name
+        :param inputs: Input parameters
         :param blockchain_config: Execution options: blockchain config BOC
         :param block_time: Execution options: time that is used as
                 transaction time
@@ -32,9 +31,8 @@ class TonTvm(TonModule):
             'transaction_lt': transaction_lt
         }
         return self.request(
-            method='tvm.run_get', account=account,
-            function_name=function_name, input=inputs,
-            execution_options=execution_options)
+            method='tvm.run_get', account=account, function_name=function_name,
+            input=inputs, execution_options=execution_options)
 
     def run_executor(
             self, message: str, account: AccountForExecutor, abi: Abi = None,
@@ -43,7 +41,7 @@ class TonTvm(TonModule):
             block_lt: int = None, transaction_lt: int = None
     ) -> Dict[str, Any]:
         """
-        :param message: Base64 encoded message BOC
+        :param message: Input message BOC. Must be encoded as base64
         :param account: Account to run on executor
         :param abi: Contract ABI for decoding output messages
         :param skip_transaction_check: Skip transaction check flag
@@ -72,8 +70,8 @@ class TonTvm(TonModule):
             block_lt: int = None, transaction_lt: int = None
     ) -> Dict[str, Any]:
         """
-        :param message: Base64 encoded message BOC
-        :param account: Base64 encoded account BOC
+        :param message: Input message BOC. Must be encoded as `base64`
+        :param account: Account BOC. Must be encoded as `base64`
         :param abi: Contract ABI for decoding output messages
         :param blockchain_config: Execution options: blockchain config BOC
         :param block_time: Execution options: time that is used as

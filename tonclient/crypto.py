@@ -10,8 +10,8 @@ class TonCrypto(TonModule):
     @Response.sha256
     def sha256(self, data: Union[str, bytes]) -> str:
         """
-        Calculates SHA256 hash of the specified data.
-        :param data: Base64 encoded data for hash calculation
+        Calculates SHA256 hash of the specified data
+        :param data: Input data for hash calculation encoded with `base64`
         :return:
         """
         if type(data) is bytes:
@@ -21,8 +21,8 @@ class TonCrypto(TonModule):
     @Response.sha512
     def sha512(self, data: Union[str, bytes]) -> str:
         """
-        Calculates SHA512 hash of the specified data.
-        :param data: Base64 encoded data for hash calculation
+        Calculates SHA512 hash of the specified data
+        :param data: Input data for hash calculation encoded with `base64`
         :return:
         """
         if type(data) is bytes:
@@ -30,42 +30,45 @@ class TonCrypto(TonModule):
         return self.request(method='crypto.sha512', data=data)
 
     @Response.hdkey_xprv_from_mnemonic
-    def hdkey_xprv_from_mnemonic(self, phrase: str) -> str:
+    def hdkey_xprv_from_mnemonic(
+            self, phrase: str, dictionary: int = None, word_count: int = None
+    ) -> str:
         """
-        Generate the extended master private key that will be the root for
-        all the derived keys.
+        Generates an extended master private key that will be the root for all
+        the derived keys
         :param phrase: String with seed phrase
+        :param dictionary: Dictionary identifier
+        :param word_count: Mnemonic word count
         :return:
         """
         return self.request(
-            method='crypto.hdkey_xprv_from_mnemonic', phrase=phrase)
+            method='crypto.hdkey_xprv_from_mnemonic', phrase=phrase,
+            dictionary=dictionary, word_count=word_count)
 
     @Response.hdkey_secret_from_xprv
     def hdkey_secret_from_xprv(self, xprv: str) -> str:
         """
-        Extracts the private key from the serialized extended private key.
+        Extracts the private key from the serialized extended private key
         :param xprv: Serialized extended private key
         :return:
         """
-        return self.request(
-            method='crypto.hdkey_secret_from_xprv', xprv=xprv)
+        return self.request(method='crypto.hdkey_secret_from_xprv', xprv=xprv)
 
     @Response.hdkey_public_from_xprv
     def hdkey_public_from_xprv(self, xprv: str) -> str:
         """
-        Extracts the public key from the serialized extended private key.
+        Extracts the public key from the serialized extended private key
         :param xprv: Serialized extended private key
         :return:
         """
-        return self.request(
-            method='crypto.hdkey_public_from_xprv', xprv=xprv)
+        return self.request(method='crypto.hdkey_public_from_xprv', xprv=xprv)
 
     @Response.hdkey_derive_from_xprv
     def hdkey_derive_from_xprv(
             self, xprv: str, child_index: int, hardened: bool) -> str:
         """
-        Returns derived extended private key derived from the specified
-        extended private key and child index
+        Returns extended private key derived from the specified extended
+        private key and child index
         :param xprv: Serialized extended private key
         :param child_index: Child index (see BIP-0032)
         :param hardened: Indicates the derivation of hardened/not-hardened
@@ -79,20 +82,19 @@ class TonCrypto(TonModule):
     @Response.hdkey_derive_from_xprv_path
     def hdkey_derive_from_xprv_path(self, xprv: str, path: str) -> str:
         """
-        Derives the extended private key from the specified key and path.
+        Derives the extended private key from the specified key and path
         :param xprv: Serialized extended private key
         :param path: Derivation path, for instance "m/44'/396'/0'/0/0"
         :return:
         """
         return self.request(
-            method='crypto.hdkey_derive_from_xprv_path', xprv=xprv,
-            path=path)
+            method='crypto.hdkey_derive_from_xprv_path', xprv=xprv, path=path)
 
     @Response.convert_public_key_to_ton_safe_format
     def convert_public_key_to_ton_safe_format(self, public_key: str) -> str:
         """
-        Converts public key to ton safe_format.
-        :param public_key: Public key
+        Converts public key to ton safe_format
+        :param public_key: Public key - 64 symbols `hex` string
         :return:
         """
         return self.request(
@@ -102,7 +104,7 @@ class TonCrypto(TonModule):
     @Response.generate_random_sign_keys
     def generate_random_sign_keys(self) -> KeyPair:
         """
-        Generates random ed25519 key pair.
+        Generates random ed25519 key pair
         :return:
         """
         return self.request(method='crypto.generate_random_sign_keys')
@@ -111,8 +113,8 @@ class TonCrypto(TonModule):
             self, unsigned: Union[str, bytes], keys: KeyPair
     ) -> Dict[str, str]:
         """
-        Signs a data using the provided keys.
-        :param unsigned: Base64 encoded data to be signed
+        Signs a data using the provided keys
+        :param unsigned: Data that must be signed encoded in `base64`
         :param keys: Sign keys
         :return:
         """
@@ -125,25 +127,25 @@ class TonCrypto(TonModule):
     def verify_signature(self, signed: Union[str, bytes], public: str) -> str:
         """
         Verifies signed data using the provided public key.
-        :param signed: Base64 encoded signature to be verified
-        :param public: Signer's public key hex
-        :return: Base64 encoded unsigned data
+        Raises error if verification is failed
+        :param signed: Signed data that must be verified encoded in `base64`
+        :param public: Signer's public key - 64 symbols `hex` string
+        :return: Unsigned data encoded in `base64`
         """
         if type(signed) is bytes:
             signed = signed.decode()
         return self.request(
-            method='crypto.verify_signature', signed=signed,
-            public=public)
+            method='crypto.verify_signature', signed=signed, public=public)
 
     @Response.modular_power
     def modular_power(self, base: str, exponent: str, modulus: str) -> str:
         """
-        Performs modular exponentiation for big integers
-        (`base`^`exponent` mod `modulus`).
+        Performs modular exponentiation for big integers (`base`^`exponent`
+        mod `modulus`).
         See [https://en.wikipedia.org/wiki/Modular_exponentiation]
-        :param base: 'base' argument of calculation
-        :param exponent: 'exponent' argument of calculation
-        :param modulus: 'modulus' argument of calculation
+        :param base: `base` argument of calculation
+        :param exponent: `exponent` argument of calculation
+        :param modulus: `modulus` argument of calculation
         :return:
         """
         return self.request(
@@ -157,17 +159,16 @@ class TonCrypto(TonModule):
         into a product of smaller prime integers (factors).
         See [https://en.wikipedia.org/wiki/Integer_factorization]
         :param composite: Hexadecimal representation of u64 composite number
-        :return: Two factors of composite or empty if composite
-                can't be factorized
+        :return: Two factors of composite or empty if composite can't be
+                factorized
         """
-        return self.request(
-            method='crypto.factorize', composite=composite)
+        return self.request(method='crypto.factorize', composite=composite)
 
     @Response.ton_crc16
     def ton_crc16(self, data: Union[str, bytes]) -> int:
         """
-        Calculates CRC16 using TON algorithm.
-        :param data: Base64 encoded data for CRC calculation
+        Calculates CRC16 using TON algorithm
+        :param data: Input data for CRC calculation. Encoded with `base64`
         :return:
         """
         if type(data) is bytes:
@@ -177,10 +178,10 @@ class TonCrypto(TonModule):
     @Response.generate_random_bytes
     def generate_random_bytes(self, length: int) -> str:
         """
-        Generates random byte array of the specified length and returns
-        it in base64 format
+        Generates random byte array of the specified length and returns it
+        in `base64` format
         :param length: Size of random byte array
-        :return: Base64 encoded generated bytes
+        :return: Generated bytes encoded in `base64`
         """
         return self.request(
             method='crypto.generate_random_bytes', length=length)
@@ -188,7 +189,7 @@ class TonCrypto(TonModule):
     @Response.mnemonic_words
     def mnemonic_words(self, dictionary: int = None) -> str:
         """
-        Prints the list of words from the specified dictionary.
+        Prints the list of words from the specified dictionary
         :param dictionary: Dictionary identifier
         :return: String of dictionary words
         """
@@ -200,7 +201,7 @@ class TonCrypto(TonModule):
             self, dictionary: int = None, word_count: int = None) -> str:
         """
         Generates a random mnemonic from the specified dictionary
-        and word count.
+        and word count
         :param dictionary: Dictionary identifier
         :param word_count: Mnemonic word count
         :return: String of mnemonic words
@@ -211,11 +212,11 @@ class TonCrypto(TonModule):
 
     @Response.mnemonic_from_entropy
     def mnemonic_from_entropy(
-            self, entropy: str, dictionary: int = None,
-            word_count: int = None) -> str:
+            self, entropy: str, dictionary: int = None, word_count: int = None
+    ) -> str:
         """
-        Generates mnemonic from pre-generated entropy.
-        :param entropy: Hex encoded entropy bytes
+        Generates mnemonic from pre-generated entropy
+        :param entropy: Entropy bytes. `Hex` encoded
         :param dictionary: Dictionary identifier
         :param word_count: Mnemonic word count
         :return: String of mnemonic words
@@ -226,11 +227,11 @@ class TonCrypto(TonModule):
 
     @Response.mnemonic_verify
     def mnemonic_verify(
-            self, phrase: str, dictionary: int = None,
-            word_count: int = None) -> bool:
+            self, phrase: str, dictionary: int = None, word_count: int = None
+    ) -> bool:
         """
         The phrase supplied will be checked for word length and validated
-        according to the checksum specified in BIP0039.
+        according to the checksum specified in BIP0039
         :param phrase: Mnemonic phrase
         :param dictionary: Dictionary identifier
         :param word_count: Mnemonic word count
@@ -246,7 +247,7 @@ class TonCrypto(TonModule):
             word_count: int = None) -> KeyPair:
         """
         Validates the seed phrase, generates master key and then derives
-        the key pair from the master key and the specified path.
+        the key pair from the master key and the specified path
         :param phrase: Mnemonic phrase
         :param path: Derivation path, for instance "m/44'/396'/0'/0/0"
         :param dictionary: Dictionary identifier
@@ -260,8 +261,9 @@ class TonCrypto(TonModule):
     @Response.nacl_sign_keypair_from_secret_key
     def nacl_sign_keypair_from_secret_key(self, secret: str) -> KeyPair:
         """
-        Generates a key pair for signing from the secret key.
-        :param secret: Secret key
+        Generates a key pair for signing from the secret key
+        :param secret: Secret key - unprefixed 0-padded to 64 symbols `hex`
+                string
         :return:
         """
         return self.request(
@@ -271,9 +273,10 @@ class TonCrypto(TonModule):
     @Response.nacl_sign
     def nacl_sign(self, unsigned: Union[str, bytes], secret: str) -> str:
         """
-        Signs data using the signer's secret key.
-        :param unsigned: Base64 encoded data to be signed
-        :param secret: Signer's secret key
+        Signs data using the signer's secret key
+        :param unsigned: Data that must be signed encoded in `base64`
+        :param secret: Signer's secret key - unprefixed 0-padded to 64 symbols
+                `hex` string
         :return: Base64 encoded signed data
         """
         if type(unsigned) is bytes:
@@ -285,9 +288,10 @@ class TonCrypto(TonModule):
     def nacl_sign_detached(
             self, unsigned: Union[str, bytes], secret: str) -> str:
         """
-        :param unsigned: Base64 encoded data to be signed
-        :param secret: Signer's secret key
-        :return: Hex encoded sign
+        :param unsigned: Data that must be signed encoded in `base64`
+        :param secret: Signer's secret key - unprefixed 0-padded to 64 symbols
+                `hex` string
+        :return: Signature encoded in `hex`
         """
         if type(unsigned) is bytes:
             unsigned = unsigned.decode()
@@ -298,15 +302,15 @@ class TonCrypto(TonModule):
     @Response.nacl_sign_open
     def nacl_sign_open(self, signed: Union[str, bytes], public: str) -> str:
         """
-        :param signed: Base64 encoded signed data to be unsigned
-        :param public: Signer's public key
-        :return: Base64 encoded unsigned data
+        :param signed: Signed data that must be unsigned. Encoded with `base64`
+        :param public: Signer's public key - unprefixed 0-padded to 64 symbols
+                `hex` string
+        :return: Unsigned data, encoded in `base64`
         """
         if type(signed) is bytes:
             signed = signed.decode()
         return self.request(
-            method='crypto.nacl_sign_open', signed=signed,
-            public=public)
+            method='crypto.nacl_sign_open', signed=signed, public=public)
 
     @Response.nacl_box_keypair
     def nacl_box_keypair(self) -> KeyPair:
@@ -316,24 +320,28 @@ class TonCrypto(TonModule):
     def nacl_box_keypair_from_secret_key(self, secret: str) -> KeyPair:
         """
         Generates key pair from a secret key
-        :param secret: Hex encoded secret key
+        :param secret: Secret key - unprefixed 0-padded to 64 symbols `hex`
+                string
         :return:
         """
         return self.request(
-            method='crypto.nacl_box_keypair_from_secret_key',
-            secret=secret)
+            method='crypto.nacl_box_keypair_from_secret_key', secret=secret)
 
     @Response.nacl_box
     def nacl_box(
             self, decrypted: Union[str, bytes], nonce: str, their_public: str,
             secret: str) -> str:
         """
-        Public key authenticated encryption
-        :param decrypted: Base64 encoded data to be encrypted
-        :param nonce:
-        :param their_public:
-        :param secret:
-        :return: Base64 encoded encrypted data
+        Public key authenticated encryption.
+        Encrypt and authenticate a message using the senders secret key,
+        the receivers public key, and a nonce
+        :param decrypted: Data that must be encrypted encoded in `base64`
+        :param nonce: Nonce, encoded in `hex`
+        :param their_public: Receiver's public key - unprefixed 0-padded to
+                64 symbols `hex` string
+        :param secret: Sender's private key - unprefixed 0-padded to 64
+                symbols `hex` string
+        :return: Encrypted data encoded in `base64`
         """
         if type(decrypted) is bytes:
             decrypted = decrypted.decode()
@@ -346,45 +354,47 @@ class TonCrypto(TonModule):
             self, encrypted: Union[str, bytes], nonce: str, their_public: str,
             secret: str) -> str:
         """
-        Decrypt and verify the cipher text using the receiver's secret key
-        and sender's public
-        :param encrypted: Base64 encoded encrypted data to be decrypted
-        :param nonce:
-        :param their_public:
-        :param secret:
-        :return: Base64 encoded decrypted data
+        Decrypt and verify the cipher text using the receivers secret key,
+        the senders public key, and the nonce
+        :param encrypted: Data that must be decrypted. Encoded with `base64`
+        :param nonce: Nonce, encoded in `hex`
+        :param their_public: Sender's public key - unprefixed 0-padded to
+                64 symbols `hex` string
+        :param secret: Receiver's private key - unprefixed 0-padded to 64
+                symbols `hex` string
+        :return: Decrypted data encoded in `base64`
         """
         if type(encrypted) is bytes:
             encrypted = encrypted.decode()
         return self.request(
-            method='crypto.nacl_box_open', encrypted=encrypted,
-            nonce=nonce, their_public=their_public, secret=secret)
+            method='crypto.nacl_box_open', encrypted=encrypted, nonce=nonce,
+            their_public=their_public, secret=secret)
 
     @Response.nacl_secret_box
     def nacl_secret_box(
             self, decrypted: Union[str, bytes], nonce: str, key: str) -> str:
         """
         Encrypt and authenticate message using nonce and secret key
-        :param decrypted: Base64 encoded data to be encrypted
-        :param nonce:
-        :param key:
-        :return: Base64 encoded encrypted data
+        :param decrypted: Data that must be encrypted. Encoded with `base64`
+        :param nonce: Nonce in `hex`
+        :param key: Secret key - unprefixed 0-padded to 64 symbols `hex` string
+        :return: Encrypted data encoded in `base64`
         """
         if type(decrypted) is bytes:
             decrypted = decrypted.decode()
         return self.request(
-            method='crypto.nacl_secret_box', decrypted=decrypted,
-            nonce=nonce, key=key)
+            method='crypto.nacl_secret_box', decrypted=decrypted, nonce=nonce,
+            key=key)
 
     @Response.nacl_secret_box_open
     def nacl_secret_box_open(
             self, encrypted: Union[str, bytes], nonce: str, key: str) -> str:
         """
         Decrypts and verifies cipher text using nonce and secret key
-        :param encrypted: Base64 encoded encrypted data to be decrypted
-        :param nonce:
-        :param key:
-        :return: Base64 encoded decrypted data
+        :param encrypted: Data that must be decrypted. Encoded with `base64`
+        :param nonce: Nonce in `hex`
+        :param key: Public key - unprefixed 0-padded to 64 symbols `hex` string
+        :return: Decrypted data encoded in `base64`
         """
         if type(encrypted) is bytes:
             encrypted = encrypted.decode()
@@ -397,22 +407,36 @@ class TonCrypto(TonModule):
             self, password: Union[str, bytes], salt: Union[str, bytes],
             log_n: int, r: int, p: int, dk_len: int) -> str:
         """
-        Derives key from 'password' and 'key' using 'scrypt' algorithm.
+        Derives key from `password` and `key` using `scrypt` algorithm.
         See [https://en.wikipedia.org/wiki/Scrypt].
-        :param password: Base64 encoded password
-        :param salt: A base64 encoded salt bytes that modifies the hash to
-                protect against Rainbow table attacks
+        Arguments:
+            - `log_n` - The log2 of the Scrypt parameter `N`
+            - `r` - The Scrypt parameter `r`
+            - `p` - The Scrypt parameter `p`
+        Conditions:
+            - `log_n` must be less than `64`
+            - `r` must be greater than `0` and less than or equal
+                    to `4294967295`
+            - `p` must be greater than `0` and less than `4294967295`
+        Recommended values sufficient for most use-cases:
+            - `log_n = 15` (`n = 32768`)
+            - `r = 8`
+            - `p = 1`
+        :param password: The password bytes to be hashed. Must be encoded
+                with `base64`
+        :param salt: A salt bytes that modifies the hash to protect against
+                Rainbow table attacks. Must be encoded with `base64`
         :param log_n: CPU/memory cost parameter
-        :param r: The block size parameter, which fine-tunes sequential
-                memory read size and performance (8 is commonly used)
+        :param r: The block size parameter, which fine-tunes sequential memory
+                read size and performance
         :param p: Parallelization parameter
         :param dk_len: Intended output length in octets of the derived key
-        :return: Hex encoded derived key
+        :return: Derived key encoded with `hex`
         """
         if type(password) is bytes:
             password = password.decode()
         if type(salt) is bytes:
             salt = salt.decode()
         return self.request(
-            method='crypto.scrypt', password=password, salt=salt,
-            log_n=log_n, r=r, p=p, dk_len=dk_len)
+            method='crypto.scrypt', password=password, salt=salt, log_n=log_n,
+            r=r, p=p, dk_len=dk_len)
