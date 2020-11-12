@@ -54,7 +54,6 @@ class TonClientBase(TonModule):
         """ Returns Core Library API reference """
         return self.request(method='client.get_api_reference')
 
-    @Response.build_info
     def build_info(self) -> Dict[str, Any]:
         return self.request(method='client.build_info')
 

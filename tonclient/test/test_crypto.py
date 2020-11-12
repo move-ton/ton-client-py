@@ -378,6 +378,18 @@ class TestTonCryptoAsyncCore(unittest.TestCase):
             async_core_client.crypto.scrypt(
                 password=password, salt=salt, log_n=10, r=1, p=1, dk_len=0)
 
+    def test_chacha20(self):
+        key = '01' * 32
+        nonce = 'ff' * 12
+        data = base64.b64encode(b'Message')
+        encrypted = async_core_client.crypto.chacha20(
+            data=data, key=key, nonce=nonce)
+        self.assertEqual('w5QOGsJodQ==', encrypted)
+
+        decrypted = async_core_client.crypto.chacha20(
+            data=encrypted, key=key, nonce=nonce)
+        self.assertEqual(data.decode(), decrypted)
+
 
 class TestTonCryptoSyncCore(unittest.TestCase):
     """ Sync core is not recommended to use, so make just a couple of tests """

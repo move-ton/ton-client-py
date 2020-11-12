@@ -2,6 +2,7 @@ import base64
 import os
 import unittest
 
+from tonclient.errors import TonException
 from tonclient.test.test_abi import SAMPLES_DIR
 from tonclient.test.helpers import send_grams, async_core_client
 from tonclient.types import Abi, DeploySet, CallSet, Signer
@@ -9,7 +10,7 @@ from tonclient.types import Abi, DeploySet, CallSet, Signer
 
 class TestTonProcessingAsyncCore(unittest.TestCase):
     def setUp(self) -> None:
-        self.events_abi = Abi.from_json_path(
+        self.events_abi = Abi.from_path(
             path=os.path.join(SAMPLES_DIR, 'Events.abi.json'))
         with open(os.path.join(SAMPLES_DIR, 'Events.tvc'), 'rb') as fp:
             self.events_tvc = base64.b64encode(fp.read()).decode()
@@ -37,6 +38,13 @@ class TestTonProcessingAsyncCore(unittest.TestCase):
         self.assertEqual([], result['out_messages'])
         self.assertEqual(
             {'out_messages': [], 'output': None}, result['decoded'])
+
+        # Contract execution error
+        with self.assertRaises(TonException):
+            call_set = CallSet(function_name='returnValue', inputs={'id': -1})
+            async_core_client.processing.process_message(
+                abi=self.events_abi, signer=signer, address=encoded['address'],
+                call_set=call_set, send_events=False)
 
     def test_process_message_with_events(self):
         # Prepare data for deployment message

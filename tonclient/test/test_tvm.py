@@ -13,7 +13,7 @@ from tonclient.types import Abi, DeploySet, CallSet, Signer, StateInitSource, \
 
 class TestTonTvmAsyncCore(unittest.TestCase):
     def test_execute_message(self):
-        abi = Abi.from_json_path(
+        abi = Abi.from_path(
             os.path.join(SAMPLES_DIR, 'Subscription.abi.json'))
         with open(os.path.join(SAMPLES_DIR, 'Subscription.tvc'), 'rb') as fp:
             tvc = base64.b64encode(fp.read()).decode()
@@ -137,7 +137,7 @@ class TestTonTvmAsyncCore(unittest.TestCase):
 
     def test_run_executor_acc_uninit(self):
         keypair = async_core_client.crypto.generate_random_sign_keys()
-        abi = Abi.from_json_path(
+        abi = Abi.from_path(
             os.path.join(SAMPLES_DIR, 'Hello.abi.json'))
         with open(os.path.join(SAMPLES_DIR, 'Hello.tvc'), 'rb') as fp:
             tvc = base64.b64encode(fp.read()).decode()

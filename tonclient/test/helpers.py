@@ -7,13 +7,19 @@ BASE_DIR = os.path.dirname(__file__)
 SAMPLES_DIR = os.path.join(BASE_DIR, 'samples')
 GIVER_ADDRESS = '0:653b9a6452c7a982c6dc92b2da9eba832ade1c467699ebb3b43dca6d77b780dd'
 
-async_core_client = TonClient(network={'server_address': DEVNET_BASE_URL})
+async_core_client = TonClient(
+    abi={'message_expiration_timeout': 60000},
+    network={
+        'server_address': DEVNET_BASE_URL,
+        'message_processing_timeout': 60000,
+        'wait_for_timeout': 60000
+    })
 sync_core_client = TonClient(
     network={'server_address': DEVNET_BASE_URL}, is_core_async=False)
 
 
 def send_grams(address: str):
-    giver_abi = Abi.from_json_path(
+    giver_abi = Abi.from_path(
         path=os.path.join(SAMPLES_DIR, 'Giver.abi.json'))
     call_set = CallSet(
         function_name='grant',

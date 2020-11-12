@@ -440,3 +440,24 @@ class TonCrypto(TonModule):
         return self.request(
             method='crypto.scrypt', password=password, salt=salt, log_n=log_n,
             r=r, p=p, dk_len=dk_len)
+
+    @Response.chacha20
+    def chacha20(
+            self, data: Union[str, bytes], key: Union[str, bytes],
+            nonce: Union[str, bytes]) -> str:
+        """
+        Performs symmetric `chacha20` encryption
+        :param data: Source data to be encrypted or decrypted. Must be
+                encoded with `base64`
+        :param key: 256-bit key. Must be encoded with `hex`
+        :param nonce: 96-bit nonce. Must be encoded with `hex`
+        :return: Encrypted/decrypted data. Encoded with `base64`
+        """
+        if type(data) is bytes:
+            data = data.decode()
+        if type(key) is bytes:
+            key = key.decode()
+        if type(nonce) is bytes:
+            nonce = nonce.decode()
+        return self.request(
+            method='crypto.chacha20', data=data, key=key, nonce=nonce)

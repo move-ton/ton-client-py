@@ -13,11 +13,11 @@ class TestTonClientAsyncCore(unittest.TestCase):
 
     def test_get_api_reference(self):
         reference = self.client.get_api_reference()
-        self.assertEqual(LIB_VERSION, reference['version'])
+        self.assertGreater(len(reference['modules']), 0)
 
     def test_build_info(self):
         info = self.client.build_info()
-        self.assertIsInstance(info, dict)
+        self.assertNotEqual(None, info.get('build_number'))
 
     def test_destroy_context(self):
         self.client.destroy_context()
@@ -34,11 +34,11 @@ class TestTonClientSyncCore(unittest.TestCase):
 
     def test_get_api_reference(self):
         reference = self.client.get_api_reference()
-        self.assertEqual(LIB_VERSION, reference['version'])
+        self.assertGreater(len(reference['modules']), 0)
 
     def test_build_info(self):
         info = self.client.build_info()
-        self.assertIsInstance(info, dict)
+        self.assertNotEqual(None, info.get('build_number'))
 
     def test_destroy_context(self):
         self.client.destroy_context()

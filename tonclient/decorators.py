@@ -52,13 +52,6 @@ class Response(object):
         return cls.__pretty(function=function, _callback=__callback)
 
     @classmethod
-    def build_info(cls, function):
-        def __callback(result):
-            return result['build_info']
-
-        return cls.__pretty(function=function, _callback=__callback)
-
-    @classmethod
     def sha256(cls, function):
         def __callback(result):
             return result['hash']
@@ -239,6 +232,13 @@ class Response(object):
         return cls.__pretty(function=function, _callback=__callback)
 
     @classmethod
+    def chacha20(cls, function):
+        def __callback(result):
+            return result['data']
+
+        return cls.__pretty(function=function, _callback=__callback)
+
+    @classmethod
     def query_collection(cls, function):
         def __callback(result):
             return result['result']
@@ -278,6 +278,20 @@ class Response(object):
     def parse_block(cls, function):
         def __callback(result):
             return result['parsed']
+        return cls.__pretty(function=function, _callback=__callback)
+
+    @classmethod
+    def parse_shardstate(cls, function):
+        def __callback(result):
+            return result['parsed']
+
+        return cls.__pretty(function=function, _callback=__callback)
+
+    @classmethod
+    def get_boc_hash(cls, function):
+        def __callback(result):
+            return result['hash']
+
         return cls.__pretty(function=function, _callback=__callback)
 
     @classmethod

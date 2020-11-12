@@ -74,29 +74,30 @@ class Abi(object):
     def __init__(self, abi: Union[Dict, str, int], abi_type: str):
         """
         :param abi: ABI dict, ABI JSON string or handle
-        :param abi_type: One of 'Serialized', 'Handle'
+        :param abi_type: One of 'Contract', 'Json' 'Handle'
         """
         self.abi = abi
         self.abi_type = abi_type
 
     @property
     def dict(self):
-        if type(self.abi) is str:
-            self.abi = json.loads(self.abi)
         return {'type': self.abi_type, 'value': self.abi}
 
     @staticmethod
     def from_dict(abi: Dict[str, Any]) -> 'Abi':
-        return Abi(abi=abi, abi_type='Serialized')
+        return Abi(abi=abi, abi_type='Contract')
 
     @staticmethod
-    def from_json_string(abi_json: str) -> 'Abi':
-        return Abi(abi=json.loads(abi_json), abi_type='Serialized')
+    def from_string(abi_json: str) -> 'Abi':
+        return Abi(abi=abi_json, abi_type='Json')
 
     @staticmethod
-    def from_json_path(path: str) -> 'Abi':
+    def from_path(path: str, as_dict: bool = False) -> 'Abi':
         with open(path, 'r') as fp:
-            return Abi(abi=json.loads(fp.read()), abi_type='Serialized')
+            abi = fp.read()
+        if as_dict:
+            return Abi.from_dict(abi=json.loads(abi))
+        return Abi.from_string(abi_json=abi)
 
     @staticmethod
     def from_handle(handle: int) -> 'Abi':

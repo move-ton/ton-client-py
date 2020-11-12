@@ -12,7 +12,7 @@ from tonclient.types import Abi, KeyPair, DeploySet, CallSet, Signer, \
 class TestTonAbiAsyncCore(unittest.TestCase):
     def setUp(self) -> None:
         # Events contract params
-        self.events_abi = Abi.from_json_path(
+        self.events_abi = Abi.from_path(
             path=os.path.join(SAMPLES_DIR, 'Events.abi.json'))
         self.keypair = KeyPair(
             public='4c7c408ff1ddebb8d6405ee979c716a14fdd6cc08124107a61d3c25597099499',
@@ -213,7 +213,7 @@ class TestTonAbiSyncCore(unittest.TestCase):
     """ Sync core is not recommended to use, so make just a couple of tests """
     def setUp(self) -> None:
         # Events contract params
-        self.events_abi = Abi.from_json_path(
+        self.events_abi = Abi.from_path(
             path=os.path.join(SAMPLES_DIR, 'Events.abi.json'))
         self.keypair = KeyPair(
             public='4c7c408ff1ddebb8d6405ee979c716a14fdd6cc08124107a61d3c25597099499',
