@@ -6,7 +6,7 @@ import unittest
 from tonclient.errors import TonException
 from tonclient.net import TonQLQuery
 from tonclient.test.helpers import send_grams, SAMPLES_DIR, async_core_client,\
-    sync_core_client
+    sync_core_client, async_custom_client
 from tonclient.types import Abi, DeploySet, CallSet, Signer, StateInitSource, \
     AccountForExecutor
 
@@ -17,7 +17,7 @@ class TestTonTvmAsyncCore(unittest.TestCase):
             os.path.join(SAMPLES_DIR, 'Subscription.abi.json'))
         with open(os.path.join(SAMPLES_DIR, 'Subscription.tvc'), 'rb') as fp:
             tvc = base64.b64encode(fp.read()).decode()
-        keypair = async_core_client.crypto.generate_random_sign_keys()
+        keypair = async_custom_client.crypto.generate_random_sign_keys()
         wallet_address = '0:2222222222222222222222222222222222222222222222222222222222222222'
 
         # Deploy message
@@ -27,14 +27,14 @@ class TestTonTvmAsyncCore(unittest.TestCase):
         signer = Signer.from_keypair(keypair=keypair)
 
         # Get account deploy message
-        deploy_message = async_core_client.abi.encode_message(
+        deploy_message = async_custom_client.abi.encode_message(
             abi=abi, signer=signer, deploy_set=deploy_set, call_set=call_set)
 
         # Send grams
         send_grams(address=deploy_message['address'])
 
         # Deploy account
-        async_core_client.processing.process_message(
+        async_custom_client.processing.process_message(
             abi=abi, signer=signer, deploy_set=deploy_set, call_set=call_set,
             send_events=False)
 
@@ -42,10 +42,10 @@ class TestTonTvmAsyncCore(unittest.TestCase):
         query = TonQLQuery(collection='accounts') \
             .set_filter(id__eq=deploy_message['address']) \
             .set_result('id boc')
-        account = async_core_client.net.wait_for_collection(query=query)
+        account = async_custom_client.net.wait_for_collection(query=query)
 
         # Get account balance
-        parsed = async_core_client.boc.parse_account(boc=account['boc'])
+        parsed = async_custom_client.boc.parse_account(boc=account['boc'])
         orig_balance = parsed['balance']
 
         # Run executor (unlimited balance should not affect account balance)
@@ -57,23 +57,23 @@ class TestTonTvmAsyncCore(unittest.TestCase):
             'period': '0x456'
         }
         call_set = CallSet(function_name='subscribe', inputs=subscribe_params)
-        encoded_message = async_core_client.abi.encode_message(
+        encoded_message = async_custom_client.abi.encode_message(
             abi=abi, signer=signer, address=deploy_message['address'],
             call_set=call_set)
         account_for_executor = AccountForExecutor.from_account(
             boc=account['boc'], unlimited_balance=True)
-        result = async_core_client.tvm.run_executor(
+        result = async_custom_client.tvm.run_executor(
             message=encoded_message['message'], account=account_for_executor,
             abi=abi)
 
         # Get account balance again
-        parsed = async_core_client.boc.parse_account(boc=result['account'])
+        parsed = async_custom_client.boc.parse_account(boc=result['account'])
         self.assertEqual(orig_balance, parsed['balance'])
 
         # Run executor in standard mode (limited balance)
         account_for_executor = AccountForExecutor.from_account(
             boc=account['boc'], unlimited_balance=False)
-        result = async_core_client.tvm.run_executor(
+        result = async_custom_client.tvm.run_executor(
             message=encoded_message['message'], account=account_for_executor,
             abi=abi)
         self.assertEqual(
@@ -84,10 +84,10 @@ class TestTonTvmAsyncCore(unittest.TestCase):
         call_set = CallSet(
             function_name='getSubscription',
             inputs={'subscriptionId': subscribe_params['subscriptionId']})
-        encoded_message = async_core_client.abi.encode_message(
+        encoded_message = async_custom_client.abi.encode_message(
             abi=abi, signer=signer, address=deploy_message['address'],
             call_set=call_set)
-        result = async_core_client.tvm.run_tvm(
+        result = async_custom_client.tvm.run_tvm(
             message=encoded_message['message'], account=result['account'],
             abi=abi)
         self.assertEqual(
@@ -161,7 +161,7 @@ class TestTonTvmSyncCore(unittest.TestCase):
     """ Sync core is not recommended to use, so make just a couple of tests """
     def test_run_executor_acc_none(self):
         message = 'te6ccgEBAQEAXAAAs0gAV2lB0HI8/VEO/pBKDJJJeoOcIh+dL9JzpmRzM8PfdicAPGNEGwRWGaJsR6UYmnsFVC2llSo1ZZN5mgUnCiHf7ZaUBKgXyAAGFFhgAAAB69+UmQS/LjmiQA=='
-        result = async_core_client.tvm.run_executor(
+        result = sync_core_client.tvm.run_executor(
             message=message, account=AccountForExecutor(),
             skip_transaction_check=True)
 

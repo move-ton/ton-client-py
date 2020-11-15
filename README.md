@@ -11,14 +11,87 @@ Works for Python 3.6+
 [![Chat on Telegram EN](https://img.shields.io/badge/Chat%20on-Telegram%20EN-blue)](https://t.me/MOVETON_SDK_EN)
 
 ## Installation
-1. Create python virtual environment using `pipenv` or `virtualenv`
-2. Activate created environment
-3. Run `pip install ton-client-py`
+Check if Python 3.6+ is installed
+##### MacOS/Linux
+```
+# Using pipenv
+pipenv install ton-client-py
+
+Using pip  
+pip install ton-client-py
+```
+##### Windows
+```
+# Using pipenv
+py -m pipenv install ton-client-py
+
+Using pip  
+py -m pip install ton-client-py
+```
 
 ## Tests
-1. Create python virtual environment using `pipenv` or `virtualenv` and activate it
-2. Clone git repository and enter it
-3. Run `python -m unittest`
+* Clone repository
+```
+# Clone repository 
+git clone https://github.com/move-ton/ton-client-py.git
+
+# Go to repo directory
+cd ton-client-py
+```
+
+* Install dev dependencies
+##### MacOS/Linux
+```
+# Using pipenv
+pipenv install --dev
+
+# Using pip
+pip install pytest
+```
+##### Windows
+```
+# Using pipenv
+py -m pipenv install --dev
+
+# Using pip
+py -m pip install pytest
+```
+
+* Running tests
+##### MacOS/Linux
+```
+# Using pipenv
+pipenv run pytest  # Display only module name while testing
+pipenv run pytest -v  # Display module and method while testing
+pipenv run pytest -v -s --log-cli-level=INFO  # Display methods logging while testing
+
+# Without pipenv
+python -m pytest
+python -m pytest -v
+python -m pytest -v -s --log-cli-level=INFO
+```
+##### Windows
+```
+# Using pipenv
+py -m pipenv run pytest  # Display only module name while testing
+py -m pipenv run pytest -v  # Display module and method while testing
+py -m pipenv run pytest -v -s --log-cli-level=INFO  # Display methods logging while testing
+
+# Without pipenv
+py -m pytest
+py -m pytest -v
+py -m pytest -v -s --log-cli-level=INFO
+```
+
+* Alternative running tests
+If you have problems with installing `pytest` package you can simply run  
+```
+# For MacOS/Linux
+python -m unittest -v
+
+# For Windows
+py -m unittest -v
+```
 
 ## Client
 Core client library has sync and async request modes. Some core methods are available only in async request mode and 

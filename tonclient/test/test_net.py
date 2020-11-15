@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 
 import unittest
@@ -51,6 +52,7 @@ class TestTonNetAsyncCore(unittest.TestCase):
         handle = None
         results = []
         for response in generator:
+            logging.info(f'[Response] {response}')
             results.append(response)
             if response['response_data'].get('handle'):
                 handle = response['response_data']['handle']
