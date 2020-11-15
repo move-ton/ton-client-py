@@ -17,7 +17,7 @@ Check if Python 3.6+ is installed
 # Using pipenv
 pipenv install ton-client-py
 
-Using pip  
+# Using pip  
 pip install ton-client-py
 ```
 ##### Windows
@@ -25,7 +25,7 @@ pip install ton-client-py
 # Using pipenv
 py -m pipenv install ton-client-py
 
-Using pip  
+# Using pip  
 py -m pip install ton-client-py
 ```
 
