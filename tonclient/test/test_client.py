@@ -14,6 +14,7 @@ class TestTonClientAsyncCore(unittest.TestCase):
     def test_get_api_reference(self):
         reference = self.client.get_api_reference()
         self.assertGreater(len(reference['modules']), 0)
+        self.assertEqual(LIB_VERSION, reference['version'])
 
     def test_build_info(self):
         info = self.client.build_info()
