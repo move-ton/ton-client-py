@@ -4,6 +4,7 @@ from tonclient.bindings.lib import tc_create_context, tc_destroy_context, \
     tc_read_string, tc_destroy_string
 from tonclient.bindings.types import TCClientContext, TCSyncResponseData
 from tonclient.boc import TonBoc
+from tonclient.debot import TonDebot
 from tonclient.decorators import Response
 from tonclient.errors import TonException
 from tonclient.module import TonModule
@@ -13,7 +14,8 @@ from tonclient.abi import TonAbi
 from tonclient.processing import TonProcessing
 from tonclient.tvm import TonTvm
 from tonclient.types import DEFAULT_MNEMONIC_DICTIONARY, \
-    DEFAULT_MNEMONIC_WORD_COUNT, DEFAULT_HDKEY_DERIVATION_PATH
+    DEFAULT_MNEMONIC_WORD_COUNT, DEFAULT_HDKEY_DERIVATION_PATH, \
+    AppRequestResult
 from tonclient.utils import TonUtils
 
 DEVNET_BASE_URL = 'net.ton.dev'
@@ -32,8 +34,7 @@ CLIENT_DEFAULT_SETUP = {
     'crypto': {
         'mnemonic_dictionary': DEFAULT_MNEMONIC_DICTIONARY,
         'mnemonic_word_count': DEFAULT_MNEMONIC_WORD_COUNT,
-        'hdkey_derivation_path': DEFAULT_HDKEY_DERIVATION_PATH,
-        'hdkey_compliant': True
+        'hdkey_derivation_path': DEFAULT_HDKEY_DERIVATION_PATH
     },
     'abi': {
         'workchain': 0,
@@ -56,6 +57,19 @@ class TonClientBase(TonModule):
 
     def build_info(self) -> Dict[str, Any]:
         return self.request(method='client.build_info')
+
+    def resolve_app_request(
+            self, app_request_id: int,
+            result: Union[AppRequestResult.Ok, AppRequestResult.Error]):
+        """
+        Resolves application request processing result
+        :param app_request_id: Request ID received from SDK
+        :param result: Result of request processing
+        :return:
+        """
+        return self.request(
+            method='client.resolve_app_request', app_request_id=app_request_id,
+            result=result.dict)
 
 
 class TonClient(object):
@@ -90,6 +104,7 @@ class TonClient(object):
         self.processing = TonProcessing(client=self)
         self.utils = TonUtils(client=self)
         self.tvm = TonTvm(client=self)
+        self.debot = TonDebot(client=self)
 
     @property
     def ctx(self):
@@ -99,17 +114,9 @@ class TonClient(object):
     def is_core_async(self):
         return self._is_core_async
 
-    @is_core_async.setter
-    def is_core_async(self, value: bool):
-        self._is_core_async = value
-
     @property
     def is_async(self):
         return self._is_async
-
-    @is_async.setter
-    def is_async(self, value: bool):
-        self._is_async = value
 
     @property
     def version(self):
@@ -122,6 +129,10 @@ class TonClient(object):
     @property
     def build_info(self):
         return self.base.build_info
+
+    @property
+    def resolve_app_request(self):
+        return self.base.resolve_app_request
 
     @staticmethod
     def create_context(config: Dict[str, Dict[str, Union[str, int, float]]]):

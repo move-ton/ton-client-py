@@ -13,7 +13,9 @@ class Response(object):
         def response_or_generator(*args, **kwargs):
             def generator_wrapper():
                 for item in result:
-                    item['response_data'] = _callback(item['response_data'])
+                    data = item['response_data']
+                    if data is not None:
+                        item['response_data'] = _callback(data)
                     yield item
 
             def response_wrapper():
@@ -25,7 +27,9 @@ class Response(object):
 
             async def async_generator_wrapper():
                 async for item in result:
-                    item['response_data'] = _callback(item['response_data'])
+                    data = item['response_data']
+                    if data is not None:
+                        item['response_data'] = _callback(data)
                     yield item
 
             result = function(*args, **kwargs)
@@ -235,6 +239,27 @@ class Response(object):
     def chacha20(cls, function):
         def __callback(result):
             return result['data']
+
+        return cls.__pretty(function=function, _callback=__callback)
+
+    @classmethod
+    def get_signing_box(cls, function):
+        def __callback(result):
+            return result['handle']
+
+        return cls.__pretty(function=function, _callback=__callback)
+
+    @classmethod
+    def signing_box_get_public_key(cls, function):
+        def __callback(result):
+            return result['pubkey']
+
+        return cls.__pretty(function=function, _callback=__callback)
+
+    @classmethod
+    def signing_box_sign(cls, function):
+        def __callback(result):
+            return result['signature']
 
         return cls.__pretty(function=function, _callback=__callback)
 

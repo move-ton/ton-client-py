@@ -4,7 +4,7 @@ import os
 
 import json
 import time
-from typing import Any, Dict, Union, Generator
+from typing import Any, Dict, Union, Generator, Tuple, List
 
 from tonclient.bindings.lib import tc_request, tc_request_sync, \
     tc_read_string, tc_destroy_string
@@ -94,79 +94,94 @@ class TonModule(object):
 
     def _async_response_resolver(self, request_id: int) -> Any:
         read_len = 0
-        resolved = None
+        result = None
         while True:
-            time.sleep(0.0001)
-            responses = self._async_response_map[request_id][read_len:]
-            read_len += len(responses)
-            for item in responses:
-                if item['response_type'] == TCResponseType.Error:
-                    del self._async_response_map[request_id]
-                    raise TonException(item['response_data'])
-                if item['response_type'] == TCResponseType.Success:
-                    resolved = item['response_data']
-                if item['finished']:
-                    del self._async_response_map[request_id]
-                    return resolved
+            time.sleep(0.001)
+            read_len, finished, tmp_result = self._async_response_resolve(
+                request_id=request_id, read_len=read_len)
+            if tmp_result is not None:
+                result = tmp_result
+            if finished:
+                return result
 
     async def _async_response_resolver_coro(self, request_id: int) -> Any:
         read_len = 0
-        resolved = None
+        result = None
         while True:
-            await asyncio.sleep(0.0001)
-            responses = self._async_response_map[request_id][read_len:]
-            read_len += len(responses)
-            for item in responses:
-                if item['response_type'] == TCResponseType.Error:
-                    del self._async_response_map[request_id]
-                    raise TonException(item['response_data'])
-                if item['response_type'] == TCResponseType.Success:
-                    resolved = item['response_data']
-                if item['finished']:
-                    del self._async_response_map[request_id]
-                    return resolved
+            await asyncio.sleep(0.001)
+            read_len, finished, tmp_result = self._async_response_resolve(
+                request_id=request_id, read_len=read_len)
+            if tmp_result is not None:
+                result = tmp_result
+            if finished:
+                return result
 
     def _async_response_generator(self, request_id: int) -> Any:
         read_len = 0
         while True:
-            time.sleep(0.0001)
-            responses = self._async_response_map[request_id][read_len:]
-            read_len += len(responses)
-            try:
-                for item in responses:
-                    if item['response_type'] == TCResponseType.Error:
-                        del self._async_response_map[request_id]
-                        raise TonException(item['response_data'])
-                    if item['finished']:
-                        del self._async_response_map[request_id]
-                        if item['response_data']:
-                            yield item
-                        return
+            time.sleep(0.001)
+            read_len, package = self._async_response_generator_resolve(
+                    request_id=request_id, read_len=read_len)
+            for item in package:
+                if item['finished']:
                     yield item
-            except GeneratorExit:
-                del self._async_response_map[request_id]
-                return
+                    return
+                yield item
 
     async def _async_response_generator_coro(self, request_id: int) -> Any:
         read_len = 0
         while True:
-            await asyncio.sleep(0.0001)
-            responses = self._async_response_map[request_id][read_len:]
-            read_len += len(responses)
-            try:
-                for item in responses:
-                    if item['response_type'] == TCResponseType.Error:
-                        del self._async_response_map[request_id]
-                        raise TonException(item['response_data'])
-                    if item['finished']:
-                        del self._async_response_map[request_id]
-                        if item['response_data']:
-                            yield item
-                        return
+            await asyncio.sleep(0.001)
+            read_len, package = self._async_response_generator_resolve(
+                request_id=request_id, read_len=read_len)
+            for item in package:
+                if item['finished']:
                     yield item
-            except GeneratorExit:
+                    return
+                yield item
+
+    def _async_response_resolve(
+            self, request_id: int, read_len: int) -> Tuple[int, bool, Any]:
+        """
+        Resolve responses from async core request
+        :param request_id: Request id
+        :param read_len: Responses len, that have been already read
+        :return:
+        """
+        responses = self._async_response_map[request_id][read_len:]
+        read_len += len(responses)
+        result = None
+        finished = False
+        for item in responses:
+            if item['response_type'] == TCResponseType.Error:
                 del self._async_response_map[request_id]
-                return
+                raise TonException(item['response_data'])
+            if item['response_type'] == TCResponseType.Success:
+                result = item['response_data']
+            if item['finished']:
+                del self._async_response_map[request_id]
+                finished = True
+        return read_len, finished, result
+
+    def _async_response_generator_resolve(
+            self, request_id: int, read_len: int) -> Tuple[int, List[Any]]:
+        """
+        Filter async core request responses and add extra logic
+        :param request_id: Request id
+        :param read_len: Responses len, that have been already read
+        :return:
+        """
+        responses = self._async_response_map[request_id][read_len:]
+        read_len += len(responses)
+        filtered = []
+        for item in responses:
+            if item['response_type'] == TCResponseType.Error:
+                del self._async_response_map[request_id]
+                raise TonException(item['response_data'])
+            if item['finished']:
+                del self._async_response_map[request_id]
+            filtered.append(item)
+        return read_len, filtered
 
     @staticmethod
     def _prepare_params(params_or_str, **kwargs) -> str:

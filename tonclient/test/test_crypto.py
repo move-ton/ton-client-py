@@ -390,6 +390,29 @@ class TestTonCryptoAsyncCore(unittest.TestCase):
             data=encrypted, key=key, nonce=nonce)
         self.assertEqual(data.decode(), decrypted)
 
+    def test_signing_box(self):
+        keypair = async_core_client.crypto.generate_random_sign_keys()
+
+        # Create handle
+        handle = async_core_client.crypto.get_signing_box(keypair=keypair)
+        self.assertIsInstance(handle, int)
+
+        # Get public key from box
+        public = async_core_client.crypto.signing_box_get_public_key(
+            handle=handle)
+        self.assertEqual(keypair.public, public)
+
+        # Sign with box
+        message = base64.b64encode(b'Sign with box')
+        signature_box = async_core_client.crypto.signing_box_sign(
+            signing_box=handle, unsigned=message)
+        signature = async_core_client.crypto.sign(
+            unsigned=message, keys=keypair)
+        self.assertEqual(signature['signature'], signature_box)
+
+        # Remove signing box
+        async_core_client.crypto.remove_signing_box(handle=handle)
+
 
 class TestTonCryptoSyncCore(unittest.TestCase):
     """ Sync core is not recommended to use, so make just a couple of tests """

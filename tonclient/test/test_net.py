@@ -3,6 +3,7 @@ from datetime import datetime
 
 import unittest
 
+from tonclient.bindings.types import TCResponseType
 from tonclient.errors import TonException
 from tonclient.net import TonQLQuery
 from tonclient.test.helpers import async_core_client, sync_core_client
@@ -54,11 +55,16 @@ class TestTonNetAsyncCore(unittest.TestCase):
         for response in generator:
             logging.info(f'[Response] {response}')
             results.append(response)
-            if response['response_data'].get('handle'):
-                handle = response['response_data']['handle']
+            data = response['response_data']
+            if not data:
+                continue
+
+            if response['response_type'] == TCResponseType.Success:
+                handle = data['handle']
 
             if (int(datetime.now().timestamp()) > now + 5 or
-                    response['response_type'] > 100) and handle:
+                    response['response_type'] > TCResponseType.Custom) and \
+                    handle:
                 async_core_client.net.unsubscribe(handle=handle)
                 handle = None
 

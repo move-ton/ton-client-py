@@ -7,7 +7,7 @@ DEFAULT_MNEMONIC_WORD_COUNT = 12
 DEFAULT_HDKEY_DERIVATION_PATH = "m/44'/396'/0'/0/0"
 
 
-class MnemonicDictionary(object):
+class MnemonicDictionary:
     TON = 0
     ENGLISH = 1
     CHINESE_SIMPLIFIED = 2
@@ -231,10 +231,16 @@ class StateInitSource(object):
         """
         self.source_type = source_type
         self._kwargs = kwargs
+        for name, value in kwargs.items():
+            setattr(self, name, value)
 
     @property
     def dict(self):
-        return {'type': self.source_type, **self._kwargs}
+        params = {
+            key: value.dict if hasattr(value, 'dict') else value
+            for key, value in self._kwargs.items()
+        }
+        return {'type': self.source_type, **params}
 
     @staticmethod
     def from_message(message: MessageSource) -> 'StateInitSource':
@@ -242,7 +248,7 @@ class StateInitSource(object):
         :param message: Deploy message
         :return:
         """
-        return StateInitSource(source_type='Message', source=message.dict)
+        return StateInitSource(source_type='Message', source=message)
 
     @staticmethod
     def from_state_init(
@@ -275,7 +281,7 @@ class StateInitSource(object):
             init_params=init_params)
 
 
-class AddressStringFormat(object):
+class AddressStringFormat:
     AccountId = {'type': 'AccountId'}
     Hex = {'type': 'Hex'}
 
@@ -330,3 +336,205 @@ class AccountForExecutor(object):
         :return:
         """
         return AccountForExecutor(boc=boc, unlimited_balance=unlimited_balance)
+
+
+class BaseAppCallback(object):
+    """ Base class for app callback params or results """
+    def __init__(self, type: str):
+        self.type = type
+
+    @property
+    def dict(self):
+        return {'type': self.type}
+
+
+class ParamsOfAppSigningBox:
+    """ Signing box callbacks """
+    class GetPublicKey(BaseAppCallback):
+        def __init__(self, type: str = 'GetPublicKey'):
+            super(ParamsOfAppSigningBox.GetPublicKey, self).__init__(
+                type=type)
+
+    class Sign(BaseAppCallback):
+        def __init__(self, unsigned: str, type: str = 'Sign'):
+            super(ParamsOfAppSigningBox.Sign, self).__init__(type=type)
+            self.unsigned = unsigned
+
+    @staticmethod
+    def from_dict(data: Dict[str, Any]) -> Union[GetPublicKey, Sign]:
+        return getattr(ParamsOfAppSigningBox, data['type'])(**data)
+
+
+class ResultOfAppSigningBox:
+    """ Returning values from signing box callbacks """
+    class GetPublicKey(BaseAppCallback):
+        def __init__(self, public_key: str, type: str = 'GetPublicKey'):
+            super(ResultOfAppSigningBox.GetPublicKey, self).__init__(
+                type=type)
+            self.public_key = public_key
+
+        @property
+        def dict(self):
+            return {
+                **super(ResultOfAppSigningBox.GetPublicKey, self).dict,
+                'public_key': self.public_key
+            }
+
+    class Sign(BaseAppCallback):
+        def __init__(self, signature: str, type: str = 'Sign'):
+            super(ResultOfAppSigningBox.Sign, self).__init__(type=type)
+            self.signature = signature
+
+        @property
+        def dict(self):
+            return {
+                **super(ResultOfAppSigningBox.Sign, self).dict,
+                'signature': self.signature
+            }
+
+
+class ParamsOfAppDebotBrowser:
+    """
+    UNSTABLE Debot Browser callbacks.
+    Called by debot engine to communicate with debot browser
+    """
+    class Log(BaseAppCallback):
+        def __init__(self, msg: str, type: str = 'Log'):
+            super(ParamsOfAppDebotBrowser.Log, self).__init__(type=type)
+            self.msg = msg
+
+    class Switch(BaseAppCallback):
+        def __init__(self, context_id: int, type: str = 'Switch'):
+            super(ParamsOfAppDebotBrowser.Switch, self).__init__(type=type)
+            self.context_id = context_id
+
+    class ShowAction(BaseAppCallback):
+        def __init__(self, action: 'DebotAction', type: str = 'ShowAction'):
+            super(ParamsOfAppDebotBrowser.ShowAction, self).__init__(
+                type=type)
+            self.action = action
+
+    class Input(BaseAppCallback):
+        def __init__(self, prompt: str, type: str = 'Input'):
+            super(ParamsOfAppDebotBrowser.Input, self).__init__(type=type)
+            self.prompt = prompt
+
+    class GetSigningBox(BaseAppCallback):
+        def __init__(self, type: str = 'GetSigningBox'):
+            super(ParamsOfAppDebotBrowser.GetSigningBox, self).__init__(
+                type=type)
+
+    class InvokeDebot(BaseAppCallback):
+        def __init__(
+                self, debot_addr: str, action: 'DebotAction',
+                type: str = 'InvokeDebot'):
+            super(ParamsOfAppDebotBrowser.InvokeDebot, self).__init__(
+                type=type)
+            self.debot_addr = debot_addr
+            self.action = action
+
+    @staticmethod
+    def from_dict(
+            data: Dict[str, Any]
+    ) -> Union[Log, Switch, ShowAction, Input, GetSigningBox, InvokeDebot]:
+        if data.get('action'):
+            data['action'] = DebotAction(**data['action'])
+        return getattr(ParamsOfAppDebotBrowser, data['type'])(**data)
+
+
+class ResultOfAppDebotBrowser(object):
+    """
+    UNSTABLE
+    Returning values from Debot Browser callbacks
+    """
+    class Input(BaseAppCallback):
+        def __init__(self, value: str, type: str = 'Input'):
+            super(ResultOfAppDebotBrowser.Input, self).__init__(type=type)
+            self.value = value
+
+        @property
+        def dict(self):
+            return {
+                **super(ResultOfAppDebotBrowser.Input, self).dict,
+                'value': self.value
+            }
+
+    class GetSigningBox(BaseAppCallback):
+        def __init__(self, signing_box: int, type: str = 'GetSigningBox'):
+            super(ResultOfAppDebotBrowser.GetSigningBox, self).__init__(
+                type=type)
+            self.signing_box = signing_box
+
+        @property
+        def dict(self):
+            return {
+                **super(ResultOfAppDebotBrowser.GetSigningBox, self).dict,
+                'signing_box': self.signing_box
+            }
+
+    class InvokeDebot(BaseAppCallback):
+        def __init__(self, type: str = 'InvokeDebot'):
+            super(ResultOfAppDebotBrowser.InvokeDebot, self).__init__(
+                type=type)
+
+
+class AppRequestResult:
+    class Error(object):
+        def __init__(self, text: str):
+            self.text = text
+
+        @property
+        def dict(self):
+            return {'type': 'Error', 'text': self.text}
+
+    class Ok(object):
+        def __init__(self, result: Any):
+            self.result = result
+
+        @property
+        def dict(self):
+            return {'type': 'Ok', 'result': self.result}
+
+
+class DebotState:
+    ZERO = 0
+    CURRENT = 253
+    PREV = 254
+    EXIT = 255
+
+
+class DebotAction(object):
+    def __init__(
+            self, description: str, name: str, action_type: int, to: int,
+            attributes: str, misc: str):
+        """
+        :param description: A short action description. Should be used by
+                Debot Browser as name of menu item
+        :param name: Depends on action type. Can be a debot function name or
+                a print string (for Print Action)
+        :param action_type: Action type
+        :param to: ID of debot context to switch after action execution
+        :param attributes: Action attributes. In the form of "param=value,flag"
+                Attribute example: instant, args, fargs, sign
+        :param misc: Some internal action data. Used by debot only
+        """
+        self.description = description
+        self.name = name
+        self.action_type = action_type
+        self.to = to
+        self.attributes = attributes
+        self.misc = misc
+
+    @property
+    def dict(self):
+        return {
+            'description': self.description,
+            'name': self.name,
+            'action_type': self.action_type,
+            'to': self.to,
+            'attributes': self.attributes,
+            'misc': self.misc
+        }
+
+    def __str__(self):
+        return self.description

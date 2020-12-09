@@ -68,7 +68,10 @@ class TestTonProcessingAsyncCore(unittest.TestCase):
             call_set=call_set, send_events=True)
         events = []
         for event in generator:
-            data = event.get('response_data', {})
+            data = event['response_data']
+            if not data:
+                continue
+
             log_message = None
             if data.get('type'):
                 log_message = f"Type: '{data['type']}'; "
@@ -129,7 +132,10 @@ class TestTonProcessingAsyncCore(unittest.TestCase):
             message=encoded['message'], send_events=True, abi=self.events_abi)
         events = []
         for event in generator:
-            data = event.get('response_data', {})
+            data = event['response_data']
+            if not data:
+                continue
+
             if type(data) is dict and data.get('type'):
                 log_message = f"Type: '{data['type']}'"
             else:
@@ -145,7 +151,10 @@ class TestTonProcessingAsyncCore(unittest.TestCase):
             send_events=True, abi=self.events_abi)
         events.clear()
         for event in generator:
-            data = event.get('response_data', {})
+            data = event['response_data']
+            if not data:
+                continue
+
             log_message = None
             if data.get('type'):
                 log_message = f"Type: '{data['type']}'; " \

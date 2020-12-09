@@ -83,7 +83,7 @@ py -m pytest -v
 py -m pytest -v -s --log-cli-level=INFO
 ```
 
-* Alternative running tests
+* Alternative running tests  
 If you have problems with installing `pytest` package you can simply run  
 ```
 # For MacOS/Linux
@@ -122,8 +122,7 @@ CLIENT_DEFAULT_SETUP = {
     'crypto': {
         'mnemonic_dictionary': 1,
         'mnemonic_word_count': 12,
-        'hdkey_derivation_path': "m/44'/396'/0'/0/0",
-        'hdkey_compliant': True
+        'hdkey_derivation_path': "m/44'/396'/0'/0/0"
     },
     'abi': {
         'workchain': 0,

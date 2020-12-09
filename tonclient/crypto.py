@@ -461,3 +461,54 @@ class TonCrypto(TonModule):
             nonce = nonce.decode()
         return self.request(
             method='crypto.chacha20', data=data, key=key, nonce=nonce)
+
+    def register_signing_box(self):
+        """
+        Register an application implemented signing box
+        :return:
+        """
+        return self.request(
+            method='crypto.register_signing_box', as_iterable=True)
+
+    @Response.get_signing_box
+    def get_signing_box(self, keypair: KeyPair) -> int:
+        """
+        Creates a default signing box implementation
+        :param keypair: Keypair
+        :return:
+        """
+        return self.request(
+            method='crypto.get_signing_box', params_or_str=keypair.dict)
+
+    @Response.signing_box_get_public_key
+    def signing_box_get_public_key(self, handle: int) -> str:
+        """
+        Returns public key of signing key pair
+        :param handle: Signing box handle
+        :return:
+        """
+        return self.request(
+            method='crypto.signing_box_get_public_key', handle=handle)
+
+    @Response.signing_box_sign
+    def signing_box_sign(
+            self, signing_box: int, unsigned: Union[str, bytes]) -> str:
+        """
+        Returns signed user data
+        :param signing_box: Signing Box handle
+        :param unsigned: Unsigned user data. Must be encoded with `base64`
+        :return:
+        """
+        if type(unsigned) is bytes:
+            unsigned = unsigned.decode()
+        return self.request(
+            method='crypto.signing_box_sign', signing_box=signing_box,
+            unsigned=unsigned)
+
+    def remove_signing_box(self, handle: int):
+        """
+        Removes signing box from SDK
+        :param handle: Signing Box handle
+        :return:
+        """
+        return self.request(method='crypto.remove_signing_box', handle=handle)

@@ -52,10 +52,12 @@ class TCSyncResponseData(ctypes.Structure):
     __repr__ = __str__
 
 
-class TCResponseType(object):
+class TCResponseType:
     Success = 0
     Error = 1
     Nop = 2
+    AppRequest = 3
+    AppNotify = 4
     Custom = 100
 
 
