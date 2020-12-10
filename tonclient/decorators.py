@@ -282,6 +282,13 @@ class Response(object):
         return cls.__pretty(function=function, _callback=__callback)
 
     @classmethod
+    def query(cls, function):
+        def __callback(result):
+            return result['result']
+
+        return cls.__pretty(function=function, _callback=__callback)
+
+    @classmethod
     def parse_message(cls, function):
         def __callback(result):
             return result['parsed']

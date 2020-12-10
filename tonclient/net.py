@@ -127,5 +127,28 @@ class TonNet(TonModule):
             result=query.result)
 
     def unsubscribe(self, handle: int):
-        """ Cancels a subscription """
+        """
+        Cancels a subscription specified by its handle
+        :param handle: Subscription handle
+        """
         return self.request(method='net.unsubscribe', handle=handle)
+
+    @Response.query
+    def query(self, query: str, variables: Dict[str, Any] = None):
+        """
+        Performs DAppServer GraphQL query
+        :param query: GraphQL query text
+        :param variables: Variables used in query. Must be a map with named
+                values that can be used in query
+        :return:
+        """
+        return self.request(
+            method='net.query', query=query, variables=variables)
+
+    def suspend(self):
+        """ Suspends network module to stop any network activity """
+        return self.request(method='net.suspend')
+
+    def resume(self):
+        """ Resumes network module to enable network activity """
+        return self.request(method='net.resume')

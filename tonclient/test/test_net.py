@@ -1,4 +1,5 @@
 import logging
+import time
 from datetime import datetime
 
 import unittest
@@ -69,6 +70,52 @@ class TestTonNetAsyncCore(unittest.TestCase):
                 handle = None
 
         self.assertGreater(len(results), 0)
+
+    def test_query(self):
+        result = async_core_client.net.query(
+            query='query($time: Float){messages(filter:{created_at:{ge:$time}}limit:5){id}}',
+            variables={'time': int(datetime.now().timestamp()) - 60})
+        self.assertGreater(len(result['data']['messages']), 0)
+
+    def test_suspend_resume(self):
+        # Prepare query
+        now = int(datetime.now().timestamp())
+        query = TonQLQuery(collection='messages') \
+            .set_filter(created_at__gt=now).set_result('created_at id') \
+            .set_order('created_at')
+
+        # Create generator
+        generator = async_core_client.net.subscribe_collection(query=query)
+        handle = None
+        results = {'current': 'before', 'before': [], 'after': []}
+        for response in generator:
+            logging.info(f'[Response] {response}')
+            results[results['current']].append(response)
+            data = response['response_data']
+            if not data:
+                continue
+
+            if response['response_type'] == TCResponseType.Success:
+                handle = data['handle']
+            if not handle:
+                continue
+
+            if results['current'] == 'before' and \
+                    len(results[results['current']]) == 2:
+                async_core_client.net.suspend()
+                time.sleep(5)
+                self.assertEqual(0, len(results['after']))
+                async_core_client.net.resume()
+                results['current'] = 'after'
+
+            if (int(datetime.now().timestamp()) > now + 15 or
+                response['response_type'] > TCResponseType.Custom) and \
+                    handle:
+                async_core_client.net.unsubscribe(handle=handle)
+                handle = None
+
+        self.assertEqual(2, len(results['before']))
+        self.assertGreater(len(results['after']), 0)
 
 
 class TestTonNetSyncCore(unittest.TestCase):
