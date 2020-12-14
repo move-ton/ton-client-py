@@ -8,7 +8,6 @@ from typing import Dict, Any
 
 from tonclient.bindings.types import TCResponseType
 from tonclient.client import TonClient, DEVNET_BASE_URL
-from tonclient.net import TonQLQuery
 from tonclient.types import AppRequestResult, ParamsOfAppSigningBox, \
     ResultOfAppSigningBox
 
@@ -99,9 +98,9 @@ class TestTonClientAsync(unittest.TestCase):
 
     async def _coro_subscription(self):
         now = int(datetime.now().timestamp())
-        query = TonQLQuery(collection='messages') \
-            .set_filter(created_at__gt=now).set_result('created_at')
-        generator = self.client.net.subscribe_collection(query=query)
+        generator = self.client.net.subscribe_collection(
+            collection='messages', filter={'created_at': {'gt': now}},
+            result='created_at')
         handle = None
         results = []
         async for response in generator:

@@ -155,36 +155,6 @@ parsed = client.boc.parse_account(boc='Account base64 BOC')
 ```
 You always can get information about method and its' arguments in method docstring.
 
-### Net module and GraphQL queries
-To create GraphQL query for net module methods use builtin factory.  
-`collection` and `result` are required for all queries, other filters are optional.
-```python
-from tonclient.net import TonQLQuery
-
-# Create query collection
-query = TonQLQuery(collection='messages')
-
-# Set filter
-# `set_filter` methods accepts any number of kwargs for filtering data.
-# kwarg name contains field name and condition separated by __.
-# E.g. field__gt=111 is equal to GraphQL {'field': {'gt': 111}}
-query = query.set_filter(field__gt=111, field__eq='0:')
-
-# Set result
-query = query.set_result('id boc')
-# or you can set result fields as separate args
-query = query.set_result('id', 'boc')
-# or you can combine all of this
-query = query.set_result('id boc', 'field')
-
-# Set order (you can pass arguments in the same way as for `set_result`)
-query = query.set_order('created_at')  # ASC sorting
-query = query.set_order('-created_at')  # DESC sorting
-
-# Set limit
-query = query.set_limit(5)
-```
-
 ### Methods with events
 Some library methods `net.subscribe_collection`, `proccessing.send_message`, `processing.wait_for_transaction`, 
 `processing.process_message` may return either result or generator.  
