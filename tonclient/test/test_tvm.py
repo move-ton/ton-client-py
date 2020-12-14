@@ -4,7 +4,6 @@ import os
 import unittest
 
 from tonclient.errors import TonException
-from tonclient.net import TonQLQuery
 from tonclient.test.helpers import send_grams, SAMPLES_DIR, async_core_client,\
     sync_core_client, async_custom_client
 from tonclient.types import Abi, DeploySet, CallSet, Signer, StateInitSource, \
@@ -39,10 +38,9 @@ class TestTonTvmAsyncCore(unittest.TestCase):
             send_events=False)
 
         # Get account data
-        query = TonQLQuery(collection='accounts') \
-            .set_filter(id__eq=deploy_message['address']) \
-            .set_result('id boc')
-        account = async_custom_client.net.wait_for_collection(query=query)
+        account = async_custom_client.net.wait_for_collection(
+            collection='accounts', filter={'id': {'eq': deploy_message['address']}},
+            result='id boc')
 
         # Get account balance
         parsed = async_custom_client.boc.parse_account(boc=account['boc'])
