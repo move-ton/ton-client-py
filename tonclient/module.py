@@ -3,6 +3,7 @@ import logging
 import os
 
 import json
+import threading
 import time
 from typing import Any, Dict, Union, Generator, Tuple, List
 
@@ -25,7 +26,7 @@ class TonModule(object):
         self._client = client
 
     def request(
-            self, method: str, as_iterable: bool = False,
+            self, method: str, as_iterable: bool = False, callback=None,
             params_or_str: Union[str, Dict[str, Any]] = None, **kwargs) -> Any:
         """ Perform core request """
         # Prepare request params
@@ -37,7 +38,7 @@ class TonModule(object):
 
         # Make sync or async core/client request
         if self._client.is_core_async:
-            kwargs.update({'as_iterable': as_iterable})
+            kwargs.update({'as_iterable': as_iterable, 'callback': callback})
             return self._async_core_request(**kwargs)
         return self._sync_core_request(**kwargs)
 
@@ -58,27 +59,35 @@ class TonModule(object):
 
         return result
 
-    def _async_core_request(
-            self, method: str, request_params: str, as_iterable: bool
+    async def _async_core_request(
+            self, method: str, request_params: str, as_iterable: bool, callback=None
     ) -> Union[Generator, Any]:
         """ Perform core asynchronous request """
         # Perform async core request
         request_id = self._generate_request_id()
-        self._async_response_map[request_id] = []
+        loop = asyncio.get_running_loop()
+        fut = loop.create_future()
+        self._async_response_map[request_id] = {'future': fut, 'callback': callback, 'loop': loop}
+
+        # def run_cmd():
         tc_request(
             ctx=self._client.ctx, method=method, request_id=request_id,
             params_json=request_params,
             response_handler=self._async_response_handler)
 
-        if as_iterable:
-            if self._client.is_async:
-                return self._async_response_generator_coro(
-                    request_id=request_id)
-            return self._async_response_generator(request_id=request_id)
+        # t = threading.Thread(target=run_cmd)
 
-        if self._client.is_async:
-            return self._async_response_resolver_coro(request_id=request_id)
-        return self._async_response_resolver(request_id=request_id)
+        return await fut
+
+        # if as_iterable:
+        #     if self._client.is_async:
+        #         return self._async_response_generator_coro(
+        #             request_id=request_id)
+        #     return self._async_response_generator(request_id=request_id)
+        #
+        # if self._client.is_async:
+        #     return self._async_response_resolver_coro(request_id=request_id)
+        # return self._async_response_resolver(request_id=request_id)
 
     def _generate_request_id(self, size: int = 3) -> int:
         """
@@ -199,11 +208,30 @@ class TonModule(object):
             request_id: int, response_data: TCStringData,
             response_type: int, finished: bool):
         """ Core response handler """
-        response = {
-            'response_data': response_data.json,
-            'response_type': response_type,
-            'finished': finished
-        }
-        logging.debug(f'Request: {request_id}; Response: {response}')
-        if TonModule._async_response_map.get(request_id) is not None:
-            TonModule._async_response_map[request_id].append(response)
+        print(f'Request: {request_id}; Response: {response_data.json}; Response type: {response_type}; Finished: {finished}')
+
+        request = TonModule._async_response_map.get(request_id)
+        if not request:
+            return
+        if finished:
+            del TonModule._async_response_map[request_id]
+
+        if response_type == TCResponseType.Success:
+            request['loop'].call_soon_threadsafe(request['future'].set_result, response_data.json)
+            # request['future'].set_result(response_data.json)
+            return
+        if response_type == TCResponseType.Error:
+            request['future'].set_exception(TonException(response_data.json))
+            return
+
+        if request['callback']:
+            request['callback'](response_data.json)
+
+        # response = {
+        #     'response_data': response_data.json,
+        #     'response_type': response_type,
+        #     'finished': finished
+        # }
+        # logging.debug(f'Request: {request_id}; Response: {response}')
+        # if TonModule._async_response_map.get(request_id) is not None:
+        #     TonModule._async_response_map[request_id].append(response)

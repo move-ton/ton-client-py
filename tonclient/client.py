@@ -45,7 +45,7 @@ CLIENT_DEFAULT_SETUP = {
 
 
 class TonClientBase(TonModule):
-    @Response.version
+    # @Response.version
     def version(self) -> str:
         """ Returns Core Library version """
         return self.request(method='client.version')

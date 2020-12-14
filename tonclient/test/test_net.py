@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import time
 from datetime import datetime
@@ -44,32 +45,50 @@ class TestTonNetAsyncCore(unittest.TestCase):
             async_core_client.net.wait_for_collection(query=query, timeout=1)
 
     def test_subscribe_collection(self):
-        # Prepare query
-        now = int(datetime.now().timestamp())
-        query = TonQLQuery(collection='messages') \
-            .set_filter(created_at__gt=now).set_result('created_at')
+        async def _main():
+            # Prepare query
+            now = int(datetime.now().timestamp())
+            query = TonQLQuery(collection='messages') \
+                .set_filter(created_at__gt=now).set_result('created_at')
+
+            messages = []
+            def cb(r):
+                print('Callback', r)
+                messages.append(r)
+
+            response = await async_core_client.net.subscribe_collection(query=query, callback=cb)
+            print(response)
+
+            while True:
+                print('MESSAGES', len(messages))
+                await asyncio.sleep(1)
+                if len(messages) > 5:
+                    print('HANDLE', response)
+                    await async_core_client.net.unsubscribe(handle=response['handle'])
+                    break
+        asyncio.run(_main())
 
         # Create generator
-        generator = async_core_client.net.subscribe_collection(query=query)
-        handle = None
-        results = []
-        for response in generator:
-            logging.info(f'[Response] {response}')
-            results.append(response)
-            data = response['response_data']
-            if not data:
-                continue
-
-            if response['response_type'] == TCResponseType.Success:
-                handle = data['handle']
-
-            if (int(datetime.now().timestamp()) > now + 5 or
-                    response['response_type'] > TCResponseType.Custom) and \
-                    handle:
-                async_core_client.net.unsubscribe(handle=handle)
-                handle = None
-
-        self.assertGreater(len(results), 0)
+        # generator = async_core_client.net.subscribe_collection(query=query)
+        # handle = None
+        # results = []
+        # for response in generator:
+        #     logging.info(f'[Response] {response}')
+        #     results.append(response)
+        #     data = response['response_data']
+        #     if not data:
+        #         continue
+        #
+        #     if response['response_type'] == TCResponseType.Success:
+        #         handle = data['handle']
+        #
+        #     if (int(datetime.now().timestamp()) > now + 5 or
+        #             response['response_type'] > TCResponseType.Custom) and \
+        #             handle:
+        #         async_core_client.net.unsubscribe(handle=handle)
+        #         handle = None
+        #
+        # self.assertGreater(len(results), 0)
 
     def test_query(self):
         result = async_core_client.net.query(

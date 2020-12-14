@@ -118,13 +118,13 @@ class TonNet(TonModule):
             method='net.wait_for_collection', collection=query.collection,
             filter=query.filter, result=query.result, timeout=timeout)
 
-    @Response.subscribe_collection
-    def subscribe_collection(self, query: TonQLQuery) -> Generator:
+    # @Response.subscribe_collection
+    def subscribe_collection(self, query: TonQLQuery, callback) -> Generator:
         """ Creates a subscription """
         return self.request(
             method='net.subscribe_collection', as_iterable=True,
             collection=query.collection, filter=query.filter,
-            result=query.result)
+            result=query.result, callback=callback)
 
     def unsubscribe(self, handle: int):
         """

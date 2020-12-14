@@ -1,3 +1,4 @@
+import asyncio
 import unittest
 
 from tonclient.bindings.lib import LIB_VERSION
@@ -9,7 +10,16 @@ class TestTonClientAsyncCore(unittest.TestCase):
         self.client = TonClient(network={'server_address': DEVNET_BASE_URL})
 
     def test_version(self):
-        self.assertEqual(LIB_VERSION, self.client.version())
+        async def _main():
+            response = await self.client.version()
+            print('RESPONSE', response)
+            # while True:
+            #     await asyncio.sleep(5)
+            #     print('RESPONSE', await response)
+            #     await asyncio.sleep(1)
+
+        asyncio.run(_main())
+        # self.assertEqual(LIB_VERSION, self.client.version())
 
     def test_get_api_reference(self):
         reference = self.client.get_api_reference()
