@@ -2,7 +2,7 @@ import unittest
 
 from tonclient.errors import TonException
 from tonclient.test.helpers import async_core_client, sync_core_client
-from tonclient.types import AddressStringFormat
+from tonclient.types import AddressStringFormat, ParamsOfConvertAddress
 
 
 class TestTonUtilsAsyncCore(unittest.TestCase):
@@ -13,30 +13,47 @@ class TestTonUtilsAsyncCore(unittest.TestCase):
         base64 = 'Uf/8uRo6OBbQ97jCx2EIuKm8Wmt6Vb15+KsQHFLbKSMiYG+9'
         base64url = 'kf_8uRo6OBbQ97jCx2EIuKm8Wmt6Vb15-KsQHFLbKSMiYIny'
 
+        convert_params = ParamsOfConvertAddress(
+            address=account_id, output_format=AddressStringFormat.Hex())
         converted = async_core_client.utils.convert_address(
-            address=account_id, output_format=AddressStringFormat.Hex)
-        self.assertEqual(hex_workchain0, converted)
+            params=convert_params)
+        self.assertEqual(hex_workchain0, converted.address)
 
+        convert_params = ParamsOfConvertAddress(
+            address=converted.address,
+            output_format=AddressStringFormat.AccountId())
         converted = async_core_client.utils.convert_address(
-            address=converted, output_format=AddressStringFormat.AccountId)
-        self.assertEqual(account_id, converted)
+            params=convert_params)
+        self.assertEqual(account_id, converted.address)
 
+        convert_params = ParamsOfConvertAddress(
+            address=hex_,
+            output_format=AddressStringFormat.Base64(
+                url=False, test=False, bounce=False))
         converted = async_core_client.utils.convert_address(
-            address=hex_, output_format=AddressStringFormat.base64())
-        self.assertEqual(base64, converted)
+            params=convert_params)
+        self.assertEqual(base64, converted.address)
 
-        converted = async_core_client.utils.convert_address(
-            address=base64, output_format=AddressStringFormat.base64(
+        convert_params = ParamsOfConvertAddress(
+            address=base64,
+            output_format=AddressStringFormat.Base64(
                 url=True, test=True, bounce=True))
-        self.assertEqual(base64url, converted)
-
         converted = async_core_client.utils.convert_address(
-            address=base64url, output_format=AddressStringFormat.Hex)
-        self.assertEqual(hex_, converted)
+            params=convert_params)
+        self.assertEqual(base64url, converted.address)
+
+        convert_params = ParamsOfConvertAddress(
+            address=base64url,
+            output_format=AddressStringFormat.Hex())
+        converted = async_core_client.utils.convert_address(
+            params=convert_params)
+        self.assertEqual(hex_, converted.address)
 
         with self.assertRaises(TonException):
-            async_core_client.utils.convert_address(
-                address='-1:00', output_format=AddressStringFormat.Hex)
+            convert_params = ParamsOfConvertAddress(
+                address='-1:00',
+                output_format=AddressStringFormat.Hex())
+            async_core_client.utils.convert_address(params=convert_params)
 
 
 class TestTonUtilsSyncCore(unittest.TestCase):
@@ -48,27 +65,44 @@ class TestTonUtilsSyncCore(unittest.TestCase):
         base64 = 'Uf/8uRo6OBbQ97jCx2EIuKm8Wmt6Vb15+KsQHFLbKSMiYG+9'
         base64url = 'kf_8uRo6OBbQ97jCx2EIuKm8Wmt6Vb15-KsQHFLbKSMiYIny'
 
+        convert_params = ParamsOfConvertAddress(
+            address=account_id, output_format=AddressStringFormat.Hex())
         converted = sync_core_client.utils.convert_address(
-            address=account_id, output_format=AddressStringFormat.Hex)
-        self.assertEqual(hex_workchain0, converted)
+            params=convert_params)
+        self.assertEqual(hex_workchain0, converted.address)
 
+        convert_params = ParamsOfConvertAddress(
+            address=converted.address,
+            output_format=AddressStringFormat.AccountId())
         converted = sync_core_client.utils.convert_address(
-            address=converted, output_format=AddressStringFormat.AccountId)
-        self.assertEqual(account_id, converted)
+            params=convert_params)
+        self.assertEqual(account_id, converted.address)
 
+        convert_params = ParamsOfConvertAddress(
+            address=hex_,
+            output_format=AddressStringFormat.Base64(
+                url=False, test=False, bounce=False))
         converted = sync_core_client.utils.convert_address(
-            address=hex_, output_format=AddressStringFormat.base64())
-        self.assertEqual(base64, converted)
+            params=convert_params)
+        self.assertEqual(base64, converted.address)
 
-        converted = sync_core_client.utils.convert_address(
-            address=base64, output_format=AddressStringFormat.base64(
+        convert_params = ParamsOfConvertAddress(
+            address=base64,
+            output_format=AddressStringFormat.Base64(
                 url=True, test=True, bounce=True))
-        self.assertEqual(base64url, converted)
-
         converted = sync_core_client.utils.convert_address(
-            address=base64url, output_format=AddressStringFormat.Hex)
-        self.assertEqual(hex_, converted)
+            params=convert_params)
+        self.assertEqual(base64url, converted.address)
+
+        convert_params = ParamsOfConvertAddress(
+            address=base64url,
+            output_format=AddressStringFormat.Hex())
+        converted = sync_core_client.utils.convert_address(
+            params=convert_params)
+        self.assertEqual(hex_, converted.address)
 
         with self.assertRaises(TonException):
-            sync_core_client.utils.convert_address(
-                address='-1:00', output_format=AddressStringFormat.Hex)
+            convert_params = ParamsOfConvertAddress(
+                address='-1:00',
+                output_format=AddressStringFormat.Hex())
+            sync_core_client.utils.convert_address(params=convert_params)

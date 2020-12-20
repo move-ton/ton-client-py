@@ -1,9 +1,10 @@
 from typing import Any
 
+from tonclient.types import ClientError
+
 
 class TonException(Exception):
     def __init__(self, error: Any):
-        if type(error) is dict:
-            error = f"[{error.get('code')}] {error.get('message')} " \
-                    f"(Core: {error.get('data', {}).get('core_version')})"
+        if isinstance(error, ClientError):
+            error = error.__str__()
         super(TonException, self).__init__(error)

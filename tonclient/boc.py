@@ -1,77 +1,79 @@
-from typing import Dict, Any
-
-from tonclient.decorators import Response
+from tonclient.decorators import result_as
 from tonclient.module import TonModule
+from tonclient.types import ParamsOfParse, ResultOfParse, \
+    ParamsOfParseShardstate, ParamsOfGetBocHash, ResultOfGetBocHash, \
+    ParamsOfGetBlockchainConfig, ResultOfGetBlockchainConfig
 
 
 class TonBoc(TonModule):
     """ Free TON boc SDK API implementation """
-    @Response.parse_message
-    def parse_message(self, boc: str) -> Dict[str, Any]:
+    @result_as(classname=ResultOfParse)
+    def parse_message(self, params: ParamsOfParse) -> ResultOfParse:
         """
-        Parses message BOC into a JSON
-        :param boc: BOC encoded as `base64`
-        :return: JSON containing parsed BOC
+        Parses message boc into a JSON.
+        JSON structure is compatible with GraphQL API message object
+        :param params: See `types.ParamsOfParse`
+        :return: See `types.ResultOfParse`
         """
-        return self.request(method='boc.parse_message', boc=boc)
+        return self.request(method='boc.parse_message', **params.dict)
 
-    @Response.parse_transaction
-    def parse_transaction(self, boc: str) -> Dict[str, Any]:
+    @result_as(classname=ResultOfParse)
+    def parse_transaction(self, params: ParamsOfParse) -> ResultOfParse:
         """
-        Parses transaction BOC into a JSON
-        :param boc: BOC encoded as `base64`
-        :return: JSON containing parsed BOC
+        Parses transaction boc into a JSON.
+        JSON structure is compatible with GraphQL API transaction object
+        :param params: See `types.ParamsOfParse`
+        :return: See `types.ResultOfParse`
         """
-        return self.request(method='boc.parse_transaction', boc=boc)
+        return self.request(method='boc.parse_transaction', **params.dict)
 
-    @Response.parse_account
-    def parse_account(self, boc: str) -> Dict[str, Any]:
+    @result_as(classname=ResultOfParse)
+    def parse_account(self, params: ParamsOfParse) -> ResultOfParse:
         """
-        Parses account BOC into a JSON
-        :param boc: BOC encoded as `base64`
-        :return: JSON containing parsed BOC
+        Parses account boc into a JSON.
+        JSON structure is compatible with GraphQL API account object
+        :param params: See `types.ParamsOfParse`
+        :return: See `types.ResultOfParse`
         """
-        return self.request(method='boc.parse_account', boc=boc)
+        return self.request(method='boc.parse_account', **params.dict)
 
-    @Response.parse_block
-    def parse_block(self, boc: str) -> Dict[str, Any]:
+    @result_as(classname=ResultOfParse)
+    def parse_block(self, params: ParamsOfParse) -> ResultOfParse:
         """
-        Parses block BOC into a JSON
-        :param boc: BOC encoded as `base64`
-        :return: JSON containing parsed BOC
+        Parses block boc into a JSON.
+        JSON structure is compatible with GraphQL API block object
+        :param params: See `types.ParamsOfParse`
+        :return: See `types.ResultOfParse`
         """
-        return self.request(method='boc.parse_block', boc=boc)
+        return self.request(method='boc.parse_block', **params.dict)
 
-    @Response.parse_shardstate
+    @result_as(classname=ResultOfParse)
     def parse_shardstate(
-            self, boc: str, state_id: str, workchain_id: int
-    ) -> Dict[str, Any]:
+            self, params: ParamsOfParseShardstate) -> ResultOfParse:
         """
         Parses shardstate boc into a JSON.
         JSON structure is compatible with GraphQL API shardstate object
-        :param boc: BOC encoded as `base64`
-        :param state_id: Shardstate identificator
-        :param workchain_id: Workchain shardstate belongs to
-        :return: JSON containing parsed BOC
+        :param params: See `ParamsOfParseShardstate`
+        :return: See `ResultOfParse`
         """
-        return self.request(
-            method='boc.parse_shardstate', boc=boc, id=state_id,
-            workchain_id=workchain_id)
+        return self.request(method='boc.parse_shardstate', **params.dict)
 
-    @Response.get_boc_hash
-    def get_boc_hash(self, boc: str) -> str:
+    @result_as(classname=ResultOfGetBocHash)
+    def get_boc_hash(self, params: ParamsOfGetBocHash) -> ResultOfGetBocHash:
         """
         Calculates BOC root hash
-        :param boc: BOC encoded as `base64`
-        :return: BOC root hash encoded with `hex`
+        :param params: See `ParamsOfGetBocHash`
+        :return: See `ResultOfGetBocHash`
         """
-        return self.request(method='boc.get_boc_hash', boc=boc)
+        return self.request(method='boc.get_boc_hash', **params.dict)
 
-    @Response.get_blockchain_config
-    def get_blockchain_config(self, block_boc: str) -> str:
+    @result_as(classname=ResultOfGetBlockchainConfig)
+    def get_blockchain_config(
+            self, params: ParamsOfGetBlockchainConfig
+    ) -> ResultOfGetBlockchainConfig:
         """
-        :param block_boc: Key block BOC encoded as `base64`
-        :return: Blockchain config BOC encoded as `base64`
+        :param params: See `ParamsOfGetBlockchainConfig`
+        :return: See `ResultOfGetBlockchainConfig`
         """
         return self.request(
-            method='boc.get_blockchain_config', block_boc=block_boc)
+            method='boc.get_blockchain_config', **params.dict)

@@ -1,22 +1,16 @@
-from typing import Union, Dict
-
-from tonclient.decorators import Response
+from tonclient.decorators import result_as
 from tonclient.module import TonModule
+from tonclient.types import ParamsOfConvertAddress, ResultOfConvertAddress
 
 
 class TonUtils(TonModule):
     """ Free TON utils SDK API implementation """
-    @Response.convert_address
+    @result_as(classname=ResultOfConvertAddress)
     def convert_address(
-            self, address: str, output_format: Dict[str, Union[str, bool]]
-    ) -> str:
+            self, params: ParamsOfConvertAddress) -> ResultOfConvertAddress:
         """
         Converts address from any TON format to any TON format
-        :param address: Account address in any format
-        :param output_format: Format to convert to.
-                'types.AddressStringFormat' class may help
-        :return:
+        :param params: See `types.ParamsOfConvertAddress`
+        :return: See `types.ResultOfConvertAddress`
         """
-        return self.request(
-            method='utils.convert_address', address=address,
-            output_format=output_format)
+        return self.request(method='utils.convert_address', **params.dict)

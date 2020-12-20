@@ -1,86 +1,91 @@
-from typing import Union, Dict, Any, Generator
+from typing import Callable
 
-from tonclient.decorators import Response
+from tonclient.decorators import result_as
 from tonclient.module import TonModule
-from tonclient.types import Abi, MessageSource, Signer, DeploySet, CallSet
+from tonclient.types import ParamsOfSendMessage, ResultOfSendMessage, \
+    ParamsOfWaitForTransaction, ResultOfProcessMessage, ParamsOfProcessMessage
 
 
 class TonProcessing(TonModule):
     """ Free TON processing SDK API implementation """
+    @result_as(classname=ResultOfProcessMessage)
     def process_message(
-            self, abi: Abi, signer: Signer, send_events: bool,
-            address: str = None, deploy_set: DeploySet = None,
-            call_set: CallSet = None, processing_try_index: int = 0
-    ) -> Union[Dict[str, Any], Generator]:
+            self, params: ParamsOfProcessMessage, callback: Callable = None
+    ) -> ResultOfProcessMessage:
         """
-        Creates message, sends it to the network and monitors its processing
-        :param abi: Contract ABI
-        :param signer: Signing parameters
-        :param address: Target address the message will be sent to. Must be
-                specified in case of non-deploy message
-        :param deploy_set: Deploy parameters. Must be specified in case of
-                deploy message
-        :param call_set: Function call parameters. Must be specified in case
-                of non-deploy message. In case of deploy message it is optional
-                and contains parameters of the functions that will to be
-                called upon deploy transaction
-        :param processing_try_index: Processing try index. Used in message
-                processing with retries (if contract's ABI includes "expire"
-                header). Encoder uses the provided try index to calculate
-                message expiration time. The 1st message expiration time is
-                specified in client config. Expiration timeouts will grow with
-                every retry
-        :param send_events: Flag for requesting events sending
-        :return:
-        """
-        message_source = MessageSource.from_encoding_params(
-            abi=abi, signer=signer, address=address, deploy_set=deploy_set,
-            call_set=call_set, processing_try_index=processing_try_index)
-        return self.request(
-            method='processing.process_message', as_iterable=send_events,
-            message_encode_params=message_source.dict, send_events=send_events)
+        Creates message, sends it to the network and monitors its processing.
+        Creates ABI-compatible message, sends it to the network and monitors
+        for the result transaction. Decodes the output messages' bodies.
 
-    @Response.send_message
+        If contract's ABI includes "expire" header, then SDK implements
+        retries in case of unsuccessful message delivery within the expiration
+        timeout: SDK recreates the message, sends it and processes it again.
+
+        The intermediate events, such as `WillFetchFirstBlock`, `WillSend`,
+        `DidSend`, `WillFetchNextBlock`, etc - are switched on/off by
+        `send_events` flag and logged into the supplied callback function.
+        The retry configuration parameters are defined in config.
+
+        If contract's ABI does not include "expire" header then, if no
+        transaction is found within the network timeout (see config parameter),
+        exits with error
+        :param params: See `types.ParamsOfProcessMessage`
+        :param callback: Additional responses handler
+        :return: See `types.ResultOfProcessMessage`
+        """
+        return self.request(
+            method='processing.process_message', callback=callback,
+            **params.dict)
+
+    @result_as(classname=ResultOfSendMessage)
     def send_message(
-            self, message: str, send_events: bool, abi: Abi = None
-    ) -> Union[str, Generator]:
+            self, params: ParamsOfSendMessage, callback: Callable = None
+    ) -> ResultOfSendMessage:
         """
-        Sends message to the network
-        :param message: Message BOC. Encoded with `base64`
-        :param send_events: Flag for requesting events sending
-        :param abi: Optional message ABI. If this parameter is specified and
-                the message has the 'expire' header then expiration time will
-                be checked against the current time to prevent an unnecessary
-                sending.
-                The `message already expired` error will be returned in this
-                case.
-                Note that specifying `abi` for ABI compliant contracts is
-                strongly recommended due to choosing proper processing strategy
-        :return:
+        Sends message to the network.
+        Sends message to the network and returns the last generated shard
+        block of the destination account before the message was sent.
+        It will be required later for message processing
+        :param params: See `types.ParamsOfSendMessage`
+        :param callback: Additional responses handler
+        :return: See `types.ResultOfSendMessage`
         """
-        abi = abi.dict if abi else abi
         return self.request(
-            method='processing.send_message', message=message,
-            send_events=send_events, abi=abi, as_iterable=send_events)
+            method='processing.send_message', callback=callback, **params.dict)
 
+    @result_as(classname=ResultOfProcessMessage)
     def wait_for_transaction(
-            self, message: str, shard_block_id: str, send_events: bool,
-            abi: Abi = None) -> Union[Dict[str, Any], Generator]:
+            self, params: ParamsOfWaitForTransaction,
+            callback: Callable = None) -> ResultOfProcessMessage:
         """
-        Performs monitoring of the network for the result transaction
-        :param message: Message BOC. Encoded with `base64`
-        :param shard_block_id: The last generated block id of the destination
-                account shard before the message was sent. You must provide
-                the same value as the `send_message` has returned
-        :param send_events: Flag for requesting events sending
-        :param abi: Optional ABI for decoding transaction results. If it is
-                specified then the output messages bodies will be decoded
-                according to this ABI. The `abi_decoded` result field will be
-                filled out
-        :return:
+        Performs monitoring of the network for the result transaction of the
+        external inbound message processing.
+
+        `send_events` enables intermediate events, such as
+        `WillFetchNextBlock`, `FetchNextBlockFailed` that may be useful for
+        logging of new shard blocks creation during message processing.
+
+        Note, that presence of the abi parameter is critical for ABI compliant
+        contracts. Message processing uses drastically different strategy for
+        processing message for contracts which ABI includes "expire" header.
+
+        When the ABI header expire is present, the processing uses message
+        expiration strategy:
+            - The maximum block gen time is set to
+              `message_expiration_timeout + transaction_wait_timeout`;
+            - When maximum block gen time is reached, the processing will be
+              finished with `MessageExpired` error.
+
+        When the ABI header expire isn't present or abi parameter isn't
+        specified, the processing uses transaction waiting strategy:
+            - The maximum block gen time is set to
+              `now() + transaction_wait_timeout`.
+            - If maximum block gen time is reached and no result transaction
+              is found, the processing will exit with an error.
+        :param params: See `types.ParamsOfWaitForTransaction`
+        :param callback: Additional responses handler
+        :return: See `types.ResultOfProcessMessage`
         """
-        abi = abi.dict if abi else abi
         return self.request(
-            method='processing.wait_for_transaction', message=message,
-            shard_block_id=shard_block_id, send_events=send_events, abi=abi,
-            as_iterable=send_events)
+            method='processing.wait_for_transaction', callback=callback,
+            **params.dict)

@@ -1,70 +1,77 @@
-from typing import Any, Dict, Generator, List
+from typing import Callable
 
-from tonclient.decorators import Response
+from tonclient.decorators import result_as
 from tonclient.module import TonModule
+from tonclient.types import ParamsOfQuery, ResultOfQuery, \
+    ParamsOfQueryCollection, ResultOfQueryCollection, \
+    ParamsOfWaitForCollection, ResultOfWaitForCollection, \
+    ResultOfSubscribeCollection, ParamsOfSubscribeCollection
 
 
 class TonNet(TonModule):
     """ Free TON net SDK API implementation """
-    @Response.query_collection
+    @result_as(classname=ResultOfQueryCollection)
     def query_collection(
-            self, collection: str, result: str, filter: Dict[str, Any] = None,
-            order: List[Dict[str, str]] = None, limit: int = None) -> Any:
+            self, params: ParamsOfQueryCollection) -> ResultOfQueryCollection:
         """
-        Queries collection data
-        :param collection: Collection name
-        :param result: Projection (result) string
-        :param filter: Collection filter
-        :param order: Sorting order.
-                List of dict(s) {'path': field, 'direction': 'ASC'|'DESC'}
-        :param limit: Number of documents to return
+        Queries collection data.
+        Queries data that satisfies the `filter` conditions, limits the number
+        of returned records and orders them. The projection fields are limited
+        to result fields
+        :param params: See `types.ParamsOfQueryCollection`
+        :return: See `types.ResultOfQueryCollection`
         """
-        return self.request(
-            method='net.query_collection', collection=collection,
-            filter=filter, result=result, order=order, limit=limit)
+        return self.request(method='net.query_collection', **params.dict)
 
-    @Response.wait_for_collection
+    @result_as(classname=ResultOfWaitForCollection)
     def wait_for_collection(
-            self, collection: str, result: str, filter: Dict[str, Any] = None,
-            timeout: int = None) -> Any:
+            self, params: ParamsOfWaitForCollection
+    ) -> ResultOfWaitForCollection:
         """
-        Returns an object that fulfills the conditions or waits for
-        its appearance. Triggers only once.
+        Returns an object that fulfills the conditions or waits for its
+        appearance. Triggers only once.
         If object that satisfies the `filter` conditions already exists -
         returns it immediately. If not - waits for insert/update of data
-        withing the specified `timeout`, and returns it
+        within the specified `timeout`, and returns it. The projection fields
+        are limited to `result` fields
+        :param params: See `types.ParamsOfWaitForCollection`
+        :return: See `types.ResultOfWaitForCollection`
         """
-        return self.request(
-            method='net.wait_for_collection', collection=collection,
-            filter=filter, result=result, timeout=timeout)
+        return self.request(method='net.wait_for_collection', **params.dict)
 
-    @Response.subscribe_collection
+    @result_as(classname=ResultOfSubscribeCollection)
     def subscribe_collection(
-            self, collection: str, result: str,
-            filter: Dict[str, Any] = None) -> Generator:
-        """ Creates a subscription """
-        return self.request(
-            method='net.subscribe_collection', as_iterable=True,
-            collection=collection, filter=filter, result=result)
-
-    def unsubscribe(self, handle: int):
+            self, params: ParamsOfSubscribeCollection,
+            callback: Callable = None
+    ) -> ResultOfSubscribeCollection:
         """
-        Cancels a subscription specified by its handle
-        :param handle: Subscription handle
-        """
-        return self.request(method='net.unsubscribe', handle=handle)
-
-    @Response.query
-    def query(self, query: str, variables: Dict[str, Any] = None):
-        """
-        Performs DAppServer GraphQL query
-        :param query: GraphQL query text
-        :param variables: Variables used in query. Must be a map with named
-                values that can be used in query
+        Creates a subscription.
+        Triggers for each insert/update of data that satisfies the `filter`
+        conditions. The projection fields are limited to `result` fields
+        :param params: See `types.ParamsOfSubscribeCollection`
+        :param callback: Additional responses handler
         :return:
         """
         return self.request(
-            method='net.query', query=query, variables=variables)
+            method='net.subscribe_collection', callback=callback,
+            **params.dict)
+
+    def unsubscribe(self, params: ResultOfSubscribeCollection):
+        """
+        Cancels a subscription.
+        Cancels a subscription specified by its handle
+        :param params: See `types.ResultOfSubscribeCollection`
+        """
+        return self.request(method='net.unsubscribe', **params.dict)
+
+    @result_as(classname=ResultOfQuery)
+    def query(self, params: ParamsOfQuery) -> ResultOfQuery:
+        """
+        Performs DAppServer GraphQL query
+        :param params: See `types.ResultOfQuery`
+        :return: See `types.ResultOfQuery`
+        """
+        return self.request(method='net.query', **params.dict)
 
     def suspend(self):
         """ Suspends network module to stop any network activity """

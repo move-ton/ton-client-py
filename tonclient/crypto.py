@@ -1,514 +1,418 @@
-from typing import Dict, Union, List
+from typing import Callable
 
-from tonclient.decorators import Response
 from tonclient.module import TonModule
-from tonclient.types import KeyPair
+from tonclient.decorators import result_as
+from tonclient.types import KeyPair, ParamsOfFactorize, ResultOfFactorize, \
+    ParamsOfModularPower, ResultOfModularPower, ParamsOfTonCrc16, \
+    ResultOfTonCrc16, ParamsOfGenerateRandomBytes, \
+    ParamsOfConvertPublicKeyToTonSafeFormat, ResultOfGenerateRandomBytes, \
+    ResultOfConvertPublicKeyToTonSafeFormat, ParamsOfSign, ResultOfSign, \
+    ParamsOfVerifySignature, ResultOfVerifySignature, ParamsOfHash, \
+    ResultOfHash, ParamsOfScrypt, ResultOfScrypt, \
+    ParamsOfNaclSignKeyPairFromSecret, ParamsOfNaclSign, ResultOfNaclSign, \
+    ParamsOfNaclSignOpen, ResultOfNaclSignOpen, ResultOfNaclSignDetached, \
+    ParamsOfNaclBoxKeyPairFromSecret, ParamsOfNaclBox, ResultOfNaclBox, \
+    ParamsOfNaclBoxOpen, ResultOfNaclBoxOpen, ParamsOfNaclSecretBox, \
+    ParamsOfNaclSecretBoxOpen, ParamsOfMnemonicWords, ResultOfMnemonicWords, \
+    ParamsOfMnemonicFromRandom, ResultOfMnemonicFromRandom, \
+    ParamsOfMnemonicFromEntropy, ResultOfMnemonicFromEntropy, \
+    ParamsOfMnemonicVerify, ResultOfMnemonicVerify, \
+    ParamsOfMnemonicDeriveSignKeys, ParamsOfHDKeyXPrvFromMnemonic, \
+    ResultOfHDKeyXPrvFromMnemonic, ParamsOfHDKeyDeriveFromXPrv, \
+    ResultOfHDKeyDeriveFromXPrv, ParamsOfHDKeyDeriveFromXPrvPath, \
+    ResultOfHDKeyDeriveFromXPrvPath, ParamsOfHDKeySecretFromXPrv, \
+    ResultOfHDKeySecretFromXPrv, ParamsOfHDKeyPublicFromXPrv, \
+    ResultOfHDKeyPublicFromXPrv, ParamsOfChaCha20, ResultOfChaCha20, \
+    RegisteredSigningBox, ResultOfSigningBoxGetPublicKey, \
+    ParamsOfSigningBoxSign, ResultOfSigningBoxSign
 
 
 class TonCrypto(TonModule):
     """ Free TON crypto SDK API implementation """
-    @Response.sha256
-    def sha256(self, data: Union[str, bytes]) -> str:
+    @result_as(classname=ResultOfHash)
+    def sha256(self, params: ParamsOfHash) -> ResultOfHash:
         """
         Calculates SHA256 hash of the specified data
-        :param data: Input data for hash calculation encoded with `base64`
-        :return:
+        :param params: See `types.ParamsOfHash`
+        :return: See `types.ResultOfHash`
         """
-        if type(data) is bytes:
-            data = data.decode()
-        return self.request(method='crypto.sha256', data=data)
+        return self.request(method='crypto.sha256', **params.dict)
 
-    @Response.sha512
-    def sha512(self, data: Union[str, bytes]) -> str:
+    @result_as(classname=ResultOfHash)
+    def sha512(self, params: ParamsOfHash) -> ResultOfHash:
         """
         Calculates SHA512 hash of the specified data
-        :param data: Input data for hash calculation encoded with `base64`
-        :return:
+        :param params: See `types.ParamsOfHash`
+        :return: See `types.ResultOfHash`
         """
-        if type(data) is bytes:
-            data = data.decode()
-        return self.request(method='crypto.sha512', data=data)
+        return self.request(method='crypto.sha512', **params.dict)
 
-    @Response.hdkey_xprv_from_mnemonic
+    @result_as(classname=ResultOfHDKeyXPrvFromMnemonic)
     def hdkey_xprv_from_mnemonic(
-            self, phrase: str, dictionary: int = None, word_count: int = None
-    ) -> str:
+            self, params: ParamsOfHDKeyXPrvFromMnemonic
+    ) -> ResultOfHDKeyXPrvFromMnemonic:
         """
         Generates an extended master private key that will be the root for all
         the derived keys
-        :param phrase: String with seed phrase
-        :param dictionary: Dictionary identifier
-        :param word_count: Mnemonic word count
-        :return:
+        :param params: See `types.ParamsOfHDKeyXPrvFromMnemonic`
+        :return: See `types.ResultOfHDKeyXPrvFromMnemonic`
         """
         return self.request(
-            method='crypto.hdkey_xprv_from_mnemonic', phrase=phrase,
-            dictionary=dictionary, word_count=word_count)
+            method='crypto.hdkey_xprv_from_mnemonic', **params.dict)
 
-    @Response.hdkey_secret_from_xprv
-    def hdkey_secret_from_xprv(self, xprv: str) -> str:
+    @result_as(classname=ResultOfHDKeySecretFromXPrv)
+    def hdkey_secret_from_xprv(
+            self, params: ParamsOfHDKeySecretFromXPrv
+    ) -> ResultOfHDKeySecretFromXPrv:
         """
         Extracts the private key from the serialized extended private key
-        :param xprv: Serialized extended private key
-        :return:
+        :param params: See `types.ParamsOfHDKeySecretFromXPrv`
+        :return: See `types.ResultOfHDKeySecretFromXPrv`
         """
-        return self.request(method='crypto.hdkey_secret_from_xprv', xprv=xprv)
+        return self.request(
+            method='crypto.hdkey_secret_from_xprv', **params.dict)
 
-    @Response.hdkey_public_from_xprv
-    def hdkey_public_from_xprv(self, xprv: str) -> str:
+    @result_as(classname=ResultOfHDKeyPublicFromXPrv)
+    def hdkey_public_from_xprv(
+            self, params: ParamsOfHDKeyPublicFromXPrv
+    ) -> ResultOfHDKeyPublicFromXPrv:
         """
         Extracts the public key from the serialized extended private key
-        :param xprv: Serialized extended private key
-        :return:
+        :param params: See `types.ParamsOfHDKeyPublicFromXPrv`
+        :return: See `types.ResultOfHDKeyPublicFromXPrv`
         """
-        return self.request(method='crypto.hdkey_public_from_xprv', xprv=xprv)
+        return self.request(
+            method='crypto.hdkey_public_from_xprv', **params.dict)
 
-    @Response.hdkey_derive_from_xprv
+    @result_as(classname=ResultOfHDKeyDeriveFromXPrv)
     def hdkey_derive_from_xprv(
-            self, xprv: str, child_index: int, hardened: bool) -> str:
+            self, params: ParamsOfHDKeyDeriveFromXPrv
+    ) -> ResultOfHDKeyDeriveFromXPrv:
         """
         Returns extended private key derived from the specified extended
         private key and child index
-        :param xprv: Serialized extended private key
-        :param child_index: Child index (see BIP-0032)
-        :param hardened: Indicates the derivation of hardened/not-hardened
-                key (see BIP-0032)
-        :return:
+        :param params: See `types.ParamsOfHDKeyDeriveFromXPrv`
+        :return: See `types.ResultOfHDKeyDeriveFromXPrv`
         """
         return self.request(
-            method='crypto.hdkey_derive_from_xprv', xprv=xprv,
-            child_index=child_index, hardened=hardened)
+            method='crypto.hdkey_derive_from_xprv', **params.dict)
 
-    @Response.hdkey_derive_from_xprv_path
-    def hdkey_derive_from_xprv_path(self, xprv: str, path: str) -> str:
+    @result_as(classname=ResultOfHDKeyDeriveFromXPrvPath)
+    def hdkey_derive_from_xprv_path(
+            self, params: ParamsOfHDKeyDeriveFromXPrvPath
+    ) -> ResultOfHDKeyDeriveFromXPrvPath:
         """
         Derives the extended private key from the specified key and path
-        :param xprv: Serialized extended private key
-        :param path: Derivation path, for instance "m/44'/396'/0'/0/0"
-        :return:
+        :param params: See `types.ParamsOfHDKeyDeriveFromXPrvPath`
+        :return: See `types.ResultOfHDKeyDeriveFromXPrvPath`
         """
         return self.request(
-            method='crypto.hdkey_derive_from_xprv_path', xprv=xprv, path=path)
+            method='crypto.hdkey_derive_from_xprv_path', **params.dict)
 
-    @Response.convert_public_key_to_ton_safe_format
-    def convert_public_key_to_ton_safe_format(self, public_key: str) -> str:
+    @result_as(classname=ResultOfConvertPublicKeyToTonSafeFormat)
+    def convert_public_key_to_ton_safe_format(
+            self, params: ParamsOfConvertPublicKeyToTonSafeFormat
+    ) -> ResultOfConvertPublicKeyToTonSafeFormat:
         """
         Converts public key to ton safe_format
-        :param public_key: Public key - 64 symbols `hex` string
-        :return:
+        :param params: See `types.ParamsOfConvertPublicKeyToTonSafeFormat`
+        :return: See `types.ResultOfConvertPublicKeyToTonSafeFormat`
         """
         return self.request(
             method='crypto.convert_public_key_to_ton_safe_format',
-            public_key=public_key)
+            **params.dict)
 
-    @Response.generate_random_sign_keys
+    @result_as(classname=KeyPair)
     def generate_random_sign_keys(self) -> KeyPair:
         """
         Generates random ed25519 key pair
-        :return:
+        :return: See `types.KeyPair`
         """
         return self.request(method='crypto.generate_random_sign_keys')
 
-    def sign(
-            self, unsigned: Union[str, bytes], keys: KeyPair
-    ) -> Dict[str, str]:
+    @result_as(classname=ResultOfSign)
+    def sign(self, params: ParamsOfSign) -> ResultOfSign:
         """
         Signs a data using the provided keys
-        :param unsigned: Data that must be signed encoded in `base64`
-        :param keys: Sign keys
-        :return:
+        :param params: See `types.ParamsOfSign`
+        :return: See `types.ResultOfSign`
         """
-        if type(unsigned) is bytes:
-            unsigned = unsigned.decode()
-        return self.request(
-            method='crypto.sign', unsigned=unsigned, keys=keys.dict)
+        return self.request(method='crypto.sign', **params.dict)
 
-    @Response.verify_signature
-    def verify_signature(self, signed: Union[str, bytes], public: str) -> str:
+    @result_as(classname=ResultOfVerifySignature)
+    def verify_signature(
+            self, params: ParamsOfVerifySignature) -> ResultOfVerifySignature:
         """
         Verifies signed data using the provided public key.
         Raises error if verification is failed
-        :param signed: Signed data that must be verified encoded in `base64`
-        :param public: Signer's public key - 64 symbols `hex` string
-        :return: Unsigned data encoded in `base64`
+        :param params: See `types.ParamsOfVerifySignature`
+        :return: See `types.ResultOfVerifySignature`
         """
-        if type(signed) is bytes:
-            signed = signed.decode()
-        return self.request(
-            method='crypto.verify_signature', signed=signed, public=public)
+        return self.request(method='crypto.verify_signature', **params.dict)
 
-    @Response.modular_power
-    def modular_power(self, base: str, exponent: str, modulus: str) -> str:
+    @result_as(classname=ResultOfModularPower)
+    def modular_power(
+            self, params: ParamsOfModularPower) -> ResultOfModularPower:
         """
         Performs modular exponentiation for big integers (`base`^`exponent`
         mod `modulus`).
         See [https://en.wikipedia.org/wiki/Modular_exponentiation]
-        :param base: `base` argument of calculation
-        :param exponent: `exponent` argument of calculation
-        :param modulus: `modulus` argument of calculation
-        :return:
+        :param params: See `types.ParamsOfModularPower`
+        :return: See `types.ResultOfModularPower`
         """
-        return self.request(
-            method='crypto.modular_power', base=base, exponent=exponent,
-            modulus=modulus)
+        return self.request(method='crypto.modular_power', **params.dict)
 
-    @Response.factorize
-    def factorize(self, composite: str) -> List[str]:
+    @result_as(classname=ResultOfFactorize)
+    def factorize(self, params: ParamsOfFactorize) -> ResultOfFactorize:
         """
         Performs prime factorization – decomposition of a composite number
         into a product of smaller prime integers (factors).
         See [https://en.wikipedia.org/wiki/Integer_factorization]
-        :param composite: Hexadecimal representation of u64 composite number
-        :return: Two factors of composite or empty if composite can't be
-                factorized
+        :param params: See `types.ParamsOfFactorize`
+        :return: See `types.ResultOfFactorize`
         """
-        return self.request(method='crypto.factorize', composite=composite)
+        return self.request(method='crypto.factorize', **params.dict)
 
-    @Response.ton_crc16
-    def ton_crc16(self, data: Union[str, bytes]) -> int:
+    @result_as(classname=ResultOfTonCrc16)
+    def ton_crc16(self, params: ParamsOfTonCrc16) -> ResultOfTonCrc16:
         """
         Calculates CRC16 using TON algorithm
-        :param data: Input data for CRC calculation. Encoded with `base64`
-        :return:
+        :param params: See `types.ParamsOfTonCrc16`
+        :return: See `types.ResultOfTonCrc16`
         """
-        if type(data) is bytes:
-            data = data.decode()
-        return self.request(method='crypto.ton_crc16', data=data)
+        return self.request(method='crypto.ton_crc16', **params.dict)
 
-    @Response.generate_random_bytes
-    def generate_random_bytes(self, length: int) -> str:
+    @result_as(classname=ResultOfGenerateRandomBytes)
+    def generate_random_bytes(
+            self, params: ParamsOfGenerateRandomBytes
+    ) -> ResultOfGenerateRandomBytes:
         """
         Generates random byte array of the specified length and returns it
         in `base64` format
-        :param length: Size of random byte array
-        :return: Generated bytes encoded in `base64`
+        :param params: See `types.ParamsOfGenerateRandomBytes`
+        :return: See `types.ResultOfGenerateRandomBytes`
         """
         return self.request(
-            method='crypto.generate_random_bytes', length=length)
+            method='crypto.generate_random_bytes', **params.dict)
 
-    @Response.mnemonic_words
-    def mnemonic_words(self, dictionary: int = None) -> str:
+    @result_as(classname=ResultOfMnemonicWords)
+    def mnemonic_words(
+            self, params: ParamsOfMnemonicWords) -> ResultOfMnemonicWords:
         """
         Prints the list of words from the specified dictionary
-        :param dictionary: Dictionary identifier
-        :return: String of dictionary words
+        :param params: See `types.ParamsOfMnemonicWords`
+        :return: See `types.ResultOfMnemonicWords`
         """
-        return self.request(
-            method='crypto.mnemonic_words', dictionary=dictionary)
+        return self.request(method='crypto.mnemonic_words', **params.dict)
 
-    @Response.mnemonic_from_random
+    @result_as(classname=ResultOfMnemonicFromRandom)
     def mnemonic_from_random(
-            self, dictionary: int = None, word_count: int = None) -> str:
+            self, params: ParamsOfMnemonicFromRandom
+    ) -> ResultOfMnemonicFromRandom:
         """
         Generates a random mnemonic from the specified dictionary
         and word count
-        :param dictionary: Dictionary identifier
-        :param word_count: Mnemonic word count
-        :return: String of mnemonic words
+        :param params: See `types.ParamsOfMnemonicFromRandom`
+        :return: See `types.ResultOfMnemonicFromRandom`
         """
         return self.request(
-            method='crypto.mnemonic_from_random', dictionary=dictionary,
-            word_count=word_count)
+            method='crypto.mnemonic_from_random', **params.dict)
 
-    @Response.mnemonic_from_entropy
+    @result_as(classname=ResultOfMnemonicFromEntropy)
     def mnemonic_from_entropy(
-            self, entropy: str, dictionary: int = None, word_count: int = None
-    ) -> str:
+            self, params: ParamsOfMnemonicFromEntropy
+    ) -> ResultOfMnemonicFromEntropy:
         """
         Generates mnemonic from pre-generated entropy
-        :param entropy: Entropy bytes. `Hex` encoded
-        :param dictionary: Dictionary identifier
-        :param word_count: Mnemonic word count
-        :return: String of mnemonic words
+        :param params: See `types.ParamsOfMnemonicFromEntropy`
+        :return: See `types.ResultOfMnemonicFromEntropy`
         """
         return self.request(
-            method='crypto.mnemonic_from_entropy', entropy=entropy,
-            dictionary=dictionary, word_count=word_count)
+            method='crypto.mnemonic_from_entropy', **params.dict)
 
-    @Response.mnemonic_verify
+    @result_as(classname=ResultOfMnemonicVerify)
     def mnemonic_verify(
-            self, phrase: str, dictionary: int = None, word_count: int = None
-    ) -> bool:
+            self, params: ParamsOfMnemonicVerify) -> ResultOfMnemonicVerify:
         """
         The phrase supplied will be checked for word length and validated
         according to the checksum specified in BIP0039
-        :param phrase: Mnemonic phrase
-        :param dictionary: Dictionary identifier
-        :param word_count: Mnemonic word count
-        :return:
+        :param params: See `types.ParamsOfMnemonicVerify`
+        :return: See `types.ResultOfMnemonicVerify`
         """
-        return self.request(
-            method='crypto.mnemonic_verify', phrase=phrase,
-            dictionary=dictionary, word_count=word_count)
+        return self.request(method='crypto.mnemonic_verify', **params.dict)
 
-    @Response.mnemonic_derive_sign_keys
+    @result_as(classname=KeyPair)
     def mnemonic_derive_sign_keys(
-            self, phrase: str, path: str = None, dictionary: int = None,
-            word_count: int = None) -> KeyPair:
+            self, params: ParamsOfMnemonicDeriveSignKeys) -> KeyPair:
         """
         Validates the seed phrase, generates master key and then derives
         the key pair from the master key and the specified path
-        :param phrase: Mnemonic phrase
-        :param path: Derivation path, for instance "m/44'/396'/0'/0/0"
-        :param dictionary: Dictionary identifier
-        :param word_count: Mnemonic word count
-        :return:
+        :param params: See `types.ParamsOfMnemonicDeriveSignKeys`
+        :return: See `types.KeyPair`
         """
         return self.request(
-            method='crypto.mnemonic_derive_sign_keys', phrase=phrase,
-            path=path, dictionary=dictionary, word_count=word_count)
+            method='crypto.mnemonic_derive_sign_keys', **params.dict)
 
-    @Response.nacl_sign_keypair_from_secret_key
-    def nacl_sign_keypair_from_secret_key(self, secret: str) -> KeyPair:
+    @result_as(classname=KeyPair)
+    def nacl_sign_keypair_from_secret_key(
+            self, params: ParamsOfNaclSignKeyPairFromSecret) -> KeyPair:
         """
         Generates a key pair for signing from the secret key
-        :param secret: Secret key - unprefixed 0-padded to 64 symbols `hex`
-                string
-        :return:
+        :param params: See `types.ParamsOfNaclSignKeyPairFromSecret`
+        :return: See `types.KeyPair`
         """
         return self.request(
-            method='crypto.nacl_sign_keypair_from_secret_key',
-            secret=secret)
+            method='crypto.nacl_sign_keypair_from_secret_key', **params.dict)
 
-    @Response.nacl_sign
-    def nacl_sign(self, unsigned: Union[str, bytes], secret: str) -> str:
+    @result_as(classname=ResultOfNaclSign)
+    def nacl_sign(self, params: ParamsOfNaclSign) -> ResultOfNaclSign:
         """
         Signs data using the signer's secret key
-        :param unsigned: Data that must be signed encoded in `base64`
-        :param secret: Signer's secret key - unprefixed 0-padded to 64 symbols
-                `hex` string
-        :return: Base64 encoded signed data
+        :param params: See `types.ParamsOfNaclSign`
+        :return: See `types.ResultOfNaclSign`
         """
-        if type(unsigned) is bytes:
-            unsigned = unsigned.decode()
-        return self.request(
-            method='crypto.nacl_sign', unsigned=unsigned, secret=secret)
+        return self.request(method='crypto.nacl_sign', **params.dict)
 
-    @Response.nacl_sign_detached
+    @result_as(classname=ResultOfNaclSignDetached)
     def nacl_sign_detached(
-            self, unsigned: Union[str, bytes], secret: str) -> str:
+            self, params: ParamsOfNaclSign) -> ResultOfNaclSignDetached:
         """
-        :param unsigned: Data that must be signed encoded in `base64`
-        :param secret: Signer's secret key - unprefixed 0-padded to 64 symbols
-                `hex` string
-        :return: Signature encoded in `hex`
+        :param params: See `types.ParamsOfNaclSign`
+        :return: See `types.ResultOfNaclSignDetached`
         """
-        if type(unsigned) is bytes:
-            unsigned = unsigned.decode()
-        return self.request(
-            method='crypto.nacl_sign_detached', unsigned=unsigned,
-            secret=secret)
+        return self.request(method='crypto.nacl_sign_detached', **params.dict)
 
-    @Response.nacl_sign_open
-    def nacl_sign_open(self, signed: Union[str, bytes], public: str) -> str:
+    @result_as(classname=ResultOfNaclSignOpen)
+    def nacl_sign_open(
+            self, params: ParamsOfNaclSignOpen) -> ResultOfNaclSignOpen:
         """
-        :param signed: Signed data that must be unsigned. Encoded with `base64`
-        :param public: Signer's public key - unprefixed 0-padded to 64 symbols
-                `hex` string
-        :return: Unsigned data, encoded in `base64`
+        :param params: See `types.ParamsOfNaclSignOpen`
+        :return: See `types.ResultOfNaclSignOpen`
         """
-        if type(signed) is bytes:
-            signed = signed.decode()
-        return self.request(
-            method='crypto.nacl_sign_open', signed=signed, public=public)
+        return self.request(method='crypto.nacl_sign_open', **params.dict)
 
-    @Response.nacl_box_keypair
+    @result_as(classname=KeyPair)
     def nacl_box_keypair(self) -> KeyPair:
         return self.request(method='crypto.nacl_box_keypair')
 
-    @Response.nacl_box_keypair_from_secret_key
-    def nacl_box_keypair_from_secret_key(self, secret: str) -> KeyPair:
+    @result_as(classname=KeyPair)
+    def nacl_box_keypair_from_secret_key(
+            self, params: ParamsOfNaclBoxKeyPairFromSecret) -> KeyPair:
         """
         Generates key pair from a secret key
-        :param secret: Secret key - unprefixed 0-padded to 64 symbols `hex`
-                string
-        :return:
+        :param params: See `types.ParamsOfNaclBoxKeyPairFromSecret`
+        :return: See `types.KeyPair`
         """
         return self.request(
-            method='crypto.nacl_box_keypair_from_secret_key', secret=secret)
+            method='crypto.nacl_box_keypair_from_secret_key', **params.dict)
 
-    @Response.nacl_box
-    def nacl_box(
-            self, decrypted: Union[str, bytes], nonce: str, their_public: str,
-            secret: str) -> str:
+    @result_as(classname=ResultOfNaclBox)
+    def nacl_box(self, params: ParamsOfNaclBox) -> ResultOfNaclBox:
         """
         Public key authenticated encryption.
         Encrypt and authenticate a message using the senders secret key,
         the receivers public key, and a nonce
-        :param decrypted: Data that must be encrypted encoded in `base64`
-        :param nonce: Nonce, encoded in `hex`
-        :param their_public: Receiver's public key - unprefixed 0-padded to
-                64 symbols `hex` string
-        :param secret: Sender's private key - unprefixed 0-padded to 64
-                symbols `hex` string
-        :return: Encrypted data encoded in `base64`
+        :param params: See `types.ParamsOfNaclBox`
+        :return: See `types.ResultOfNaclBox`
         """
-        if type(decrypted) is bytes:
-            decrypted = decrypted.decode()
-        return self.request(
-            method='crypto.nacl_box', decrypted=decrypted, nonce=nonce,
-            their_public=their_public, secret=secret)
+        return self.request(method='crypto.nacl_box', **params.dict)
 
-    @Response.nacl_box_open
+    @result_as(classname=ResultOfNaclBoxOpen)
     def nacl_box_open(
-            self, encrypted: Union[str, bytes], nonce: str, their_public: str,
-            secret: str) -> str:
+            self, params: ParamsOfNaclBoxOpen) -> ResultOfNaclBoxOpen:
         """
         Decrypt and verify the cipher text using the receivers secret key,
         the senders public key, and the nonce
-        :param encrypted: Data that must be decrypted. Encoded with `base64`
-        :param nonce: Nonce, encoded in `hex`
-        :param their_public: Sender's public key - unprefixed 0-padded to
-                64 symbols `hex` string
-        :param secret: Receiver's private key - unprefixed 0-padded to 64
-                symbols `hex` string
-        :return: Decrypted data encoded in `base64`
+        :param params: See `types.ParamsOfNaclBoxOpen`
+        :return: See `types.ResultOfNaclBoxOpen`
         """
-        if type(encrypted) is bytes:
-            encrypted = encrypted.decode()
-        return self.request(
-            method='crypto.nacl_box_open', encrypted=encrypted, nonce=nonce,
-            their_public=their_public, secret=secret)
+        return self.request(method='crypto.nacl_box_open', **params.dict)
 
-    @Response.nacl_secret_box
+    @result_as(classname=ResultOfNaclBox)
     def nacl_secret_box(
-            self, decrypted: Union[str, bytes], nonce: str, key: str) -> str:
+            self, params: ParamsOfNaclSecretBox) -> ResultOfNaclBox:
         """
         Encrypt and authenticate message using nonce and secret key
-        :param decrypted: Data that must be encrypted. Encoded with `base64`
-        :param nonce: Nonce in `hex`
-        :param key: Secret key - unprefixed 0-padded to 64 symbols `hex` string
-        :return: Encrypted data encoded in `base64`
+        :param params: See `types.ParamsOfNaclSecretBox`
+        :return: See `types.ResultOfNaclBox`
         """
-        if type(decrypted) is bytes:
-            decrypted = decrypted.decode()
-        return self.request(
-            method='crypto.nacl_secret_box', decrypted=decrypted, nonce=nonce,
-            key=key)
+        return self.request(method='crypto.nacl_secret_box', **params.dict)
 
-    @Response.nacl_secret_box_open
+    @result_as(classname=ResultOfNaclBoxOpen)
     def nacl_secret_box_open(
-            self, encrypted: Union[str, bytes], nonce: str, key: str) -> str:
+            self, params: ParamsOfNaclSecretBoxOpen) -> ResultOfNaclBoxOpen:
         """
-        Decrypts and verifies cipher text using nonce and secret key
-        :param encrypted: Data that must be decrypted. Encoded with `base64`
-        :param nonce: Nonce in `hex`
-        :param key: Public key - unprefixed 0-padded to 64 symbols `hex` string
-        :return: Decrypted data encoded in `base64`
+        Decrypts and verifies cipher text using `nonce` and secret `key`
+        :param params: See `types.ParamsOfNaclSecretBoxOpen`
+        :return: See `types.ResultOfNaclBoxOpen`
         """
-        if type(encrypted) is bytes:
-            encrypted = encrypted.decode()
         return self.request(
-            method='crypto.nacl_secret_box_open', encrypted=encrypted,
-            nonce=nonce, key=key)
+            method='crypto.nacl_secret_box_open', **params.dict)
 
-    @Response.scrypt
-    def scrypt(
-            self, password: Union[str, bytes], salt: Union[str, bytes],
-            log_n: int, r: int, p: int, dk_len: int) -> str:
+    @result_as(classname=ResultOfScrypt)
+    def scrypt(self, params: ParamsOfScrypt) -> ResultOfScrypt:
         """
         Derives key from `password` and `key` using `scrypt` algorithm.
         See [https://en.wikipedia.org/wiki/Scrypt].
-        Arguments:
-            - `log_n` - The log2 of the Scrypt parameter `N`
-            - `r` - The Scrypt parameter `r`
-            - `p` - The Scrypt parameter `p`
-        Conditions:
-            - `log_n` must be less than `64`
-            - `r` must be greater than `0` and less than or equal
-                    to `4294967295`
-            - `p` must be greater than `0` and less than `4294967295`
-        Recommended values sufficient for most use-cases:
-            - `log_n = 15` (`n = 32768`)
-            - `r = 8`
-            - `p = 1`
-        :param password: The password bytes to be hashed. Must be encoded
-                with `base64`
-        :param salt: A salt bytes that modifies the hash to protect against
-                Rainbow table attacks. Must be encoded with `base64`
-        :param log_n: CPU/memory cost parameter
-        :param r: The block size parameter, which fine-tunes sequential memory
-                read size and performance
-        :param p: Parallelization parameter
-        :param dk_len: Intended output length in octets of the derived key
-        :return: Derived key encoded with `hex`
+        :param params: See `types.ParamsOfScrypt`
+        :return: See `types.ResultOfScrypt`
         """
-        if type(password) is bytes:
-            password = password.decode()
-        if type(salt) is bytes:
-            salt = salt.decode()
-        return self.request(
-            method='crypto.scrypt', password=password, salt=salt, log_n=log_n,
-            r=r, p=p, dk_len=dk_len)
+        return self.request(method='crypto.scrypt', **params.dict)
 
-    @Response.chacha20
-    def chacha20(
-            self, data: Union[str, bytes], key: Union[str, bytes],
-            nonce: Union[str, bytes]) -> str:
+    @result_as(classname=ResultOfChaCha20)
+    def chacha20(self, params: ParamsOfChaCha20) -> ResultOfChaCha20:
         """
         Performs symmetric `chacha20` encryption
-        :param data: Source data to be encrypted or decrypted. Must be
-                encoded with `base64`
-        :param key: 256-bit key. Must be encoded with `hex`
-        :param nonce: 96-bit nonce. Must be encoded with `hex`
-        :return: Encrypted/decrypted data. Encoded with `base64`
+        :param params: See `types.ParamsOfChaCha20`
+        :return: See `types.ResultOfChaCha20`
         """
-        if type(data) is bytes:
-            data = data.decode()
-        if type(key) is bytes:
-            key = key.decode()
-        if type(nonce) is bytes:
-            nonce = nonce.decode()
-        return self.request(
-            method='crypto.chacha20', data=data, key=key, nonce=nonce)
+        return self.request(method='crypto.chacha20', **params.dict)
 
-    def register_signing_box(self):
+    @result_as(classname=RegisteredSigningBox)
+    def register_signing_box(self, callback: Callable) -> RegisteredSigningBox:
         """
         Register an application implemented signing box
-        :return:
+        :param callback: Callback to send events to
+        :return: See `types.RegisteredSigningBox`
         """
         return self.request(
-            method='crypto.register_signing_box', as_iterable=True)
+            method='crypto.register_signing_box', callback=callback)
 
-    @Response.get_signing_box
-    def get_signing_box(self, keypair: KeyPair) -> int:
+    @result_as(classname=RegisteredSigningBox)
+    def get_signing_box(self, params: KeyPair) -> RegisteredSigningBox:
         """
         Creates a default signing box implementation
-        :param keypair: Keypair
-        :return:
+        :param params: See `types.KeyPair`
+        :return: See `types.RegisteredSigningBox`
         """
-        return self.request(
-            method='crypto.get_signing_box', params_or_str=keypair.dict)
+        return self.request(method='crypto.get_signing_box', **params.dict)
 
-    @Response.signing_box_get_public_key
-    def signing_box_get_public_key(self, handle: int) -> str:
+    @result_as(classname=ResultOfSigningBoxGetPublicKey)
+    def signing_box_get_public_key(
+            self, params: RegisteredSigningBox
+    ) -> ResultOfSigningBoxGetPublicKey:
         """
         Returns public key of signing key pair
-        :param handle: Signing box handle
-        :return:
+        :param params: See `types.RegisteredSigningBox`
+        :return: See `types.ResultOfSigningBoxGetPublicKey`
         """
         return self.request(
-            method='crypto.signing_box_get_public_key', handle=handle)
+            method='crypto.signing_box_get_public_key', **params.dict)
 
-    @Response.signing_box_sign
+    @result_as(classname=ResultOfSigningBoxSign)
     def signing_box_sign(
-            self, signing_box: int, unsigned: Union[str, bytes]) -> str:
+            self, params: ParamsOfSigningBoxSign) -> ResultOfSigningBoxSign:
         """
         Returns signed user data
-        :param signing_box: Signing Box handle
-        :param unsigned: Unsigned user data. Must be encoded with `base64`
-        :return:
+        :param params: See `types.ParamsOfSigningBoxSign`
+        :return: See `types.ResultOfSigningBoxSign`
         """
-        if type(unsigned) is bytes:
-            unsigned = unsigned.decode()
-        return self.request(
-            method='crypto.signing_box_sign', signing_box=signing_box,
-            unsigned=unsigned)
+        return self.request(method='crypto.signing_box_sign', **params.dict)
 
-    def remove_signing_box(self, handle: int):
+    def remove_signing_box(self, params: RegisteredSigningBox):
         """
         Removes signing box from SDK
-        :param handle: Signing Box handle
+        :param params: See `types.RegisteredSigningBox`
         :return:
         """
-        return self.request(method='crypto.remove_signing_box', handle=handle)
+        return self.request(method='crypto.remove_signing_box', **params.dict)
