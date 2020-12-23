@@ -8,12 +8,13 @@ import unittest
 from tonclient.client import TonClient
 from tonclient.errors import TonException
 from tonclient.test.helpers import async_core_client, sync_core_client, \
-    SAMPLES_DIR, send_grams, async_custom_client, CUSTOM_BASE_URL
+    SAMPLES_DIR, send_grams, async_custom_client, CUSTOM_BASE_URL, \
+    GIVER_ADDRESS
 from tonclient.types import ParamsOfQueryCollection, OrderBy, SortDirection, \
     ParamsOfWaitForCollection, ParamsOfQuery, ParamsOfSubscribeCollection, \
     SubscriptionResponseType, ResultOfSubscription, ClientError, Abi, \
-    ParamsOfEncodeMessage, Signer, DeploySet, CallSet, ParamsOfProcessMessage,\
-    ClientConfig
+    ParamsOfEncodeMessage, Signer, DeploySet, CallSet, ParamsOfProcessMessage, \
+    ClientConfig, ParamsOfFindLastShardBlock
 
 
 class TestTonNetAsyncCore(unittest.TestCase):
@@ -162,6 +163,12 @@ class TestTonNetAsyncCore(unittest.TestCase):
 
         # Unsubscribe
         async_custom_client.net.unsubscribe(params=subscribe)
+
+    def test_find_last_shard_block(self):
+        find_params = ParamsOfFindLastShardBlock(address=GIVER_ADDRESS)
+        result = async_core_client.net.find_last_shard_block(
+            params=find_params)
+        self.assertIsInstance(result.block_id, str)
 
 
 class TestTonNetSyncCore(unittest.TestCase):

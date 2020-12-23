@@ -5,7 +5,8 @@ from tonclient.module import TonModule
 from tonclient.types import ParamsOfQuery, ResultOfQuery, \
     ParamsOfQueryCollection, ResultOfQueryCollection, \
     ParamsOfWaitForCollection, ResultOfWaitForCollection, \
-    ResultOfSubscribeCollection, ParamsOfSubscribeCollection
+    ResultOfSubscribeCollection, ParamsOfSubscribeCollection, \
+    ParamsOfFindLastShardBlock, ResultOfFindLastShardBlock
 
 
 class TonNet(TonModule):
@@ -80,3 +81,13 @@ class TonNet(TonModule):
     def resume(self):
         """ Resumes network module to enable network activity """
         return self.request(method='net.resume')
+
+    @result_as(classname=ResultOfFindLastShardBlock)
+    def find_last_shard_block(
+            self, params: ParamsOfFindLastShardBlock
+    ) -> ResultOfFindLastShardBlock:
+        """
+        :param params: See `types.ParamsOfFindLastShardBlock`
+        :return: See `types.ResultOfFindLastShardBlock`
+        """
+        return self.request(method='net.find_last_shard_block', **params.dict)

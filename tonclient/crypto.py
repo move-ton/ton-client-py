@@ -277,6 +277,9 @@ class TonCrypto(TonModule):
     def nacl_sign_detached(
             self, params: ParamsOfNaclSign) -> ResultOfNaclSignDetached:
         """
+        Signs the message using the secret key and returns a signature.
+        Signs the message unsigned using the secret key `secret` and returns a
+        signature `signature`
         :param params: See `types.ParamsOfNaclSign`
         :return: See `types.ResultOfNaclSignDetached`
         """
@@ -286,6 +289,10 @@ class TonCrypto(TonModule):
     def nacl_sign_open(
             self, params: ParamsOfNaclSignOpen) -> ResultOfNaclSignOpen:
         """
+        Verifies the signature and returns the unsigned message.
+        Verifies the signature in `signed` using the signer's public key
+        `public` and returns the message `unsigned`.
+        If the signature fails verification, raises an exception
         :param params: See `types.ParamsOfNaclSignOpen`
         :return: See `types.ResultOfNaclSignOpen`
         """
@@ -293,6 +300,7 @@ class TonCrypto(TonModule):
 
     @result_as(classname=KeyPair)
     def nacl_box_keypair(self) -> KeyPair:
+        """ Generates a random NaCl key pair """
         return self.request(method='crypto.nacl_box_keypair')
 
     @result_as(classname=KeyPair)

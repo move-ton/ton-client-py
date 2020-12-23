@@ -1073,6 +1073,26 @@ class ResultOfGetBocHash(object):
         self.hash = hash
 
 
+class ParamsOfGetCodeFromTvc(object):
+    def __init__(self, tvc: str):
+        """
+        :param tvc: Contract TVC image encoded as `base64`
+        """
+        self.tvc = tvc
+
+    @property
+    def dict(self):
+        return {'tvc': self.tvc}
+
+
+class ResultOfGetCodeFromTvc(object):
+    def __init__(self, code: str):
+        """
+        :param code: Contract code encoded as `base64`
+        """
+        self.code = code
+
+
 # CRYPTO module
 SigningBoxHandle = int
 
@@ -2085,18 +2105,32 @@ class SubscriptionResponseType(int, Enum):
     ERROR = 101
 
 
-class SubscriptionAction(str, Enum):
-    SUSPEND = 'Suspend'
-    RESUME = 'Resume'
-    FINISH = 'Finish'
-
-
 class ResultOfSubscription(object):
     def __init__(self, result: Dict[str, Any]):
         """
         :param result: First appeared object that matches the provided criteria
         """
         self.result = result
+
+
+class ParamsOfFindLastShardBlock(object):
+    def __init__(self, address: str):
+        """
+        :param address: Account address
+        """
+        self.address = address
+
+    @property
+    def dict(self):
+        return {'address': self.address}
+
+
+class ResultOfFindLastShardBlock(object):
+    def __init__(self, block_id: str):
+        """
+        :param block_id: Account shard last block ID
+        """
+        self.block_id = block_id
 
 
 # PROCESSING module
@@ -2702,144 +2736,7 @@ class ResultOfConvertAddress(object):
 
 
 # DEBOT module
-class BaseAppCallback(object):
-    """ Base class for app callback params or results """
-    def __init__(self, type: str):
-        """
-        :param type:
-        """
-        self.type = type
-
-    @property
-    def dict(self):
-        return {'type': self.type}
-
-
-class ParamsOfAppDebotBrowser:
-    """
-    UNSTABLE Debot Browser callbacks.
-    Called by debot engine to communicate with debot browser
-    """
-    class Log(BaseAppCallback):
-        def __init__(self, msg: str, type: str = 'Log'):
-            """
-            :param msg:
-            :param type:
-            """
-            super(ParamsOfAppDebotBrowser.Log, self).__init__(type=type)
-            self.msg = msg
-
-    class Switch(BaseAppCallback):
-        def __init__(self, context_id: int, type: str = 'Switch'):
-            """
-            :param context_id:
-            :param type:
-            """
-            super(ParamsOfAppDebotBrowser.Switch, self).__init__(type=type)
-            self.context_id = context_id
-
-    class ShowAction(BaseAppCallback):
-        def __init__(self, action: 'DebotAction', type: str = 'ShowAction'):
-            """
-            :param action:
-            :param type:
-            """
-            super(ParamsOfAppDebotBrowser.ShowAction, self).__init__(
-                type=type)
-            self.action = action
-
-    class Input(BaseAppCallback):
-        def __init__(self, prompt: str, type: str = 'Input'):
-            """
-            :param prompt:
-            :param type:
-            """
-            super(ParamsOfAppDebotBrowser.Input, self).__init__(type=type)
-            self.prompt = prompt
-
-    class GetSigningBox(BaseAppCallback):
-        def __init__(self, type: str = 'GetSigningBox'):
-            """
-            :param type:
-            """
-            super(ParamsOfAppDebotBrowser.GetSigningBox, self).__init__(
-                type=type)
-
-    class InvokeDebot(BaseAppCallback):
-        def __init__(
-                self, debot_addr: str, action: 'DebotAction',
-                type: str = 'InvokeDebot'):
-            """
-            :param debot_addr:
-            :param action:
-            :param type:
-            """
-            super(ParamsOfAppDebotBrowser.InvokeDebot, self).__init__(
-                type=type)
-            self.debot_addr = debot_addr
-            self.action = action
-
-    @staticmethod
-    def from_dict(
-            data: Dict[str, Any]
-    ) -> Union[Log, Switch, ShowAction, Input, GetSigningBox, InvokeDebot]:
-        if data.get('action'):
-            data['action'] = DebotAction(**data['action'])
-        return getattr(ParamsOfAppDebotBrowser, data['type'])(**data)
-
-
-class ResultOfAppDebotBrowser(object):
-    """
-    UNSTABLE
-    Returning values from Debot Browser callbacks
-    """
-    class Input(BaseAppCallback):
-        def __init__(self, value: str, type: str = 'Input'):
-            """
-            :param value:
-            :param type:
-            """
-            super(ResultOfAppDebotBrowser.Input, self).__init__(type=type)
-            self.value = value
-
-        @property
-        def dict(self):
-            return {
-                **super(ResultOfAppDebotBrowser.Input, self).dict,
-                'value': self.value
-            }
-
-    class GetSigningBox(BaseAppCallback):
-        def __init__(self, signing_box: int, type: str = 'GetSigningBox'):
-            """
-            :param signing_box:
-            :param type:
-            """
-            super(ResultOfAppDebotBrowser.GetSigningBox, self).__init__(
-                type=type)
-            self.signing_box = signing_box
-
-        @property
-        def dict(self):
-            return {
-                **super(ResultOfAppDebotBrowser.GetSigningBox, self).dict,
-                'signing_box': self.signing_box
-            }
-
-    class InvokeDebot(BaseAppCallback):
-        def __init__(self, type: str = 'InvokeDebot'):
-            """
-            :param type:
-            """
-            super(ResultOfAppDebotBrowser.InvokeDebot, self).__init__(
-                type=type)
-
-
-class DebotState(int, Enum):
-    ZERO = 0
-    CURRENT = 253
-    PREV = 254
-    EXIT = 255
+DebotHandle = int
 
 
 class DebotAction(object):
@@ -2879,6 +2776,218 @@ class DebotAction(object):
         return self.description
 
 
+class ParamsOfStart(object):
+    """ Parameters to start debot """
+    def __init__(self, address: str):
+        """
+        :param address: Debot smart contract address
+        """
+        self.address = address
+
+    @property
+    def dict(self):
+        return {'address': self.address}
+
+
+class RegisteredDebot(object):
+    """
+    Structure for storing debot handle returned from `start` and `fetch`
+    functions
+    """
+    def __init__(self, debot_handle: 'DebotHandle'):
+        """
+        :param debot_handle: Debot handle which references an instance of
+                debot engine
+        """
+        self.debot_handle = debot_handle
+
+    @property
+    def dict(self):
+        return {'debot_handle': self.debot_handle}
+
+
+class ParamsOfAppDebotBrowser:
+    """
+    Debot Browser callbacks.
+    Called by debot engine to communicate with debot browser
+    """
+    class Log(BaseTypedType):
+        """ Print message to user """
+        def __init__(self, msg: str, type: str = 'Log'):
+            """
+            :param msg: A string that must be printed to user
+            :param type:
+            """
+            super(ParamsOfAppDebotBrowser.Log, self).__init__(type=type)
+            self.msg = msg
+
+    class Switch(BaseTypedType):
+        """ Switch debot to another context (menu) """
+        def __init__(self, context_id: int, type: str = 'Switch'):
+            """
+            :param context_id: Debot context ID to which debot is switched
+            :param type:
+            """
+            super(ParamsOfAppDebotBrowser.Switch, self).__init__(type=type)
+            self.context_id = context_id
+
+    class SwitchCompleted(BaseTypedType):
+        """ Notify browser that all context actions are shown """
+        def __init__(self, type: str = 'SwitchCompleted'):
+            """
+            :param type:
+            """
+            super(ParamsOfAppDebotBrowser.SwitchCompleted, self).__init__(
+                type=type)
+
+    class ShowAction(BaseTypedType):
+        """
+        Show action to the user.
+        Called after switch for each action in context
+        """
+        def __init__(self, action: 'DebotAction', type: str = 'ShowAction'):
+            """
+            :param action: Debot action that must be shown to user as menu
+                    item. At least description property must be shown from
+                    `DebotAction` structure
+            :param type:
+            """
+            super(ParamsOfAppDebotBrowser.ShowAction, self).__init__(
+                type=type)
+            self.action = action
+
+    class Input(BaseTypedType):
+        """ Request user input """
+        def __init__(self, prompt: str, type: str = 'Input'):
+            """
+            :param prompt: A prompt string that must be printed to user
+                    before input request
+            :param type:
+            """
+            super(ParamsOfAppDebotBrowser.Input, self).__init__(type=type)
+            self.prompt = prompt
+
+    class GetSigningBox(BaseTypedType):
+        """
+        Get signing box to sign data.
+        Signing box returned is owned and disposed by debot engine
+        """
+        def __init__(self, type: str = 'GetSigningBox'):
+            """
+            :param type:
+            """
+            super(ParamsOfAppDebotBrowser.GetSigningBox, self).__init__(
+                type=type)
+
+    class InvokeDebot(BaseTypedType):
+        """ Execute action of another debot """
+        def __init__(
+                self, debot_addr: str, action: 'DebotAction',
+                type: str = 'InvokeDebot'):
+            """
+            :param debot_addr: Address of debot in blockchain
+            :param action: Debot action to execute
+            :param type:
+            """
+            super(ParamsOfAppDebotBrowser.InvokeDebot, self).__init__(
+                type=type)
+            self.debot_addr = debot_addr
+            self.action = action
+
+    @staticmethod
+    def from_dict(data: Dict[str, Any]) -> 'ParamsOfAppDebotBrowserType':
+        if data.get('action'):
+            data['action'] = DebotAction(**data['action'])
+        return getattr(ParamsOfAppDebotBrowser, data['type'])(**data)
+
+
+class ResultOfAppDebotBrowser(object):
+    """ Returning values from Debot Browser callbacks """
+    class Input(BaseTypedType):
+        """ Result of user input """
+        def __init__(self, value: str, type: str = 'Input'):
+            """
+            :param value: String entered by user
+            :param type:
+            """
+            super(ResultOfAppDebotBrowser.Input, self).__init__(type=type)
+            self.value = value
+
+        @property
+        def dict(self):
+            return {
+                **super(ResultOfAppDebotBrowser.Input, self).dict,
+                'value': self.value
+            }
+
+    class GetSigningBox(BaseTypedType):
+        """ Result of getting signing box """
+        def __init__(
+                self, signing_box: 'SigningBoxHandle',
+                type: str = 'GetSigningBox'):
+            """
+            :param signing_box: Signing box for signing data requested by
+                    debot engine. Signing box is owned and disposed by debot
+                    engine
+            :param type:
+            """
+            super(ResultOfAppDebotBrowser.GetSigningBox, self).__init__(
+                type=type)
+            self.signing_box = signing_box
+
+        @property
+        def dict(self):
+            return {
+                **super(ResultOfAppDebotBrowser.GetSigningBox, self).dict,
+                'signing_box': self.signing_box
+            }
+
+    class InvokeDebot(BaseTypedType):
+        """ Result of debot invoking """
+        def __init__(self, type: str = 'InvokeDebot'):
+            """
+            :param type:
+            """
+            super(ResultOfAppDebotBrowser.InvokeDebot, self).__init__(
+                type=type)
+
+
+class ParamsOfFetch(object):
+    """ Parameters to fetch debot """
+    def __init__(self, address: str):
+        """
+        :param address: Debot smart contract address
+        """
+        self.address = address
+
+    @property
+    def dict(self):
+        return {'address': self.address}
+
+
+class ParamsOfExecute(object):
+    """ Parameters for executing debot action """
+    def __init__(self, debot_handle: 'DebotHandle', action: 'DebotAction'):
+        """
+        :param debot_handle: Debot handle which references an instance of
+                debot engine
+        :param action: Debot Action that must be executed
+        """
+        self.debot_handle = debot_handle
+        self.action = action
+
+    @property
+    def dict(self):
+        return {'debot_handle': self.debot_handle, 'action': self.action.dict}
+
+
+class DebotState(int, Enum):
+    ZERO = 0
+    CURRENT = 253
+    PREV = 254
+    EXIT = 255
+
+
 # Aggregated types
 AbiType = Union[Abi.Contract, Abi.Json, Abi.Handle, Abi.Serialized]
 SignerType = Union[
@@ -2898,3 +3007,8 @@ AccountForExecutorType = Union[
 AddressStringFormatType = Union[
     AddressStringFormat.AccountId, AddressStringFormat.Hex,
     AddressStringFormat.Base64]
+ParamsOfAppDebotBrowserType = Union[
+    ParamsOfAppDebotBrowser.Log, ParamsOfAppDebotBrowser.Switch,
+    ParamsOfAppDebotBrowser.SwitchCompleted,
+    ParamsOfAppDebotBrowser.ShowAction, ParamsOfAppDebotBrowser.Input,
+    ParamsOfAppDebotBrowser.GetSigningBox, ParamsOfAppDebotBrowser.InvokeDebot]

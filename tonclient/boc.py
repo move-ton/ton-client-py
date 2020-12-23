@@ -2,7 +2,8 @@ from tonclient.decorators import result_as
 from tonclient.module import TonModule
 from tonclient.types import ParamsOfParse, ResultOfParse, \
     ParamsOfParseShardstate, ParamsOfGetBocHash, ResultOfGetBocHash, \
-    ParamsOfGetBlockchainConfig, ResultOfGetBlockchainConfig
+    ParamsOfGetBlockchainConfig, ResultOfGetBlockchainConfig, \
+    ParamsOfGetCodeFromTvc, ResultOfGetCodeFromTvc
 
 
 class TonBoc(TonModule):
@@ -77,3 +78,13 @@ class TonBoc(TonModule):
         """
         return self.request(
             method='boc.get_blockchain_config', **params.dict)
+
+    @result_as(classname=ResultOfGetCodeFromTvc)
+    def get_code_from_tvc(
+            self, params: ParamsOfGetCodeFromTvc) -> ResultOfGetCodeFromTvc:
+        """
+        Extracts code from TVC contract image
+        :param params: See `types.ParamsOfGetCodeFromTvc`
+        :return: See `types.ResultOfGetCodeFromTvc`
+        """
+        return self.request(method='boc.get_code_from_tvc', **params.dict)

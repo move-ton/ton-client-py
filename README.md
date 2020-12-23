@@ -94,93 +94,149 @@ py -m unittest -v
 ```
 
 ## Client
-Core client library has sync and async request modes. Some core methods are available only in async request mode and 
+Core client library has sync and async request modes.  
+Some core methods are available only in async request mode and 
 this mode is more prefferable, so python client is created with async core requests by default.
 
 Create client
 ```python
+from tonclient.types import ClientConfig
 from tonclient.client import TonClient
 
-client = TonClient()
+client = TonClient(config=ClientConfig())
 
 # If you need sync core requests for some reason
-client_sync_core = TonClient(is_core_async=False)
+client_sync_core = TonClient(config=ClientConfig(), is_core_async=False)
 ```
 
 Client is created with default config
 ```python
-CLIENT_DEFAULT_SETUP = {
-    'network': {
-        'server_address': 'http://localhost',
-        'network_retries_count': 5,
-        'message_retries_count': 5,
-        'message_processing_timeout': 40000,
-        'wait_for_timeout': 40000,
-        'out_of_sync_threshold': 15000,
-        'access_key': ''
-    },
-    'crypto': {
-        'mnemonic_dictionary': 1,
-        'mnemonic_word_count': 12,
-        'hdkey_derivation_path': "m/44'/396'/0'/0/0"
-    },
-    'abi': {
-        'workchain': 0,
-        'message_expiration_timeout': 40000,
-        'message_expiration_timeout_grow_factor': 1.5
-    }
-}
+from tonclient.types import NetworkConfig, CryptoConfig, AbiConfig, ClientConfig
+
+
+# Default network config is below.
+# `None` attributes are filled by core with defaults values: 
+#     `network_retries_count=5` 
+#     `message_retries_count=5`
+#     `message_processing_timeout=40000`
+#     `wait_for_timeout=40000`
+#     `out_of_sync_threshold=15000`
+#     `access_key=''`
+network = NetworkConfig(
+    server_address='http://localhost', network_retries_count=None, 
+    message_retries_count=None, message_processing_timeout=None, 
+    wait_for_timeout=None, out_of_sync_threshold=None, access_key=None)
+
+# Default crypto config is below.
+# `None` attributes are filled by core with defaults values: 
+#     `mnemonic_dictionary=1` 
+#     `mnemonic_word_count=12`
+#     `hdkey_derivation_path="m/44'/396'/0'/0/0"`
+crypto = CryptoConfig(
+    mnemonic_dictionary=None, mnemonic_word_count=None, hdkey_derivation_path=None)
+
+# Default abi config is below.
+# `None` attributes are filled by core with defaults values: 
+#     `workchain=0` 
+#     `message_expiration_timeout=40000`
+#     `message_expiration_timeout_grow_factor=1.5`
+abi = AbiConfig(
+    workchain=None, message_expiration_timeout=None, 
+    message_expiration_timeout_grow_factor=None)
+
+# Then `ClientConfig` is created
+config = ClientConfig(network=network, crypto=crypto, abi=abi)
 ```
 
 You can override initial config while creating a client
 ```python
+from tonclient.types import ClientConfig
 from tonclient.client import TonClient, DEVNET_BASE_URL
 
-client = TonClient(network={'server_address': DEVNET_BASE_URL}, abi={'message_expiration_timeout': 30000})
+config = ClientConfig()
+config.network.server_address = DEVNET_BASE_URL
+config.abi.message_expiration_timeout = 30000
+
+client = TonClient(config=config)
 version = client.version()
 ```
 
-Client contains all core modules and its' methods. You can get full list of modules and methods here: 
+Client contains all core modules and its methods.  
+You can get full list of modules and methods here: 
 https://github.com/tonlabs/TON-SDK/blob/master/docs/modules.md  
 Module method is called by template `client.[module].[method]`
 ```python
+from tonclient.types import ClientConfig, ParamsOfParse
 from tonclient.client import TonClient, DEVNET_BASE_URL
 
-client = TonClient(network={'server_address': DEVNET_BASE_URL})
+config = ClientConfig()
+config.network.server_address = DEVNET_BASE_URL
+client = TonClient(config=config)
 
 # Generate random signing keys
 keypair = client.crypto.generate_random_sign_keys()
+
 # Parse account
-parsed = client.boc.parse_account(boc='Account base64 BOC')
+parse_params = ParamsOfParse(boc='Account base64 BOC')
+result = client.boc.parse_account(params=parse_params)
 ```
-You always can get information about method and its' arguments in method docstring.
+You always can get information about method and its arguments in method docstring.
 
-### Methods with events
-Some library methods `net.subscribe_collection`, `proccessing.send_message`, `processing.wait_for_transaction`, 
-`processing.process_message` may return either result or generator.  
+### Methods with callbacks
+Some library methods accept `callback` argument to pass additional data to it.  
+E.g. `net.subscribe_collection`  
+```python
+import time
+from datetime import datetime
 
-- `net.subscribe_collection` always returns a generator  
-- `proccessing.send_message`, `processing.wait_for_transaction`, 
-`processing.process_message` return generator only if `send_events` argument is set to `True`
+from tonclient.errors import TonException
+from tonclient.types import ClientConfig, ClientError, SubscriptionResponseType, \
+    ParamsOfSubscribeCollection, ResultOfSubscription
+from tonclient.client import DEVNET_BASE_URL, TonClient
 
-Please, dig in `tonclient/test/test_net.py`, `tonclient/test/test_processing.py` to get example how to work with 
-generators.
+
+config = ClientConfig()
+config.network.server_address = DEVNET_BASE_URL
+client = TonClient(config=config)
+
+
+def __callback(response_data, response_type, loop):
+    """
+    `loop` in args is just for example.
+    It will have value only with `asyncio` and may be replaced by `_` or `*args` 
+    in synchronous requests
+    """
+    if response_type == SubscriptionResponseType.OK:
+        result = ResultOfSubscription(**response_data)
+        results.append(result.result)
+    if response_type == SubscriptionResponseType.ERROR:
+        raise TonException(error=ClientError(**response_data))
+
+results = []
+now = int(datetime.now().timestamp())
+q_params = ParamsOfSubscribeCollection(collection='messages', result='created_at', filter={'created_at': {'gt': now}})
+subscription = client.net.subscribe_collection(params=q_params, callback=__callback)
+
+while True:
+    if len(results) > 0 or int(datetime.now().timestamp()) > now + 10:
+        client.net.unsubscribe(params=subscription)
+        break
+    time.sleep(1)
+```
+Please, dig in `tonclient/test/test_net.py`, `tonclient/test/test_processing.py`, 
+`tonclient/test/test_crypto.py`, `tonclient/test/test_debot.py` to get more examples.
 
 ## Client and asyncio
 ```python
+from tonclient.types import ClientConfig
 from tonclient.client import TonClient, DEVNET_BASE_URL
 
 # Create client with `is_async=True` argument.
-client = TonClient(network={'server_address': DEVNET_BASE_URL}, is_async=True)
+config = ClientConfig()
+config.network.server_address = DEVNET_BASE_URL
+client = TonClient(config=config, is_async=True)
 
 # Get version (simple method with result)
 version = await client.version()
-
-# Generators
-generator = client.net.subscribe_collection(query=TonQLQuery)
-async for event in generator:
-    # Work with event
-    pass
 ```
-
 Please, dig in `tonclient/test/test_async.py` to get more info.
