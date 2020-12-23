@@ -2,6 +2,7 @@ import base64
 import os
 import unittest
 import logging
+from multiprocessing import get_context
 from concurrent.futures.thread import ThreadPoolExecutor
 from typing import List, Dict, Tuple, Any, Union
 
@@ -11,7 +12,7 @@ from tonclient.types import Abi, Signer, CallSet, DeploySet, DebotAction, \
     DebotState, AppRequestResult, ParamsOfAppDebotBrowser, \
     ResultOfAppDebotBrowser, ParamsOfEncodeMessage, ParamsOfProcessMessage, \
     ParamsOfStart, ParamsOfFetch, ParamsOfExecute, ParamsOfAppRequest, \
-    ParamsOfResolveAppRequest
+    ParamsOfResolveAppRequest, KeyPair
 
 
 class TestTonDebotAsyncCore(unittest.TestCase):
@@ -35,7 +36,8 @@ class TestTonDebotAsyncCore(unittest.TestCase):
             {'choice': 7, 'inputs': [], 'outputs': []}
         ]
         params = ParamsOfStart(address=self.debot_address)
-        self._debot_run(steps=steps, params=params, start_fn='start')
+        debot_browser(
+            steps=steps, params=params, start_fn='start', keypair=self.keypair)
 
     def test_print(self):
         steps = [
@@ -46,7 +48,8 @@ class TestTonDebotAsyncCore(unittest.TestCase):
             {'choice': 7, 'inputs': [], 'outputs': []}
         ]
         params = ParamsOfStart(address=self.debot_address)
-        self._debot_run(steps=steps, params=params, start_fn='start')
+        debot_browser(
+            steps=steps, params=params, start_fn='start', keypair=self.keypair)
 
     def test_run_action(self):
         steps = [
@@ -59,7 +62,8 @@ class TestTonDebotAsyncCore(unittest.TestCase):
             {'choice': 7, 'inputs': [], 'outputs': []}
         ]
         params = ParamsOfStart(address=self.debot_address)
-        self._debot_run(steps=steps, params=params, start_fn='start')
+        debot_browser(
+            steps=steps, params=params, start_fn='start', keypair=self.keypair)
 
     def test_run_method(self):
         steps = [
@@ -70,7 +74,8 @@ class TestTonDebotAsyncCore(unittest.TestCase):
             {'choice': 7, 'inputs': [], 'outputs': []}
         ]
         params = ParamsOfStart(address=self.debot_address)
-        self._debot_run(steps=steps, params=params, start_fn='start')
+        debot_browser(
+            steps=steps, params=params, start_fn='start', keypair=self.keypair)
 
     def test_send_message(self):
         steps = [
@@ -82,7 +87,8 @@ class TestTonDebotAsyncCore(unittest.TestCase):
             {'choice': 7, 'inputs': [], 'outputs': []}
         ]
         params = ParamsOfStart(address=self.debot_address)
-        self._debot_run(steps=steps, params=params, start_fn='start')
+        debot_browser(
+            steps=steps, params=params, start_fn='start', keypair=self.keypair)
 
     def test_invoke(self):
         steps = [
@@ -95,7 +101,8 @@ class TestTonDebotAsyncCore(unittest.TestCase):
             {'choice': 7, 'inputs': [], 'outputs': []}
         ]
         params = ParamsOfStart(address=self.debot_address)
-        self._debot_run(steps=steps, params=params, start_fn='start')
+        debot_browser(
+            steps=steps, params=params, start_fn='start', keypair=self.keypair)
 
     def test_engine_calls(self):
         steps = [
@@ -109,111 +116,11 @@ class TestTonDebotAsyncCore(unittest.TestCase):
             {'choice': 7, 'inputs': [], 'outputs': []}
         ]
         params = ParamsOfStart(address=self.debot_address)
-        self._debot_run(steps=steps, params=params, start_fn='start')
-
-    def _debot_run(
-            self, steps: List[Dict[str, Any]], start_fn: str,
-            params: Union[ParamsOfStart, ParamsOfFetch],
-            actions: List[DebotAction] = None):
-
-        def __callback(response_data, response_type, *args):
-            # Process notifications
-            if response_type == TCResponseType.AppNotify:
-                notify = ParamsOfAppDebotBrowser.from_dict(data=response_data)
-
-                # Process notification types
-                if isinstance(notify, ParamsOfAppDebotBrowser.Log):
-                    state['messages'].append(notify.msg)
-                if isinstance(notify, ParamsOfAppDebotBrowser.Switch):
-                    state['switch_started'] = True
-                    if notify.context_id == DebotState.EXIT:
-                        state['finished'] = True
-                    state['actions'].clear()
-                if isinstance(
-                        notify, ParamsOfAppDebotBrowser.SwitchCompleted):
-                    state['switch_started'] = False
-                if isinstance(notify, ParamsOfAppDebotBrowser.ShowAction):
-                    state['actions'].append(notify.action)
-
-            # Process requests
-            if response_type == TCResponseType.AppRequest:
-                request = ParamsOfAppRequest(**response_data)
-                request_data = ParamsOfAppDebotBrowser.from_dict(
-                    data=request.request_data)
-                result = None
-
-                # Process request types
-                if isinstance(request_data, ParamsOfAppDebotBrowser.Input):
-                    result = ResultOfAppDebotBrowser.Input(
-                        value=state['step']['inputs'][0])
-                if isinstance(
-                        request_data, ParamsOfAppDebotBrowser.GetSigningBox):
-                    with ThreadPoolExecutor() as executor:
-                        future = executor.submit(
-                            async_custom_client.crypto.get_signing_box,
-                            params=self.keypair)
-                        signing_box = future.result()
-                    result = ResultOfAppDebotBrowser.GetSigningBox(
-                        signing_box=signing_box.handle)
-                if isinstance(
-                        request_data, ParamsOfAppDebotBrowser.InvokeDebot):
-                    invoke_steps = state['step']['invokes']
-                    fetch_params = ParamsOfFetch(address=self.debot_address)
-                    with ThreadPoolExecutor() as executor:
-                        future = executor.submit(
-                            self._debot_run, steps=invoke_steps,
-                            params=fetch_params, start_fn='fetch',
-                            actions=[request_data.action])
-                        future.result()
-                    result = ResultOfAppDebotBrowser.InvokeDebot()
-
-                # Resolve app request
-                result = AppRequestResult.Ok(result=result.dict)
-                resolve_params = ParamsOfResolveAppRequest(
-                    app_request_id=request.app_request_id, result=result)
-                with ThreadPoolExecutor() as executor:
-                    future = executor.submit(
-                        async_custom_client.resolve_app_request,
-                        params=resolve_params)
-                    future.result()
-
-        # Create initial state
-        state: Dict[str, Any] = {
-            'messages': [],
-            'actions': actions or [],
-            'steps': steps,
-            'step': None,
-            'switch_started': False,
-            'finished': False
-        }
-
-        # Start debot browser and get handle
-        debot = getattr(async_custom_client.debot, start_fn)(
-            params=params, callback=__callback)
-        self._debot_print_state(state=state)
-
-        while not state['finished']:
-            step: Dict[str, Any] = state['steps'].pop(0)
-            action = state['actions'][step['choice']]
-            logging.info(f'[ACTION SELECTED]\t{action}')
-            state['messages'].clear()
-            state['step'] = step
-
-            exec_params = ParamsOfExecute(
-                debot_handle=debot.debot_handle, action=action)
-            async_custom_client.debot.execute(params=exec_params)
-            self._debot_print_state(state=state)
-
-            self.assertEqual(
-                len(state['step']['outputs']), len(state['messages']))
-
-            if not len(state['steps']):
-                break
-
-        async_custom_client.debot.remove(params=debot)
+        debot_browser(
+            steps=steps, params=params, start_fn='start', keypair=self.keypair)
 
     @staticmethod
-    def _debot_print_state(state: Dict[str, Any]):
+    def debot_print_state(state: Dict[str, Any]):
         # Print messages
         for message in state['messages']:
             logging.info(f'[LOG]\t{message}')
@@ -260,3 +167,112 @@ class TestTonDebotAsyncCore(unittest.TestCase):
             debot.transaction['account_addr'],
             target.transaction['account_addr']
         )
+
+
+def debot_browser(
+        steps: List[Dict[str, Any]], start_fn: str, keypair: KeyPair,
+        params: Union[ParamsOfStart, ParamsOfFetch],
+        actions: List[DebotAction] = None):
+
+    def __callback(response_data, response_type, *args):
+        # Process notifications
+        if response_type == TCResponseType.AppNotify:
+            notify = ParamsOfAppDebotBrowser.from_dict(data=response_data)
+
+            # Process notification types
+            if isinstance(notify, ParamsOfAppDebotBrowser.Log):
+                state['messages'].append(notify.msg)
+            if isinstance(notify, ParamsOfAppDebotBrowser.Switch):
+                state['switch_started'] = True
+                if notify.context_id == DebotState.EXIT:
+                    state['finished'] = True
+                state['actions'].clear()
+            if isinstance(
+                    notify, ParamsOfAppDebotBrowser.SwitchCompleted):
+                state['switch_started'] = False
+            if isinstance(notify, ParamsOfAppDebotBrowser.ShowAction):
+                state['actions'].append(notify.action)
+
+        # Process requests
+        if response_type == TCResponseType.AppRequest:
+            request = ParamsOfAppRequest(**response_data)
+            request_data = ParamsOfAppDebotBrowser.from_dict(
+                data=request.request_data)
+            result = None
+
+            # Process request types
+            if isinstance(request_data, ParamsOfAppDebotBrowser.Input):
+                result = ResultOfAppDebotBrowser.Input(
+                    value=state['step']['inputs'][0])
+            if isinstance(
+                    request_data, ParamsOfAppDebotBrowser.GetSigningBox):
+                with ThreadPoolExecutor() as executor:
+                    future = executor.submit(
+                        async_custom_client.crypto.get_signing_box,
+                        params=keypair)
+                    signing_box = future.result()
+                result = ResultOfAppDebotBrowser.GetSigningBox(
+                    signing_box=signing_box.handle)
+            if isinstance(
+                    request_data, ParamsOfAppDebotBrowser.InvokeDebot):
+                invoke_steps = state['step']['invokes']
+                fetch_params = ParamsOfFetch(address=request_data.debot_addr)
+
+                # Here we should call `debot_browser` in `spawn` mode
+                # subprocess for compatibility with `Unix` systems.
+                # MacOS, Windows use `spawn` by default
+                with get_context('spawn').Pool() as pool:
+                    pool.apply(debot_browser, kwds={
+                        'steps': invoke_steps,
+                        'params': fetch_params,
+                        'start_fn': 'fetch',
+                        'actions': [request_data.action],
+                        'keypair': keypair
+                    })
+                result = ResultOfAppDebotBrowser.InvokeDebot()
+
+            # Resolve app request
+            result = AppRequestResult.Ok(result=result.dict)
+            resolve_params = ParamsOfResolveAppRequest(
+                app_request_id=request.app_request_id, result=result)
+            with ThreadPoolExecutor() as executor:
+                future = executor.submit(
+                    async_custom_client.resolve_app_request,
+                    params=resolve_params)
+                future.result()
+
+    # Create initial state
+    state: Dict[str, Any] = {
+        'messages': [],
+        'actions': actions or [],
+        'steps': steps,
+        'step': None,
+        'switch_started': False,
+        'finished': False
+    }
+
+    # Start debot browser and get handle
+    debot = getattr(async_custom_client.debot, start_fn)(
+        params=params, callback=__callback)
+    TestTonDebotAsyncCore.debot_print_state(state=state)
+
+    while not state['finished']:
+        step: Dict[str, Any] = state['steps'].pop(0)
+        action = state['actions'][step['choice']]
+        logging.info(f'[ACTION SELECTED]\t{action}')
+        state['messages'].clear()
+        state['step'] = step
+
+        exec_params = ParamsOfExecute(
+            debot_handle=debot.debot_handle, action=action)
+        async_custom_client.debot.execute(params=exec_params)
+        TestTonDebotAsyncCore.debot_print_state(state=state)
+
+        test_case = unittest.TestCase()
+        test_case.assertEqual(
+            len(state['step']['outputs']), len(state['messages']))
+
+        if not len(state['steps']):
+            break
+
+    async_custom_client.debot.remove(params=debot)

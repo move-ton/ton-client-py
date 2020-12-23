@@ -115,7 +115,7 @@ class TonModule(object):
         request_id = self._generate_request_id()
 
         # Get event loop and create future
-        loop = asyncio.get_running_loop()
+        loop = asyncio.get_event_loop()
         future = loop.create_future()
 
         # Set response map data

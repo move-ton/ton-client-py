@@ -145,6 +145,7 @@ class TestTonNetAsyncCore(unittest.TestCase):
 
         # Resume subscription
         async_custom_client.net.resume()
+        time.sleep(2)  # Wait a bit for resume
 
         # Run contract function to create third transaction
         call_set = CallSet(function_name='touch')
