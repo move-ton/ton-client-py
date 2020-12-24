@@ -12,12 +12,13 @@ from tonclient.types import Abi, Signer, CallSet, DeploySet, DebotAction, \
     DebotState, AppRequestResult, ParamsOfAppDebotBrowser, \
     ResultOfAppDebotBrowser, ParamsOfEncodeMessage, ParamsOfProcessMessage, \
     ParamsOfStart, ParamsOfFetch, ParamsOfExecute, ParamsOfAppRequest, \
-    ParamsOfResolveAppRequest, KeyPair
+    ParamsOfResolveAppRequest, KeyPair, ParamsOfQueryCollection
 
 
 class TestTonDebotAsyncCore(unittest.TestCase):
     def setUp(self) -> None:
-        self.keypair = async_custom_client.crypto.generate_random_sign_keys()
+        self.keypair = KeyPair.load(
+            path=os.path.join(SAMPLES_DIR, 'keys_raw.json'), is_binary=False)
         self.target_abi = Abi.from_path(
             path=os.path.join(SAMPLES_DIR, 'DebotTarget.abi.json'))
         self.debot_abi = Abi.from_path(
@@ -133,40 +134,58 @@ class TestTonDebotAsyncCore(unittest.TestCase):
         signer = Signer.Keys(keys=self.keypair)
 
         # Deploy target
+        target_address = None
         call_set = CallSet(function_name='constructor')
         deploy_set = DeploySet(tvc=self.target_tvc)
         encode_params = ParamsOfEncodeMessage(
             abi=self.target_abi, signer=signer, deploy_set=deploy_set,
             call_set=call_set)
         message = async_custom_client.abi.encode_message(params=encode_params)
-        send_grams(address=message.address)
-        process_params = ParamsOfProcessMessage(
-            message_encode_params=encode_params, send_events=False)
-        target = async_custom_client.processing.process_message(
-            params=process_params)
+
+        # Check if target contract does not exists
+        q_params = ParamsOfQueryCollection(
+            collection='accounts', result='id',
+            filter={'id': {'eq': message.address}})
+        result = async_custom_client.net.query_collection(params=q_params)
+        if len(result.result):
+            target_address = result.result[0]['id']
+        else:
+            send_grams(address=message.address)
+            process_params = ParamsOfProcessMessage(
+                message_encode_params=encode_params, send_events=False)
+            target = async_custom_client.processing.process_message(
+                params=process_params)
+            target_address = target.transaction['account_addr']
 
         # Deploy debot
         call_set = CallSet(
             function_name='constructor', input={
                 'debotAbi': self.debot_abi.value.encode().hex(),
                 'targetAbi': self.target_abi.value.encode().hex(),
-                'targetAddr': target.transaction['account_addr']
+                'targetAddr': target_address
             })
         deploy_set = DeploySet(tvc=self.debot_tvc)
         encode_params = ParamsOfEncodeMessage(
             abi=self.debot_abi, signer=signer, deploy_set=deploy_set,
             call_set=call_set)
         message = async_custom_client.abi.encode_message(params=encode_params)
-        send_grams(address=message.address)
-        process_params = ParamsOfProcessMessage(
-            message_encode_params=encode_params, send_events=False)
-        debot = async_custom_client.processing.process_message(
-            params=process_params)
 
-        return (
-            debot.transaction['account_addr'],
-            target.transaction['account_addr']
-        )
+        # Check if debot contract does not exists
+        q_params = ParamsOfQueryCollection(
+            collection='accounts', result='id',
+            filter={'id': {'eq': message.address}})
+        result = async_custom_client.net.query_collection(params=q_params)
+        if len(result.result):
+            debot_address = result.result[0]['id']
+        else:
+            send_grams(address=message.address)
+            process_params = ParamsOfProcessMessage(
+                message_encode_params=encode_params, send_events=False)
+            debot = async_custom_client.processing.process_message(
+                params=process_params)
+            debot_address = debot.transaction['account_addr']
+
+        return debot_address, target_address
 
 
 def debot_browser(
