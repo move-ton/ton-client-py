@@ -38,7 +38,7 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=12 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
-        if [ "$RUNNER_OS" == "Windows" ]; then
+        if ([ "$RUNNER_OS" == "Windows" ]); then
           python -m unittest -v
         else
           pipenv run pytest -v
