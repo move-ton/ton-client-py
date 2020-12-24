@@ -1,12 +1,11 @@
 # TON Client
 TON SDK Client library Python bindings.
 Works for Python 3.6+ 
-
-![TonClient Ubuntu 20.04](https://github.com/move-ton/ton-client-py/workflows/TonClient%20Ubuntu%2020.04/badge.svg) 
-![TonClient MacOS Latest](https://github.com/move-ton/ton-client-py/workflows/TonClient%20MacOS%20Latest/badge.svg)  
+ 
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ton-client-py?label=Python)
 ![PyPI](https://img.shields.io/pypi/v/ton-client-py?label=PyPI)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/ton-client-py?label=PyPI%20Downloads)  
+![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/move-ton/ton-client-py/TonClient/master?label=Test%20MacOS%7CUbuntu%7CWindows%20-%20Python%203.6%7C3.9)
 [![Chat on Telegram RU](https://img.shields.io/badge/Chat%20on-Telegram%20RU-blue)](https://t.me/MOVETON_SDK_RU)
 [![Chat on Telegram EN](https://img.shields.io/badge/Chat%20on-Telegram%20EN-blue)](https://t.me/MOVETON_SDK_EN)
 
