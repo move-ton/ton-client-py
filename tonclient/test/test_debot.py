@@ -28,7 +28,8 @@ class TestTonDebotAsyncCore(unittest.TestCase):
         with open(os.path.join(SAMPLES_DIR, 'Debot.tvc'), 'rb') as fp:
             self.debot_tvc = base64.b64encode(fp.read()).decode()
 
-        self.debot_address, self.target_address = self.__deploy()
+        self.debot_address, self.target_address = self.__deploy(
+            keypair=self.keypair)
 
     def test_goto(self):
         steps = [
@@ -67,6 +68,9 @@ class TestTonDebotAsyncCore(unittest.TestCase):
             steps=steps, params=params, start_fn='start', keypair=self.keypair)
 
     def test_run_method(self):
+        keypair = async_custom_client.crypto.generate_random_sign_keys()
+        debot_address, _ = self.__deploy(keypair=keypair)
+
         steps = [
             {'choice': 3, 'inputs': [], 'outputs': ['Test Run Method Action']},
             {'choice': 0, 'inputs': [], 'outputs': []},
@@ -74,9 +78,9 @@ class TestTonDebotAsyncCore(unittest.TestCase):
             {'choice': 2, 'inputs': [], 'outputs': ['Debot Tests']},
             {'choice': 7, 'inputs': [], 'outputs': []}
         ]
-        params = ParamsOfStart(address=self.debot_address)
+        params = ParamsOfStart(address=debot_address)
         debot_browser(
-            steps=steps, params=params, start_fn='start', keypair=self.keypair)
+            steps=steps, params=params, start_fn='start', keypair=keypair)
 
     def test_send_message(self):
         steps = [
@@ -129,12 +133,11 @@ class TestTonDebotAsyncCore(unittest.TestCase):
         for action in state['actions']:
             logging.info(f'[ACTION]\t{action}')
 
-    def __deploy(self) -> Tuple[str, str]:
+    def __deploy(self, keypair: KeyPair) -> Tuple[str, str]:
         """ Deploy debot and target """
-        signer = Signer.Keys(keys=self.keypair)
+        signer = Signer.Keys(keys=keypair)
 
         # Deploy target
-        target_address = None
         call_set = CallSet(function_name='constructor')
         deploy_set = DeploySet(tvc=self.target_tvc)
         encode_params = ParamsOfEncodeMessage(
