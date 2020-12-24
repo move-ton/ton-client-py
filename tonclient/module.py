@@ -3,8 +3,7 @@ import logging
 import os
 
 import json
-import threading
-import time
+from concurrent.futures import Future
 from typing import Any, Dict, Union, Callable
 
 from tonclient.bindings.lib import tc_request, tc_request_sync, \
@@ -13,21 +12,6 @@ from tonclient.bindings.types import TCStringData, TCResponseHandler, \
     TCResponseType, TCSyncResponseData
 from tonclient.errors import TonException
 from tonclient.types import ClientError
-
-
-class ResolverThread(threading.Thread):
-    """ Thread to resolve async core response """
-    def __init__(
-            self, resolved: bool = False, result: Any = None, *args, **kwargs):
-        super(ResolverThread, self).__init__(*args, **kwargs)
-        self.resolved = resolved
-        self.result = result
-        self.exception = None
-
-    def run(self) -> None:
-        while not self.resolved and not self.exception:
-            time.sleep(0.001)
-        return self.result
 
 
 class TonModule(object):
@@ -83,15 +67,14 @@ class TonModule(object):
         # Generate request id
         request_id = self._generate_request_id()
 
-        # Create resolving thread and start it
-        thread = ResolverThread(daemon=True)
-        thread.start()
+        # Create concurrent future
+        future = Future()
 
         # Set response map data
         self._async_response_map[request_id] = {
             'is_async': False,
             'callback': callback,
-            'thread': thread
+            'future': future
         }
 
         # Execute core request
@@ -100,12 +83,11 @@ class TonModule(object):
             params_json=request_params,
             response_handler=self._async_response_handler)
 
-        # Wait for resolver thread
-        thread.join()
-        if thread.exception:
-            raise thread.exception
-
-        return thread.result
+        # Resolve future
+        exception = future.exception()
+        if exception:
+            raise exception
+        return future.result()
 
     async def _async_core_request_future(
             self, method: str, request_params: str, callback: Callable
@@ -178,8 +160,7 @@ class TonModule(object):
                 request['loop'].call_soon_threadsafe(
                     request['future'].set_result, response_data.json)
             else:
-                request['thread'].result = response_data.json
-                request['thread'].resolved = True
+                request['future'].set_result(response_data.json)
             return
 
         if response_type == TCResponseType.Error:
@@ -189,7 +170,7 @@ class TonModule(object):
                 request['loop'].call_soon_threadsafe(
                     request['future'].set_exception, exception)
             else:
-                request['thread'].exception = exception
+                request['future'].set_exception(exception)
             return
 
         if request['callback'] and response_data.json:

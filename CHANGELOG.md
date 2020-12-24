@@ -1,3 +1,7 @@
+## Version 1.4.0.1
+  * Core improvement: using `concurrent.future` along with `asyncio.future` for response 
+    resolving
+
 ## Version 1.4.0.0
 Fully reworked binding. Is breaking to previous versions.  
   * Response resolvers reimplemented (no while loops with responses);
