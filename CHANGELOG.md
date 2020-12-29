@@ -1,3 +1,7 @@
+## Version 1.5.1.0
+  * Binaries updated to `1.5.1`.  
+    See https://github.com/tonlabs/TON-SDK/blob/master/CHANGELOG.md for details.
+
 ## Version 1.5.0.0
   * `reconnect_timeout` parameter in `NetworkConfig`;
   * `endpoints` parameter in `NetworkConfig`. It contains the list of available server 
