@@ -115,15 +115,17 @@ from tonclient.types import NetworkConfig, CryptoConfig, AbiConfig, ClientConfig
 
 # Default network config is below.
 # `None` attributes are filled by core with defaults values: 
+#     `endpoints=[]`
 #     `network_retries_count=5` 
 #     `message_retries_count=5`
 #     `message_processing_timeout=40000`
 #     `wait_for_timeout=40000`
 #     `out_of_sync_threshold=15000`
+#     `reconnect_timeout=`
 #     `access_key=''`
 network = NetworkConfig(
-    server_address='http://localhost', network_retries_count=None, 
-    message_retries_count=None, message_processing_timeout=None, 
+    server_address='http://localhost', endpoints=None, network_retries_count=None, 
+    message_retries_count=None, message_processing_timeout=None, reconnect_timeout=None,
     wait_for_timeout=None, out_of_sync_threshold=None, access_key=None)
 
 # Default crypto config is below.

@@ -21,6 +21,42 @@ class BaseTypedType(object):
 
 
 # CLIENT module
+class ClientErrorCode(int, Enum):
+    NOT_IMPLEMENTED = 1
+    INVALID_HEX = 2
+    INVALID_BASE64 = 3
+    INVALID_ADDRESS = 4
+    CALLBACK_PARAMS_CANT_BE_CONVERTED_TO_JSON = 5
+    WEBSOCKET_CONNECT_ERROR = 6
+    WEBSOCKET_RECEIVE_ERROR = 7
+    WEBSOCKET_SEND_ERROR = 8
+    HTTP_CLIENT_CREATE_ERROR = 9
+    HTTP_REQUEST_CREATE_ERROR = 10
+    HTTP_REQUEST_SEND_ERROR = 11
+    HTTP_REQUEST_PARSE_ERROR = 12
+    CALLBACK_NOT_REGISTERED = 13
+    NET_MODULE_NOT_INIT = 14
+    INVALID_CONFIG = 15
+    CANNOT_CREATE_RUNTIME = 16
+    INVALID_CONTEXT_HANDLE = 17
+    CANNOT_SERIALIZE_RESULT = 18
+    CANNOT_SERIALIZE_ERROR = 19
+    CANNOT_CONVERT_JS_VALUE_TO_JSON = 20
+    CANNOT_RECEIVE_SPAWNED_RESULT = 21
+    SET_TIMER_ERROR = 22
+    INVALID_PARAMS = 23
+    CONTRACTS_ADDRESS_CONVERSION_FAILED = 24
+    UNKNOWN_FUNCTION = 25
+    APP_REQUEST_ERROR = 26
+    NO_SUCH_REQUEST = 27
+    CANNOT_SEND_REQUEST_RESULT = 28
+    CANNOT_RECEIVE_REQUEST_RESULT = 29
+    CANNOT_PARSE_REQUEST_RESULT = 30
+    UNEXPECTED_CALLBACK_RESPONSE = 31
+    CANNOT_PARSE_NUMBER = 32
+    INTERNAL_ERROR = 33
+
+
 class ClientError(object):
     def __init__(self, code: int, message: str, data: Any):
         """
@@ -62,36 +98,61 @@ class ClientConfig(object):
 class NetworkConfig(object):
     def __init__(
             self, server_address: str, network_retries_count: int = None,
-            message_retries_count: int = None,
+            message_retries_count: int = None, endpoints: List[str] = None,
             message_processing_timeout: int = None,
             wait_for_timeout: int = None, out_of_sync_threshold: int = None,
-            access_key: str = None):
+            reconnect_timeout: int = None, access_key: str = None):
         """
-        :param server_address:
-        :param network_retries_count:
-        :param message_retries_count:
-        :param message_processing_timeout:
-        :param wait_for_timeout:
-        :param out_of_sync_threshold:
-        :param access_key:
+        :param server_address: DApp Server public address. For instance,
+                for `net.ton.dev/graphql` GraphQL endpoint the server
+                address will be net.ton.dev
+        :param endpoints: List of DApp Server addresses. Any correct URL
+                format can be specified, including IP addresses
+        :param network_retries_count: The number of automatic network retries
+                that SDK performs in case of connection problems. The default
+                value is 5
+        :param message_retries_count: The number of automatic message
+                processing retries that SDK performs in case of
+                `Message Expired (507)` error - but only for those messages
+                which local emulation was successful or failed with replay
+                protection error. The default value is 5
+        :param message_processing_timeout: Timeout that is used to process
+                message delivery for the contracts which ABI does not include
+                "expire" header. If the message is not delivered within the
+                specified timeout the appropriate error occurs
+        :param wait_for_timeout: Maximum timeout that is used for query
+                response. The default value is 40 sec
+        :param out_of_sync_threshold: Maximum time difference between server
+                and client. If client's device time is out of sink and
+                difference is more than the threshold then error will occur.
+                Also the error will occur if the specified threshold is more
+                than `message_processing_timeout / 2`.
+                The default value is 15 sec
+        :param reconnect_timeout: Timeout between reconnect attempts
+        :param access_key: Access key to GraphQL API. At the moment is not
+                used in production
         """
         self.server_address = server_address
+        self.endpoints = endpoints
         self.network_retries_count = network_retries_count
         self.message_retries_count = message_retries_count
         self.message_processing_timeout = message_processing_timeout
         self.wait_for_timeout = wait_for_timeout
         self.out_of_sync_threshold = out_of_sync_threshold
+        self.reconnect_timeout = reconnect_timeout
         self.access_key = access_key
 
     @property
     def dict(self):
         return {
             'server_address': self.server_address,
+            'endpoints': self.endpoints,
             'network_retries_count': self.network_retries_count,
             'message_retries_count': self.message_retries_count,
             'message_processing_timeout': self.message_processing_timeout,
             'wait_for_timeout': self.wait_for_timeout,
             'out_of_sync_threshold': self.out_of_sync_threshold,
+            'reconnect_timeout': self.reconnect_timeout,
             'access_key': self.access_key
         }
 
@@ -102,9 +163,15 @@ class CryptoConfig(object):
             mnemonic_word_count: int = None,
             hdkey_derivation_path: str = None):
         """
-        :param mnemonic_dictionary:
-        :param mnemonic_word_count:
-        :param hdkey_derivation_path:
+        :param mnemonic_dictionary: Mnemonic dictionary that will be used by
+                default in crypto functions. If not specified, 1 dictionary
+                will be used
+        :param mnemonic_word_count: Mnemonic word count that will be used by
+                default in crypto functions. If not specified the default
+                value will be 12
+        :param hdkey_derivation_path: Derivation path that will be used by
+                default in crypto functions. If not specified
+                `m/44'/396'/0'/0/0` will be used
         """
         self.mnemonic_dictionary = mnemonic_dictionary
         self.mnemonic_word_count = mnemonic_word_count
@@ -125,9 +192,11 @@ class AbiConfig(object):
             message_expiration_timeout: int = None,
             message_expiration_timeout_grow_factor: Union[int, float] = None):
         """
-        :param workchain:
-        :param message_expiration_timeout:
-        :param message_expiration_timeout_grow_factor:
+        :param workchain: Workchain id that is used by default in DeploySet
+        :param message_expiration_timeout: Message lifetime for contracts
+                which ABI includes "expire" header. The default value is 40 sec
+        :param message_expiration_timeout_grow_factor: Factor that increases
+                the expiration timeout for each retry. The default value is 1.5
         """
         self.workchain = workchain
         self.message_expiration_timeout = message_expiration_timeout
@@ -247,6 +316,20 @@ class ParamsOfResolveAppRequest(object):
 
 # ABI module
 AbiHandle = int
+
+
+class AbiErrorCode(int, Enum):
+    REQUIRED_ADDRESS_MISSING_FOR_ENCODE_MESSAGE = 301
+    REQUIRED_CALL_SET_MISSING_FOR_ENCODE_MESSAGE = 302
+    INVALID_JSON = 303
+    INVALID_MESSAGE = 304
+    ENCODE_DEPLOY_MESSAGE_FAILED = 305
+    ENCODE_RUN_MESSAGE_FAILED = 306
+    ATTACH_SIGNATURE_FAILED = 307
+    INVALID_TVC_IMAGE = 308
+    REQUIRED_PUBLIC_KEY_MISSING_FOR_FUNCTION_HEADER = 309
+    INVALID_SIGNER = 310
+    INVALID_ABI = 311
 
 
 class Abi:
@@ -993,6 +1076,13 @@ class ResultOfEncodeAccount(object):
 
 
 # BOC module
+class BocErrorCode(int, Enum):
+    INVALID_BOC = 201
+    SERIALIZATION_ERROR = 202
+    INAPPROPRIATE_BLOCK = 203
+    MISSING_SOURCE_BOC = 204
+
+
 class ParamsOfParse(object):
     def __init__(self, boc: str):
         """
@@ -1095,6 +1185,28 @@ class ResultOfGetCodeFromTvc(object):
 
 # CRYPTO module
 SigningBoxHandle = int
+
+
+class CryptoErrorCode(int, Enum):
+    INVALID_PUBLIC_KEY = 100
+    INVALID_SECRET_KEY = 101
+    INVALID_KEY = 102
+    INVALID_FACTORIZE_CHALLENGE = 106
+    INVALID_BIGINT = 107
+    SCRYPT_FAILED = 108
+    INVALID_KEY_SIZE = 109
+    NACL_SECRET_BOX_FAILED = 110
+    NACL_BOX_FAILED = 111
+    NACL_SIGN_FAILED = 112
+    BIP39_INVALID_ENTROPY = 113
+    BIP39_INVALID_PHRASE = 114
+    BIP32_INVALID_KEY = 115
+    BIP32_INVALID_DERIVE_PATH = 116
+    BIP39_INVALID_DICTIONARY = 117
+    BIP39_INVALID_WORD_COUNT = 118
+    MNEMONIC_GENERATION_FAILED = 119
+    MNEMONIC_FROM_ENTROPY_FAILED = 120
+    SIGNING_BOX_NOT_REGISTERED = 121
 
 
 class MnemonicDictionary(int, Enum):
@@ -1954,6 +2066,21 @@ class ResultOfSigningBoxSign(object):
 
 
 # NET module
+class NetErrorCode(int, Enum):
+    QUERY_FAILED = 601
+    SUBSCRIBE_FAILED = 602
+    WAIT_FOR_FAILED = 603
+    GET_SUBSCRIPTION_RESULT_FAILED = 604
+    INVALID_SERVER_RESPONSE = 605
+    CLOCK_OUT_OF_SYNC = 606
+    WAIT_FOR_TIMEOUT = 607
+    GRAPHQL_ERROR = 608
+    NETWORK_MODULE_SUSPENDED = 609
+    WEBSOCKET_DISCONNECTED = 610
+    NOT_SUPPORTED = 611
+    NO_ENDPOINTS_PROVIDED = 612
+
+
 class SortDirection(str, Enum):
     ASC = 'ASC'
     DESC = 'DESC'
@@ -2133,7 +2260,35 @@ class ResultOfFindLastShardBlock(object):
         self.block_id = block_id
 
 
+class EndpointsSet(object):
+    def __init__(self, endpoints: List[str]):
+        """
+        :param endpoints: List of endpoints provided by server
+        """
+        self.endpoints = endpoints
+
+    @property
+    def dict(self):
+        return {'endpoints': self.endpoints}
+
+
 # PROCESSING module
+class ProcessingErrorCode(int, Enum):
+    MESSAGE_ALREADY_EXPIRED = 501
+    MESSAGE_HAS_NO_DESTINATION_ADDRESS = 502
+    CANNOT_BUILD_MESSAGE_CELL = 503
+    FETCH_BLOCK_FAILED = 504
+    SEND_MESSAGE_FAILED = 505
+    INVALID_MESSAGE_BOC = 506
+    MESSAGE_EXPIRED = 507
+    TRANSACTION_WAIT_TIMEOUT = 508
+    INVALID_BLOCK_RECEIVED = 509
+    CANNOT_CHECK_BLOCK_SHARD = 510
+    BLOCK_NOT_FOUND = 511
+    INVALID_DATA = 512
+    EXTERNAL_SIGNER_MUST_NOT_BE_USED = 513
+
+
 class ProcessingEvent:
     class WillFetchFirstBlock(BaseTypedType):
         """
@@ -2428,6 +2583,23 @@ class ParamsOfProcessMessage(object):
 
 
 # TVM module
+class TvmErrorCode(int, Enum):
+    CANNOT_READ_TRANSACTION = 401
+    CANNOT_READ_BLOCKCHAIN_CONFIG = 402
+    TRANSACTION_ABORTED = 403
+    INTERNAL_ERROR = 404
+    ACTION_PHASE_FAILED = 405
+    ACCOUNT_CODE_MISSING = 406
+    LOW_BALANCE = 407
+    ACCOUNT_FROZEN_OR_DELETED = 408
+    ACCOUNT_MISSING = 409
+    UNKNOWN_EXECUTION_ERROR = 410
+    INVALID_INPUT_STACK = 411
+    INVALID_ACCOUNT_BOC = 412
+    INVALID_MESSAGE_TYPE = 413
+    CONTRACT_EXECUTION_ERROR = 414
+
+
 class TransactionFees(object):
     def __init__(
             self, in_msg_fwd_fee: int, storage_fee: int, gas_fee: int,
@@ -2737,6 +2909,13 @@ class ResultOfConvertAddress(object):
 
 # DEBOT module
 DebotHandle = int
+
+
+class DebotErrorCode(int, Enum):
+    DEBOT_START_FAILED = 801
+    DEBOT_FETCH_FAILED = 802
+    DEBOT_EXECUTION_FAILED = 803
+    DEBOT_INVALID_HANDLE = 804
 
 
 class DebotAction(object):

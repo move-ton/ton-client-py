@@ -1,3 +1,12 @@
+## Version 1.5.0.0
+  * `reconnect_timeout` parameter in `NetworkConfig`;
+  * `endpoints` parameter in `NetworkConfig`. It contains the list of available server 
+    addresses to connect. SDK will use one them with the least connect time. 
+    `server_address` parameter is still supported but endpoints is prevailing;
+  * `net.fetch_endpoints` function to receive available endpoints from the server;
+  * `net.set_endpoints` function to set endpoints list for using on next reconnect;
+  * `ErrorCode` type for each module. See `types.[MODULE]ErrorCode`.
+
 ## Version 1.4.0.1
   * Core improvement: using `concurrent.future` along with `asyncio.future` for response 
     resolving

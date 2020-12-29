@@ -6,7 +6,7 @@ from tonclient.types import ParamsOfQuery, ResultOfQuery, \
     ParamsOfQueryCollection, ResultOfQueryCollection, \
     ParamsOfWaitForCollection, ResultOfWaitForCollection, \
     ResultOfSubscribeCollection, ParamsOfSubscribeCollection, \
-    ParamsOfFindLastShardBlock, ResultOfFindLastShardBlock
+    ParamsOfFindLastShardBlock, ResultOfFindLastShardBlock, EndpointsSet
 
 
 class TonNet(TonModule):
@@ -91,3 +91,19 @@ class TonNet(TonModule):
         :return: See `types.ResultOfFindLastShardBlock`
         """
         return self.request(method='net.find_last_shard_block', **params.dict)
+
+    @result_as(classname=EndpointsSet)
+    def fetch_endpoints(self) -> EndpointsSet:
+        """
+        Requests the list of alternative endpoints from server
+        :return: See `types.EndpointsSet`
+        """
+        return self.request(method='net.fetch_endpoints')
+
+    def set_endpoints(self, params: EndpointsSet):
+        """
+        Sets the list of endpoints to use on re-init
+        :param params: See `types.EndpointsSet`
+        :return:
+        """
+        return self.request(method='net.set_endpoints', **params.dict)
