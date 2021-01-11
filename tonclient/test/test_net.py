@@ -220,5 +220,5 @@ class TestTonNetSyncCore(unittest.TestCase):
         with self.assertRaises(TonException):
             q_params = ParamsOfWaitForCollection(
                 collection='transactions', filter={'now': {'gt': now}},
-                result='id now', timeout=1)
+                result='')
             sync_core_client.net.wait_for_collection(params=q_params)

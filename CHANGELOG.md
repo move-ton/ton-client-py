@@ -1,3 +1,8 @@
+## Version 1.5.2.0
+  * Binaries updated to `1.5.2`;
+  * `net` module functions wait for `net.resume` call instead of returning error if 
+    called while the module is suspended.
+
 ## Version 1.5.1.0
   * Binaries updated to `1.5.1`.  
     See https://github.com/tonlabs/TON-SDK/blob/master/CHANGELOG.md for details.
