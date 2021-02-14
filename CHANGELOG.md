@@ -1,3 +1,11 @@
+## Version 1.8.0.0
+  * Binaries updated to `1.8.0`;
+  * Changes `1.6.0` (https://github.com/tonlabs/TON-SDK/blob/master/CHANGELOG.md#160-jan-29-2021)
+  * Changes `1.6.2` (https://github.com/tonlabs/TON-SDK/blob/master/CHANGELOG.md#162-feb-3-2021)
+  * Changes `1.6.3` (https://github.com/tonlabs/TON-SDK/blob/master/CHANGELOG.md#163-feb-4-2021)
+  * Changes `1.7.0` (https://github.com/tonlabs/TON-SDK/blob/master/CHANGELOG.md#170-feb-9-2021)
+  * Changes `1.8.0` (https://github.com/tonlabs/TON-SDK/blob/master/CHANGELOG.md#180-feb-11-2021)
+
 ## Version 1.5.2.0
   * Binaries updated to `1.5.2`;
   * `net` module functions wait for `net.resume` call instead of returning error if 

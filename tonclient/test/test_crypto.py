@@ -17,7 +17,8 @@ from tonclient.types import KeyPair, MnemonicDictionary, ParamsOfHash, \
     ParamsOfNaclBox, ParamsOfNaclBoxOpen, ParamsOfNaclSecretBox, \
     ParamsOfNaclSecretBoxOpen, ParamsOfScrypt, ParamsOfChaCha20, \
     ParamsOfSigningBoxSign, ParamsOfAppRequest, ParamsOfAppSigningBox, \
-    ParamsOfResolveAppRequest, ResultOfAppSigningBox, AppRequestResult
+    ParamsOfResolveAppRequest, ResultOfAppSigningBox, AppRequestResult, \
+    ParamsOfNaclSignDetachedVerify
 
 
 class TestTonCryptoAsyncCore(unittest.TestCase):
@@ -79,7 +80,7 @@ class TestTonCryptoAsyncCore(unittest.TestCase):
         params = ParamsOfHDKeyPublicFromXPrv(xprv=self.master_xprv)
         result = async_core_client.crypto.hdkey_public_from_xprv(params=params)
         self.assertEqual(
-            '02a8eb63085f73c33fa31b4d1134259406347284f8dab6fc68f4bf8c96f6c39b75',
+            '7b70008d0c40992283d488b1046739cf827afeabf647a5f07c4ad1e7e45a6f89',
             result.public)
 
     def test_hdkey_derive_from_xprv(self):
@@ -378,6 +379,14 @@ class TestTonCryptoAsyncCore(unittest.TestCase):
         self.assertEqual(
             'fb0cfe40eea5d6c960652e6ceb904da8a72ee2fcf6e05089cf835203179ff65bb48c57ecf31dcfcd26510bea67e64f3e6898b7c58300dc14338254268cade103',
             result.signature)
+
+        # Nacl sign detached verify signature
+        params = ParamsOfNaclSignDetachedVerify(
+            unsigned=unsigned, signature=result.signature,
+            public='1869b7ef29d58026217e9cf163cbfbd0de889bdf1bf4daebf5433a312f5b8d6e')
+        result = async_core_client.crypto.nacl_sign_detached_verify(
+            params=params)
+        self.assertEqual(True, result.succeeded)
 
         with self.assertRaises(TonException):
             params.secret = '0=='

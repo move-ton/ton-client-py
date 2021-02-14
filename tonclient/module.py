@@ -4,14 +4,14 @@ import os
 
 import json
 from concurrent.futures import Future
-from typing import Any, Dict, Union, Callable
+from typing import Any, Dict, Union
 
 from tonclient.bindings.lib import tc_request, tc_request_sync, \
     tc_read_string, tc_destroy_string
 from tonclient.bindings.types import TCStringData, TCResponseHandler, \
     TCResponseType, TCSyncResponseData
 from tonclient.errors import TonException
-from tonclient.types import ClientError
+from tonclient.types import ClientError, ResponseHandler
 
 
 class TonModule(object):
@@ -26,7 +26,7 @@ class TonModule(object):
         self._client = client
 
     def request(
-            self, method: str, callback: Callable = None,
+            self, method: str, callback: ResponseHandler = None,
             params_or_str: Union[str, Dict[str, Any]] = None, **kwargs) -> Any:
         """ Perform core request """
         # Prepare request params
@@ -62,7 +62,8 @@ class TonModule(object):
         return result
 
     def _async_core_request(
-            self, method: str, request_params: str, callback: Callable) -> Any:
+            self, method: str, request_params: str, callback: ResponseHandler
+    ) -> Any:
         """ Perform core asynchronous request """
         # Generate request id
         request_id = self._generate_request_id()
@@ -90,7 +91,7 @@ class TonModule(object):
         return future.result()
 
     async def _async_core_request_future(
-            self, method: str, request_params: str, callback: Callable
+            self, method: str, request_params: str, callback: ResponseHandler
     ) -> Any:
         """ Perform core asynchronous request """
         # Generate request id

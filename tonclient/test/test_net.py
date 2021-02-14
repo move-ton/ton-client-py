@@ -1,6 +1,7 @@
 import base64
 import os
 import time
+import logging
 from datetime import datetime
 
 import unittest
@@ -14,7 +15,8 @@ from tonclient.types import ParamsOfQueryCollection, OrderBy, SortDirection, \
     ParamsOfWaitForCollection, ParamsOfQuery, ParamsOfSubscribeCollection, \
     SubscriptionResponseType, ResultOfSubscription, ClientError, Abi, \
     ParamsOfEncodeMessage, Signer, DeploySet, CallSet, ParamsOfProcessMessage, \
-    ClientConfig, ParamsOfFindLastShardBlock
+    ClientConfig, ParamsOfFindLastShardBlock, ParamsOfAggregateCollection, \
+    FieldAggregation, AggregationFn, ParamsOfBatchQuery, ParamsOfQueryOperation
 
 
 class TestTonNetAsyncCore(unittest.TestCase):
@@ -110,7 +112,7 @@ class TestTonNetAsyncCore(unittest.TestCase):
                 transactions.append(result.result)
                 self.assertEqual(encode.address, result.result['account_addr'])
             if response_type == SubscriptionResponseType.ERROR:
-                raise TonException(error=ClientError(**response_data))
+                logging.info(ClientError(**response_data).__str__())
 
         subscribe_params = ParamsOfSubscribeCollection(
             collection='transactions', result='id account_addr',
@@ -182,6 +184,41 @@ class TestTonNetAsyncCore(unittest.TestCase):
         # Fetch/set endpoints
         endpoint_set = client.net.fetch_endpoints()
         client.net.set_endpoints(params=endpoint_set)
+
+    def test_aggregate_collection(self):
+        fields = [
+            FieldAggregation(field='', fn=AggregationFn.COUNT)
+        ]
+        params = ParamsOfAggregateCollection(
+            collection='accounts', fields=fields)
+        result = async_core_client.net.aggregate_collection(params=params)
+        count = int(result.values[0])
+        self.assertGreater(count, 0)
+
+        params.filter = {'workchain_id': {'eq': -1}}
+        result = async_core_client.net.aggregate_collection(params=params)
+        count = int(result.values[0])
+        self.assertGreater(count, 0)
+
+    def test_batch_query(self):
+        operations = [
+            ParamsOfQueryOperation.QueryCollection(
+                params=ParamsOfQueryCollection(
+                    collection='blocks_signatures', result='id', limit=1)),
+            ParamsOfQueryOperation.AggregateCollection(
+                params=ParamsOfAggregateCollection(
+                    collection='accounts',
+                    fields=[
+                        FieldAggregation(field='', fn=AggregationFn.COUNT)
+                    ])),
+            ParamsOfQueryOperation.WaitForCollection(
+                params=ParamsOfWaitForCollection(
+                    collection='transactions', filter={'now': {'gt': 20}},
+                    result='id now'))
+        ]
+        params = ParamsOfBatchQuery(operations=operations)
+        result = async_core_client.net.batch_query(params=params)
+        self.assertEqual(3, len(result.results))
 
 
 class TestTonNetSyncCore(unittest.TestCase):

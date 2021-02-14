@@ -3,7 +3,9 @@ from tonclient.module import TonModule
 from tonclient.types import ParamsOfParse, ResultOfParse, \
     ParamsOfParseShardstate, ParamsOfGetBocHash, ResultOfGetBocHash, \
     ParamsOfGetBlockchainConfig, ResultOfGetBlockchainConfig, \
-    ParamsOfGetCodeFromTvc, ResultOfGetCodeFromTvc
+    ParamsOfGetCodeFromTvc, ResultOfGetCodeFromTvc, ParamsOfBocCacheGet, \
+    ResultOfBocCacheGet, ParamsOfBocCacheSet, ResultOfBocCacheSet, \
+    ParamsOfBocCacheUnpin
 
 
 class TonBoc(TonModule):
@@ -88,3 +90,30 @@ class TonBoc(TonModule):
         :return: See `types.ResultOfGetCodeFromTvc`
         """
         return self.request(method='boc.get_code_from_tvc', **params.dict)
+
+    @result_as(classname=ResultOfBocCacheGet)
+    def cache_get(self, params: ParamsOfBocCacheGet) -> ResultOfBocCacheGet:
+        """
+        Get BOC from cache
+        :param params: See `types.ParamsOfBocCacheGet`
+        :return: See `types.ResultOfBocCacheGet`
+        """
+        return self.request(method='boc.cache_get', **params.dict)
+
+    @result_as(classname=ResultOfBocCacheSet)
+    def cache_set(self, params: ParamsOfBocCacheSet) -> ResultOfBocCacheSet:
+        """
+        Save BOC into cache
+        :param params: See `types.ParamsOfBocCacheSet`
+        :return: See `types.ResultOfBocCacheSet`
+        """
+        return self.request(method='boc.cache_set', **params.dict)
+
+    def cache_unpin(self, params: ParamsOfBocCacheUnpin):
+        """
+        Unpin BOCs with specified pin.
+        BOCs which don't have another pins will be removed from cache
+        :param params: See `types.ParamsOfBocCacheUnpin`
+        :return:
+        """
+        return self.request(method='boc.cache_unpin', **params.dict)

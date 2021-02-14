@@ -186,7 +186,7 @@ class TestTonClientAsync(unittest.TestCase):
             message = 'te6ccgEBAQEAXAAAs0gAV2lB0HI8/VEO/pBKDJJJeoOcIh+dL9JzpmRzM8PfdicAPGNEGwRWGaJsR6UYmnsFVC2llSo1ZZN5mgUnCiHf7ZaUBKgXyAAGFFhgAAAB69+UmQS/LjmiQA=='
             run_params = ParamsOfRunExecutor(
                 message=message, account=AccountForExecutor.NoAccount(),
-                skip_transaction_check=True)
+                skip_transaction_check=True, return_updated_account=True)
             result = await self.client.tvm.run_executor(params=run_params)
 
             parse_params = ParamsOfParse(boc=result.account)

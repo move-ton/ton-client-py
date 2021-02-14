@@ -1,9 +1,7 @@
-from typing import Callable
-
 from tonclient.decorators import result_as
 from tonclient.module import TonModule
 from tonclient.types import ParamsOfStart, RegisteredDebot, ParamsOfFetch, \
-    ParamsOfExecute
+    ParamsOfExecute, ParamsOfSend, ResponseHandler
 
 
 class TonDebot(TonModule):
@@ -11,7 +9,7 @@ class TonDebot(TonModule):
     @result_as(classname=RegisteredDebot)
     def start(
             self, params: ParamsOfStart,
-            callback: Callable) -> RegisteredDebot:
+            callback: ResponseHandler) -> RegisteredDebot:
         """
         Starts an instance of debot.
         Downloads debot smart contract from blockchain and switches it to
@@ -32,7 +30,7 @@ class TonDebot(TonModule):
     @result_as(classname=RegisteredDebot)
     def fetch(
             self, params: ParamsOfFetch,
-            callback: Callable) -> RegisteredDebot:
+            callback: ResponseHandler) -> RegisteredDebot:
         """
         Fetches debot from blockchain.
         Downloads debot smart contract (code and data) from blockchain and
@@ -59,6 +57,16 @@ class TonDebot(TonModule):
         :return:
         """
         return self.request(method='debot.execute', **params.dict)
+
+    def send(self, params: ParamsOfSend):
+        """
+        Sends message to Debot.
+        Used by Debot Browser to send response on DInterface call or from
+        other Debots
+        :param params: See `types.ParamsOfSend`
+        :return:
+        """
+        return self.request(method='debot.send', **params.dict)
 
     def remove(self, params: RegisteredDebot):
         """

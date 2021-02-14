@@ -5,7 +5,8 @@ from tonclient.types import ParamsOfEncodeMessageBody, DecodedMessageBody, \
     ResultOfAttachSignatureToMessageBody, ParamsOfEncodeMessage, \
     ResultOfEncodeMessage, ParamsOfAttachSignature, ResultOfAttachSignature, \
     ParamsOfDecodeMessage, ParamsOfDecodeMessageBody, ParamsOfEncodeAccount, \
-    ResultOfEncodeAccount
+    ResultOfEncodeAccount, ParamsOfEncodeInternalMessage, \
+    ResultOfEncodeInternalMessage
 
 
 class TonAbi(TonModule):
@@ -108,3 +109,27 @@ class TonAbi(TonModule):
         """
         return self.request(
             method='abi.attach_signature_to_message_body', **params.dict)
+
+    @result_as(classname=ResultOfEncodeInternalMessage)
+    def encode_internal_message(
+            self, params: ParamsOfEncodeInternalMessage
+    ) -> ResultOfEncodeInternalMessage:
+        """
+        Encodes an internal ABI-compatible message.
+        Allows to encode deploy and function call messages.
+        Use cases include messages of any possible type:
+          - deploy with initial function call (i.e. constructor or any other
+            function that is used for some kind of initialization);
+          - deploy without initial function call;
+          - simple function call
+
+        There is an optional public key can be provided in deploy set in
+        order to substitute one in TVM file.
+        Public key resolving priority:
+          - public key from deploy set;
+          - public key, specified in TVM file
+        :param params: See `types.ParamsOfEncodeInternalMessage`
+        :return: See `types.ResultOfEncodeInternalMessage`
+        """
+        return self.request(
+            method='abi.encode_internal_message', **params.dict)

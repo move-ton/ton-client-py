@@ -110,23 +110,24 @@ client_sync_core = TonClient(config=ClientConfig(), is_core_async=False)
 
 Client is created with default config
 ```python
-from tonclient.types import NetworkConfig, CryptoConfig, AbiConfig, ClientConfig
+from tonclient.types import NetworkConfig, CryptoConfig, AbiConfig, BocConfig, ClientConfig
 
 
 # Default network config is below.
 # `None` attributes are filled by core with defaults values: 
 #     `endpoints=[]`
-#     `network_retries_count=5` 
+#     `network_retries_count=5` (DEPRECATED)
 #     `message_retries_count=5`
+#     `max_reconnect_timeout=120000`
 #     `message_processing_timeout=40000`
 #     `wait_for_timeout=40000`
 #     `out_of_sync_threshold=15000`
-#     `reconnect_timeout=`
+#     `reconnect_timeout=` (DEPRECATED)
 #     `access_key=''`
 network = NetworkConfig(
     server_address='http://localhost', endpoints=None, network_retries_count=None, 
     message_retries_count=None, message_processing_timeout=None, reconnect_timeout=None,
-    wait_for_timeout=None, out_of_sync_threshold=None, access_key=None)
+    wait_for_timeout=None, out_of_sync_threshold=None, access_key=None, max_reconnect_timeout=None)
 
 # Default crypto config is below.
 # `None` attributes are filled by core with defaults values: 
@@ -145,8 +146,13 @@ abi = AbiConfig(
     workchain=None, message_expiration_timeout=None, 
     message_expiration_timeout_grow_factor=None)
 
+# Default boc config is below.
+# `None` attributes are filled by core with defaults values: 
+#     `cache_max_size=10000` (10MB)
+boc = BocConfig(cache_max_size=None)
+
 # Then `ClientConfig` is created
-config = ClientConfig(network=network, crypto=crypto, abi=abi)
+config = ClientConfig(network=network, crypto=crypto, abi=abi, boc=boc)
 ```
 
 You can override initial config while creating a client

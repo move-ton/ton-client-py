@@ -1,12 +1,12 @@
-from typing import Callable
-
 from tonclient.decorators import result_as
 from tonclient.module import TonModule
 from tonclient.types import ParamsOfQuery, ResultOfQuery, \
     ParamsOfQueryCollection, ResultOfQueryCollection, \
     ParamsOfWaitForCollection, ResultOfWaitForCollection, \
     ResultOfSubscribeCollection, ParamsOfSubscribeCollection, \
-    ParamsOfFindLastShardBlock, ResultOfFindLastShardBlock, EndpointsSet
+    ParamsOfFindLastShardBlock, ResultOfFindLastShardBlock, EndpointsSet, \
+    ParamsOfAggregateCollection, ResultOfAggregateCollection, \
+    ParamsOfBatchQuery, ResultOfBatchQuery, ResponseHandler
 
 
 class TonNet(TonModule):
@@ -43,7 +43,7 @@ class TonNet(TonModule):
     @result_as(classname=ResultOfSubscribeCollection)
     def subscribe_collection(
             self, params: ParamsOfSubscribeCollection,
-            callback: Callable = None
+            callback: ResponseHandler = None
     ) -> ResultOfSubscribeCollection:
         """
         Creates a subscription.
@@ -107,3 +107,25 @@ class TonNet(TonModule):
         :return:
         """
         return self.request(method='net.set_endpoints', **params.dict)
+
+    @result_as(classname=ResultOfAggregateCollection)
+    def aggregate_collection(
+            self, params: ParamsOfAggregateCollection
+    ) -> ResultOfAggregateCollection:
+        """
+        Aggregates collection data.
+        Aggregates values from the specified `fields` for records that
+        satisfies the `filter` conditions
+        :param params: See `types.ParamsOfAggregateCollection`
+        :return: See `types.ResultOfAggregateCollection`
+        """
+        return self.request(method='net.aggregate_collection', **params.dict)
+
+    @result_as(classname=ResultOfBatchQuery)
+    def batch_query(self, params: ParamsOfBatchQuery) -> ResultOfBatchQuery:
+        """
+        Performs multiple queries per single fetch
+        :param params: See `types.ParamsOfBatchQuery`
+        :return: See `types.ResultOfBatchQuery`
+        """
+        return self.request(method='net.batch_query', **params.dict)

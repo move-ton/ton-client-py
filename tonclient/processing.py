@@ -1,17 +1,16 @@
-from typing import Callable
-
 from tonclient.decorators import result_as
 from tonclient.module import TonModule
 from tonclient.types import ParamsOfSendMessage, ResultOfSendMessage, \
-    ParamsOfWaitForTransaction, ResultOfProcessMessage, ParamsOfProcessMessage
+    ParamsOfWaitForTransaction, ResultOfProcessMessage, ResponseHandler, \
+    ParamsOfProcessMessage
 
 
 class TonProcessing(TonModule):
     """ Free TON processing SDK API implementation """
     @result_as(classname=ResultOfProcessMessage)
     def process_message(
-            self, params: ParamsOfProcessMessage, callback: Callable = None
-    ) -> ResultOfProcessMessage:
+            self, params: ParamsOfProcessMessage,
+            callback: ResponseHandler = None) -> ResultOfProcessMessage:
         """
         Creates message, sends it to the network and monitors its processing.
         Creates ABI-compatible message, sends it to the network and monitors
@@ -39,7 +38,7 @@ class TonProcessing(TonModule):
 
     @result_as(classname=ResultOfSendMessage)
     def send_message(
-            self, params: ParamsOfSendMessage, callback: Callable = None
+            self, params: ParamsOfSendMessage, callback: ResponseHandler = None
     ) -> ResultOfSendMessage:
         """
         Sends message to the network.
@@ -56,7 +55,7 @@ class TonProcessing(TonModule):
     @result_as(classname=ResultOfProcessMessage)
     def wait_for_transaction(
             self, params: ParamsOfWaitForTransaction,
-            callback: Callable = None) -> ResultOfProcessMessage:
+            callback: ResponseHandler = None) -> ResultOfProcessMessage:
         """
         Performs monitoring of the network for the result transaction of the
         external inbound message processing.

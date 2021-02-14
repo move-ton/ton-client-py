@@ -9,7 +9,8 @@ from tonclient.types import Abi, KeyPair, DeploySet, CallSet, Signer, \
     MessageSource, StateInitSource, FunctionHeader, ParamsOfEncodeMessageBody, \
     ParamsOfDecodeMessage, MessageBodyType, ParamsOfParse, \
     ParamsOfDecodeMessageBody, ParamsOfEncodeMessage, ParamsOfSign, \
-    ParamsOfAttachSignature, ParamsOfEncodeAccount
+    ParamsOfAttachSignature, ParamsOfEncodeAccount, \
+    ParamsOfEncodeInternalMessage, ParamsOfGetBocHash, ParamsOfGetCodeFromTvc
 
 
 class TestTonAbiAsyncCore(unittest.TestCase):
@@ -250,6 +251,55 @@ class TestTonAbiAsyncCore(unittest.TestCase):
         self.assertEqual(
             '05beb555e942fa744fd96f45a9ea9d0a8248208ca12421947c06e59bc997d309',
             encoded.id)
+
+    def test_encode_internal_message_run(self):
+        address = '0:1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef'
+        abi = Abi.from_path(path=os.path.join(SAMPLES_DIR, 'Hello.abi.json'))
+
+        result = async_core_client.abi.encode_internal_message(
+            params=ParamsOfEncodeInternalMessage(
+                abi=abi, value='1000000000', address=address,
+                call_set=CallSet(function_name='sayHello'), bounce=True))
+        self.assertEqual(address, result.address)
+        self.assertEqual(
+            'te6ccgEBAQEAOgAAcGIACRorPEhV5veJGis8SFXm94kaKzxIVeb3iRorPEhV5veh3NZQAAAAAAAAAAAAAAAAAABQy+0X',
+            result.message)
+
+        boc_hash = async_core_client.boc.get_boc_hash(
+            params=ParamsOfGetBocHash(boc=result.message))
+        self.assertEqual(result.message_id, boc_hash.hash)
+
+        parsed = async_core_client.boc.parse_message(
+            params=ParamsOfParse(boc=result.message))
+        self.assertEqual('internal', parsed.parsed['msg_type_name'])
+        self.assertEqual('', parsed.parsed['src'])
+        self.assertEqual(address, parsed.parsed['dst'])
+        self.assertEqual('0x3b9aca00', parsed.parsed['value'])
+        self.assertEqual(True, parsed.parsed['bounce'])
+        self.assertEqual(True, parsed.parsed['ihr_disabled'])
+
+    def test_encode_internal_message_deploy(self):
+        abi = Abi.from_path(path=os.path.join(SAMPLES_DIR, 'Hello.abi.json'))
+        with open(os.path.join(SAMPLES_DIR, 'Hello.tvc'), 'rb') as fp:
+            tvc = base64.b64encode(fp.read()).decode()
+
+        result = async_core_client.abi.encode_internal_message(
+            params=ParamsOfEncodeInternalMessage(
+                abi=abi, value='0', deploy_set=DeploySet(tvc=tvc),
+                call_set=CallSet(function_name='constructor')))
+        self.assertEqual(
+            'te6ccgECHAEABG0AAmliADYO5IoxskLmUfURre2fOB04OmP32VjPwA/lDM/Cpvh8AAAAAAAAAAAAAAAAAAIxotV8/gYBAQHAAgIDzyAFAwEB3gQAA9AgAEHYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQCJv8A9KQgIsABkvSg4YrtU1gw9KEJBwEK9KQg9KEIAAACASAMCgHo/38h0wABjiaBAgDXGCD5AQFw7UTQ9AWAQPQO8orXC/8B7Ucib3XtVwMB+RDyqN7tRNAg10nCAY4W9ATTP9MA7UcBb3EBb3YBb3MBb3LtV44Y9AXtRwFvcnBvc3BvdsiAIM9AydBvce1X4tM/Ae1HbxMhuSALAGCfMCD4I4ED6KiCCBt3QKC53pntRyFvUyDtVzCUgDTy8OIw0x8B+CO88rnTHwHxQAECASAYDQIBIBEOAQm6i1Xz+A8B+u1Hb2FujjvtRNAg10nCAY4W9ATTP9MA7UcBb3EBb3YBb3MBb3LtV44Y9AXtRwFvcnBvc3BvdsiAIM9AydBvce1X4t7tR28WkvIzl+1HcW9W7VfiAPgA0fgjtR/tRyBvETAByMsfydBvUe1X7UdvEsj0AO1HbxPPCz/tR28WEAAczwsA7UdvEc8Wye1UcGoCAWoVEgEJtAAa1sATAfztR29hbo477UTQINdJwgGOFvQE0z/TAO1HAW9xAW92AW9zAW9y7VeOGPQF7UcBb3Jwb3Nwb3bIgCDPQMnQb3HtV+Le7UdvZSBukjBw3nDtR28SgED0DvKK1wv/uvLgZPgA+kDRIMjJ+wSBA+hwgQCAyHHPCwEizwoAcc9A+CgUAI7PFiTPFiP6AnHPQHD6AnD6AoBAz0D4I88LH3LPQCDJIvsAXwUw7UdvEsj0AO1HbxPPCz/tR28WzwsA7UdvEc8Wye1UcGrbMAEJtGX2i8AWAfjtR29hbo477UTQINdJwgGOFvQE0z/TAO1HAW9xAW92AW9zAW9y7VeOGPQF7UcBb3Jwb3Nwb3bIgCDPQMnQb3HtV+Le0e1HbxHXCx/IghBQy+0XghCAAAAAsc8LHyHPCx/Ic88LAfgozxZyz0D4Jc8LP4Ahz0AgzzUizzG8FwB4lnHPQCHPF5Vxz0EhzeIgyXH7AFshwP+OHu1HbxLI9ADtR28Tzws/7UdvFs8LAO1HbxHPFsntVN5xatswAgEgGxkBCbtzEuRYGgD47UdvYW6OO+1E0CDXScIBjhb0BNM/0wDtRwFvcQFvdgFvcwFvcu1Xjhj0Be1HAW9ycG9zcG92yIAgz0DJ0G9x7Vfi3vgA0fgjtR/tRyBvETAByMsfydBvUe1X7UdvEsj0AO1HbxPPCz/tR28WzwsA7UdvEc8Wye1UcGrbMADK3XAh10kgwSCOKyDAAI4cI9Bz1yHXCwAgwAGW2zBfB9swltswXwfbMOME2ZbbMF8G2zDjBNngItMfNCB0uyCOFTAgghD/////uiCZMCCCEP////6639+W2zBfB9sw4CMh8UABXwc=',
+            result.message)
+
+        boc_hash = async_core_client.boc.get_boc_hash(
+            params=ParamsOfGetBocHash(boc=result.message))
+        self.assertEqual(result.message_id, boc_hash.hash)
+
+        parsed = async_core_client.boc.parse_message(
+            params=ParamsOfParse(boc=result.message))
+        code = async_core_client.boc.get_code_from_tvc(
+            params=ParamsOfGetCodeFromTvc(tvc=tvc))
+        self.assertEqual(code.code, parsed.parsed['code'])
 
 
 class TestTonAbiSyncCore(unittest.TestCase):

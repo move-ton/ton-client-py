@@ -1,7 +1,8 @@
 import json
+from asyncio.selector_events import BaseSelectorEventLoop
 from enum import Enum
 from io import StringIO
-from typing import Dict, Union, Any, List
+from typing import Dict, Union, Any, List, Callable
 
 
 class BaseTypedType(object):
@@ -18,6 +19,10 @@ class BaseTypedType(object):
     @property
     def dict(self):
         return {'type': self.type}
+
+
+ResponseHandler = Callable[
+    [Any, int, Union[BaseSelectorEventLoop, None]], None]
 
 
 # CLIENT module
@@ -74,43 +79,52 @@ class ClientError(object):
 
 class ClientConfig(object):
     def __init__(
-            self, network: 'NetworkConfig' = None,
+            self, network: 'NetworkConfig' = None, boc: 'BocConfig' = None,
             crypto: 'CryptoConfig' = None, abi: 'AbiConfig' = None):
         """
         :param network:
         :param crypto:
         :param abi:
+        :param boc:
         """
         network = network or NetworkConfig(server_address='http://localhost')
         self.network = network
         self.crypto = crypto or CryptoConfig()
         self.abi = abi or AbiConfig()
+        self.boc = boc or BocConfig()
 
     @property
     def dict(self):
         return {
             'network': self.network.dict,
             'crypto': self.crypto.dict,
-            'abi': self.abi.dict
+            'abi': self.abi.dict,
+            'boc': self.boc.dict
         }
 
 
 class NetworkConfig(object):
     def __init__(
-            self, server_address: str, network_retries_count: int = None,
-            message_retries_count: int = None, endpoints: List[str] = None,
+            self, server_address: str, endpoints: List[str] = None,
+            network_retries_count: int = None, reconnect_timeout: int = None,
+            max_reconnect_timeout: int = None,
+            message_retries_count: int = None,
             message_processing_timeout: int = None,
             wait_for_timeout: int = None, out_of_sync_threshold: int = None,
-            reconnect_timeout: int = None, access_key: str = None):
+            access_key: str = None):
         """
         :param server_address: DApp Server public address. For instance,
                 for `net.ton.dev/graphql` GraphQL endpoint the server
                 address will be net.ton.dev
         :param endpoints: List of DApp Server addresses. Any correct URL
                 format can be specified, including IP addresses
-        :param network_retries_count: The number of automatic network retries
-                that SDK performs in case of connection problems. The default
-                value is 5
+        :param network_retries_count: (DEPRECATED) The number of automatic
+                network retries that SDK performs in case of connection
+                problems. The default value is 5
+        :param reconnect_timeout: (DEPRECATED) Timeout between reconnect
+                attempts
+        :param max_reconnect_timeout: Maximum time for sequential reconnections
+                in ms. Default value is 120000 (2 min)
         :param message_retries_count: The number of automatic message
                 processing retries that SDK performs in case of
                 `Message Expired (507)` error - but only for those messages
@@ -128,13 +142,13 @@ class NetworkConfig(object):
                 Also the error will occur if the specified threshold is more
                 than `message_processing_timeout / 2`.
                 The default value is 15 sec
-        :param reconnect_timeout: Timeout between reconnect attempts
         :param access_key: Access key to GraphQL API. At the moment is not
                 used in production
         """
         self.server_address = server_address
         self.endpoints = endpoints
         self.network_retries_count = network_retries_count
+        self.max_reconnect_timeout = max_reconnect_timeout
         self.message_retries_count = message_retries_count
         self.message_processing_timeout = message_processing_timeout
         self.wait_for_timeout = wait_for_timeout
@@ -148,6 +162,7 @@ class NetworkConfig(object):
             'server_address': self.server_address,
             'endpoints': self.endpoints,
             'network_retries_count': self.network_retries_count,
+            'max_reconnect_timeout': self.max_reconnect_timeout,
             'message_retries_count': self.message_retries_count,
             'message_processing_timeout': self.message_processing_timeout,
             'wait_for_timeout': self.wait_for_timeout,
@@ -211,6 +226,19 @@ class AbiConfig(object):
             'message_expiration_timeout_grow_factor':
                 self.message_expiration_timeout_grow_factor
         }
+
+
+class BocConfig(object):
+    def __init__(self, cache_max_size: int = None):
+        """
+        :param cache_max_size: Maximum BOC cache size in kilobytes.
+                Default is 10 MB
+        """
+        self.cache_max_size = cache_max_size
+
+    @property
+    def dict(self):
+        return {'cache_max_size': self.cache_max_size}
 
 
 class BuildInfoDependency(object):
@@ -334,12 +362,11 @@ class AbiErrorCode(int, Enum):
 
 class Abi:
     class Contract(BaseTypedType):
-        def __init__(self, value: 'AbiContract', type: str = 'Contract'):
+        def __init__(self, value: 'AbiContract'):
             """
             :param value:
-            :param type:
             """
-            super(Abi.Contract, self).__init__(type=type)
+            super(Abi.Contract, self).__init__(type='Contract')
             self.value = value
 
         @property
@@ -347,12 +374,11 @@ class Abi:
             return {**super(Abi.Contract, self).dict, 'value': self.value.dict}
 
     class Json(BaseTypedType):
-        def __init__(self, value: str, type: str = 'Json'):
+        def __init__(self, value: str):
             """
             :param value:
-            :param type:
             """
-            super(Abi.Json, self).__init__(type=type)
+            super(Abi.Json, self).__init__(type='Json')
             self.value = value
 
         @property
@@ -360,12 +386,11 @@ class Abi:
             return {**super(Abi.Json, self).dict, 'value': self.value}
 
     class Handle(BaseTypedType):
-        def __init__(self, value: 'AbiHandle', type: str = 'Handle'):
+        def __init__(self, value: 'AbiHandle'):
             """
             :param value:
-            :param type:
             """
-            super(Abi.Handle, self).__init__(type=type)
+            super(Abi.Handle, self).__init__(type='Handle')
             self.value = value
 
         @property
@@ -373,12 +398,11 @@ class Abi:
             return {**super(Abi.Handle, self).dict, 'value': self.value}
 
     class Serialized(BaseTypedType):
-        def __init__(self, value: 'AbiContract', type: str = 'Contract'):
+        def __init__(self, value: 'AbiContract'):
             """
             :param value:
-            :param type:
             """
-            super(Abi.Serialized, self).__init__(type=type)
+            super(Abi.Serialized, self).__init__(type='Contract')
             self.value = value
 
         @property
@@ -576,47 +600,53 @@ class CallSet(object):
 class DeploySet(object):
     def __init__(
             self, tvc: str, workchain_id: int = None,
-            initial_data: List[Dict[str, Any]] = None):
+            initial_data: List[Dict[str, Any]] = None,
+            initial_pubkey: str = None):
         """
         :param tvc: Content of TVC file encoded in `base64`
         :param workchain_id: Target workchain for destination address.
                 Default is 0
         :param initial_data: List of initial values for contract's public
                 variables
+        :param initial_pubkey: Optional public key that can be provided in
+                deploy set in order to substitute one in TVM file or provided
+                by Signer.
+                Public key resolving priority:
+                    1. Public key from deploy set;
+                    2. Public key, specified in TVM file;
+                    3. Public key, provided by Signer
         """
         self.tvc = tvc
         self.workchain_id = workchain_id
         self.initial_data = initial_data
+        self.initial_pubkey = initial_pubkey
 
     @property
     def dict(self):
         return {
             'tvc': self.tvc,
             'workchain_id': self.workchain_id,
-            'initial_data': self.initial_data
+            'initial_data': self.initial_data,
+            'initial_pubkey': self.initial_pubkey
         }
 
 
 class Signer:
     class NoSigner(BaseTypedType):
         """ No keys are provided. Creates an unsigned message """
-        def __init__(self, type: str = 'None'):
-            """
-            :param type:
-            """
-            super(Signer.NoSigner, self).__init__(type=type)
+        def __init__(self):
+            super(Signer.NoSigner, self).__init__(type='None')
 
     class External(BaseTypedType):
         """
         Only public key is provided in unprefixed hex string format to
         generate unsigned message and data_to_sign which can be signed later
         """
-        def __init__(self, public_key: str, type: str = 'External'):
+        def __init__(self, public_key: str):
             """
             :param public_key:
-            :param type:
             """
-            super(Signer.External, self).__init__(type=type)
+            super(Signer.External, self).__init__(type='External')
             self.public_key = public_key
 
         @property
@@ -628,12 +658,11 @@ class Signer:
 
     class Keys(BaseTypedType):
         """ Key pair is provided for signing """
-        def __init__(self, keys: 'KeyPair', type: str = 'Keys'):
+        def __init__(self, keys: 'KeyPair'):
             """
             :param keys:
-            :param type:
             """
-            super(Signer.Keys, self).__init__(type=type)
+            super(Signer.Keys, self).__init__(type='Keys')
             self.keys = keys
 
         @property
@@ -645,13 +674,11 @@ class Signer:
         Signing Box interface is provided for signing, allows DApps to sign
         messages using external APIs, such as HSM, cold wallet, etc.
         """
-        def __init__(
-                self, handle: 'SigningBoxHandle', type: str = 'SigningBox'):
+        def __init__(self, handle: 'SigningBoxHandle'):
             """
             :param handle:
-            :param type:
             """
-            super(Signer.SigningBox, self).__init__(type=type)
+            super(Signer.SigningBox, self).__init__(type='SigningBox')
             self.handle = handle
 
         @property
@@ -678,12 +705,11 @@ class MessageBodyType(str, Enum):
 class StateInitSource:
     class Message(BaseTypedType):
         """ Deploy message """
-        def __init__(self, source: 'MessageSourceType', type: str = 'Message'):
+        def __init__(self, source: 'MessageSourceType'):
             """
             :param source:
-            :param type:
             """
-            super(StateInitSource.Message, self).__init__(type=type)
+            super(StateInitSource.Message, self).__init__(type='Message')
             self.source = source
 
         @property
@@ -695,16 +721,13 @@ class StateInitSource:
 
     class StateInit(BaseTypedType):
         """ State init data """
-        def __init__(
-                self, code: str, data: str, library: str = None,
-                type: str = 'StateInit'):
+        def __init__(self, code: str, data: str, library: str = None):
             """
             :param code: Code BOC. Encoded in `base64`
             :param data: Data BOC. Encoded in `base64`
             :param library: Library BOC. Encoded in `base64`
-            :param type:
             """
-            super(StateInitSource.StateInit, self).__init__(type=type)
+            super(StateInitSource.StateInit, self).__init__(type='StateInit')
             self.code = code
             self.data = data
             self.library = library
@@ -722,14 +745,13 @@ class StateInitSource:
         """ Content of the TVC file """
         def __init__(
                 self, tvc: str, public_key: str = None,
-                init_params: 'StateInitParams' = None, type: str = 'Tvc'):
+                init_params: 'StateInitParams' = None):
             """
             :param tvc: Content of the TVC file. Encoded in `base64`
             :param public_key:
             :param init_params:
-            :param type:
             """
-            super(StateInitSource.Tvc, self).__init__(type=type)
+            super(StateInitSource.Tvc, self).__init__(type='Tvc')
             self.tvc = tvc
             self.public_key = public_key
             self.init_params = init_params
@@ -763,15 +785,12 @@ class StateInitParams(object):
 
 class MessageSource:
     class Encoded(BaseTypedType):
-        def __init__(
-                self, message: str, abi: 'AbiType' = None,
-                type: str = 'Encoded'):
+        def __init__(self, message: str, abi: 'AbiType' = None):
             """
             :param message:
             :param abi:
-            :param type:
             """
-            super(MessageSource.Encoded, self).__init__(type=type)
+            super(MessageSource.Encoded, self).__init__(type='Encoded')
             self.message = message
             self.abi = abi
 
@@ -784,14 +803,12 @@ class MessageSource:
             }
 
     class EncodingParams(BaseTypedType):
-        def __init__(
-                self, params: 'ParamsOfEncodeMessage',
-                type: str = 'EncodingParams'):
+        def __init__(self, params: 'ParamsOfEncodeMessage'):
             """
             :param params:
-            :param type:
             """
-            super(MessageSource.EncodingParams, self).__init__(type=type)
+            super(MessageSource.EncodingParams, self).__init__(
+                type='EncodingParams')
             self.params = params
 
         @property
@@ -1075,12 +1092,72 @@ class ResultOfEncodeAccount(object):
         self.id = id
 
 
+class ParamsOfEncodeInternalMessage(object):
+    def __init__(
+            self, abi: 'AbiType', value: str, address: str = None,
+            deploy_set: 'DeploySet' = None, call_set: 'CallSet' = None,
+            bounce: bool = None, enable_ihr: bool = None):
+        """
+        :param abi: Contract ABI
+        :param value: Value in nanograms to be sent with message
+        :param address: Target address the message will be sent to. Must be
+                specified in case of non-deploy message
+        :param deploy_set: Deploy parameters. Must be specified in case of
+                deploy message
+        :param call_set: Function call parameters. Must be specified in case
+                of non-deploy message. In case of deploy message it is
+                optional and contains parameters of the functions that will
+                to be called upon deploy transaction
+        :param bounce: Flag of bounceable message. Default is true
+        :param enable_ihr: Enable Instant Hypercube Routing for the message.
+                Default is false
+        """
+        self.abi = abi
+        self.value = value
+        self.address = address
+        self.deploy_set = deploy_set
+        self.call_set = call_set
+        self.bounce = bounce
+        self.enable_ihr = enable_ihr
+
+    @property
+    def dict(self):
+        deploy_set = self.deploy_set.dict \
+            if self.deploy_set else self.deploy_set
+        call_set = self.call_set.dict if self.call_set else self.call_set
+
+        return {
+            'abi': self.abi.dict,
+            'value': self.value,
+            'address': self.address,
+            'deploy_set': deploy_set,
+            'call_set': call_set,
+            'bounce': self.bounce,
+            'enable_ihr': self.enable_ihr
+        }
+
+
+class ResultOfEncodeInternalMessage(object):
+    def __init__(self, message: str, address: str, message_id: str):
+        """
+        :param message: Message BOC encoded with `base64`
+        :param address: Destination address
+        :param message_id: Message id
+        """
+        self.message = message
+        self.address = address
+        self.message_id = message_id
+
+
 # BOC module
 class BocErrorCode(int, Enum):
     INVALID_BOC = 201
     SERIALIZATION_ERROR = 202
     INAPPROPRIATE_BLOCK = 203
     MISSING_SOURCE_BOC = 204
+    INSUFFICIENT_CACHE_SIZE = 205,
+    BOC_REF_NOT_FOUND = 206,
+    INVALID_BOC_REF = 207
 
 
 class ParamsOfParse(object):
@@ -1183,6 +1260,85 @@ class ResultOfGetCodeFromTvc(object):
         self.code = code
 
 
+class BocCacheType:
+    class Pinned(BaseTypedType):
+        def __init__(self, pin: str):
+            """
+            :param pin: Pin the BOC with `pin` name. Such BOC will not be
+                    removed from cache until it is unpinned
+            """
+            super(BocCacheType.Pinned, self).__init__(type='Pinned')
+            self.pin = pin
+
+        @property
+        def dict(self):
+            return {
+                **super(BocCacheType.Pinned, self).dict,
+                'pin': self.pin
+            }
+
+    class Unpinned(BaseTypedType):
+        def __init__(self):
+            super(BocCacheType.Unpinned, self).__init__(type='Unpinned')
+
+
+class ParamsOfBocCacheGet(object):
+    def __init__(self, boc_ref: str):
+        """
+        :param boc_ref: Reference to the cached BOC
+        """
+        self.boc_ref = boc_ref
+
+    @property
+    def dict(self):
+        return {'boc_ref': self.boc_ref}
+
+
+class ResultOfBocCacheGet(object):
+    def __init__(self, boc: str = None):
+        """
+        :param boc: BOC encoded as `base64`
+        """
+        self.boc = boc
+
+
+class ParamsOfBocCacheSet(object):
+    def __init__(self, boc: str, cache_type: 'BocCacheTypeType'):
+        """
+        :param boc: BOC encoded as `base64` or BOC reference
+        :param cache_type: Cache type
+        """
+        self.boc = boc
+        self.cache_type = cache_type
+
+    @property
+    def dict(self):
+        return {'boc': self.boc, 'cache_type': self.cache_type.dict}
+
+
+class ResultOfBocCacheSet(object):
+    def __init__(self, boc_ref: str):
+        """
+        :param boc_ref: Reference to the cached BOC
+        """
+        self.boc_ref = boc_ref
+
+
+class ParamsOfBocCacheUnpin(object):
+    def __init__(self, pin: str, boc_ref: str = None):
+        """
+        :param pin: Pinned name
+        :param boc_ref: Reference to the cached BOC. If it is provided then
+                only referenced BOC is unpinned
+        """
+        self.pin = pin
+        self.boc_ref = boc_ref
+
+    @property
+    def dict(self):
+        return {'pin': self.pin, 'boc_ref': self.boc_ref}
+
+
 # CRYPTO module
 SigningBoxHandle = int
 
@@ -1207,6 +1363,7 @@ class CryptoErrorCode(int, Enum):
     MNEMONIC_GENERATION_FAILED = 119
     MNEMONIC_FROM_ENTROPY_FAILED = 120
     SIGNING_BOX_NOT_REGISTERED = 121
+    INVALID_SIGNATURE = 122
 
 
 class MnemonicDictionary(int, Enum):
@@ -1971,20 +2128,17 @@ class RegisteredSigningBox(object):
 class ParamsOfAppSigningBox:
     class GetPublicKey(BaseTypedType):
         """ Get signing box public key """
-        def __init__(self, type: str = 'GetPublicKey'):
-            """
-            :param type:
-            """
-            super(ParamsOfAppSigningBox.GetPublicKey, self).__init__(type=type)
+        def __init__(self):
+            super(ParamsOfAppSigningBox.GetPublicKey, self).__init__(
+                type='GetPublicKey')
 
     class Sign(BaseTypedType):
         """ Sign data """
-        def __init__(self, unsigned: str, type: str = 'Sign'):
+        def __init__(self, unsigned: str):
             """
             :param unsigned: Data to sign encoded as `base64`
-            :param type:
             """
-            super(ParamsOfAppSigningBox.Sign, self).__init__(type=type)
+            super(ParamsOfAppSigningBox.Sign, self).__init__(type='Sign')
             self.unsigned = unsigned
 
         @property
@@ -1996,18 +2150,19 @@ class ParamsOfAppSigningBox:
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> Union[GetPublicKey, Sign]:
-        return getattr(ParamsOfAppSigningBox, data['type'])(**data)
+        kwargs = {k: v for k, v in data.items() if k != 'type'}
+        return getattr(ParamsOfAppSigningBox, data['type'])(**kwargs)
 
 
 class ResultOfAppSigningBox:
     class GetPublicKey(BaseTypedType):
         """ Result of getting public key """
-        def __init__(self, public_key: str, type: str = 'GetPublicKey'):
+        def __init__(self, public_key: str):
             """
             :param public_key: Signing box public key
-            :param type:
             """
-            super(ResultOfAppSigningBox.GetPublicKey, self).__init__(type=type)
+            super(ResultOfAppSigningBox.GetPublicKey, self).__init__(
+                type='GetPublicKey')
             self.public_key = public_key
 
         @property
@@ -2019,12 +2174,11 @@ class ResultOfAppSigningBox:
 
     class Sign(BaseTypedType):
         """ Result of signing data """
-        def __init__(self, signature: str, type: str = 'Sign'):
+        def __init__(self, signature: str):
             """
             :param signature: Data signature encoded as `hex`
-            :param type:
             """
-            super(ResultOfAppSigningBox.Sign, self).__init__(type=type)
+            super(ResultOfAppSigningBox.Sign, self).__init__(type='Sign')
             self.signature = signature
 
         @property
@@ -2065,6 +2219,36 @@ class ResultOfSigningBoxSign(object):
         self.signature = signature
 
 
+class ParamsOfNaclSignDetachedVerify(object):
+    def __init__(self, unsigned: str, signature: str, public: str):
+        """
+        :param unsigned: Unsigned data that must be verified.
+                Encoded with `base64`
+        :param signature: Signature that must be verified. Encoded with `hex`
+        :param public: Signer's public key - unprefixed 0-padded to 64 symbols
+                `hex` string
+        """
+        self.unsigned = unsigned
+        self.signature = signature
+        self.public = public
+
+    @property
+    def dict(self):
+        return {
+            'unsigned': self.unsigned,
+            'signature': self.signature,
+            'public': self.public
+        }
+
+
+class ResultOfNaclSignDetachedVerify(object):
+    def __init__(self, succeeded: bool):
+        """
+        :param succeeded: true if verification succeeded or false if it failed
+        """
+        self.succeeded = succeeded
+
+
 # NET module
 class NetErrorCode(int, Enum):
     QUERY_FAILED = 601
@@ -2079,6 +2263,8 @@ class NetErrorCode(int, Enum):
     WEBSOCKET_DISCONNECTED = 610
     NOT_SUPPORTED = 611
     NO_ENDPOINTS_PROVIDED = 612
+    GRAPHQL_WEBSOCKET_INIT_ERROR = 613
+    NETWORK_MODULE_RESUMED = 614
 
 
 class SortDirection(str, Enum):
@@ -2272,6 +2458,134 @@ class EndpointsSet(object):
         return {'endpoints': self.endpoints}
 
 
+class AggregationFn(str, Enum):
+    COUNT = 'COUNT'
+    MIN = 'MIN'
+    MAX = 'MAX'
+    SUM = 'SUM'
+    AVERAGE = 'AVERAGE'
+
+
+class FieldAggregation(object):
+    def __init__(self, field: str, fn: 'AggregationFn'):
+        """
+        :param field: Dot separated path to the field
+        :param fn: Aggregation function that must be applied to field values
+        """
+        self.field = field
+        self.fn = fn
+
+    @property
+    def dict(self):
+        return {'field': self.field, 'fn': self.fn}
+
+
+class ParamsOfAggregateCollection(object):
+    def __init__(
+            self, collection: str, filter: Dict[str, Any] = None,
+            fields: List['FieldAggregation'] = None):
+        """
+        :param collection: Collection name (accounts, blocks, transactions,
+                messages, block_signatures)
+        :param filter: Collection filter
+        :param fields: Projection (result) string
+        """
+        self.collection = collection
+        self.filter = filter
+        self.fields = fields
+
+    @property
+    def dict(self):
+        return {
+            'collection': self.collection,
+            'filter': self.filter,
+            'fields': [f.dict for f in self.fields]
+        }
+
+
+class ResultOfAggregateCollection(object):
+    def __init__(self, values: List[str]):
+        """
+        :param values: Values for requested fields.
+                Returns an array of strings. Each string refers to the
+                corresponding fields item.
+                Numeric value is returned as a decimal string representations
+        """
+        self.values = values
+
+
+class ParamsOfQueryOperation:
+    class QueryCollection(BaseTypedType):
+        def __init__(self, params: 'ParamsOfQueryCollection'):
+            """
+            :param params: ParamsOfQueryCollection
+            """
+            super(ParamsOfQueryOperation.QueryCollection, self).__init__(
+                type='QueryCollection')
+            self.params = params
+
+        @property
+        def dict(self):
+            return {
+                **super(ParamsOfQueryOperation.QueryCollection, self).dict,
+                **self.params.dict
+            }
+
+    class WaitForCollection(BaseTypedType):
+        def __init__(self, params: 'ParamsOfWaitForCollection'):
+            """
+            :param params: ParamsOfWaitForCollection
+            """
+            super(ParamsOfQueryOperation.WaitForCollection, self).__init__(
+                type='WaitForCollection')
+            self.params = params
+
+        @property
+        def dict(self):
+            return {
+                **super(ParamsOfQueryOperation.WaitForCollection, self).dict,
+                **self.params.dict
+            }
+
+    class AggregateCollection(BaseTypedType):
+        def __init__(self, params: 'ParamsOfAggregateCollection'):
+            """
+            :param params: ParamsOfWaitForCollection
+            """
+            super(ParamsOfQueryOperation.AggregateCollection, self).__init__(
+                type='AggregateCollection')
+            self.params = params
+
+        @property
+        def dict(self):
+            return {
+                **super(ParamsOfQueryOperation.AggregateCollection, self).dict,
+                **self.params.dict
+            }
+
+
+class ParamsOfBatchQuery(object):
+    def __init__(self, operations: List['ParamsOfQueryOperationType']):
+        """
+        :param operations: List of query operations that must be performed
+                per single fetch
+        """
+        self.operations = operations
+
+    @property
+    def dict(self):
+        return {'operations': [o.dict for o in self.operations]}
+
+
+class ResultOfBatchQuery(object):
+    def __init__(self, results: List[Any]):
+        """
+        :param results: Result values for batched queries. Returns an array
+                of values. Each value corresponds to queries item
+        """
+        self.results = results
+
+
 # PROCESSING module
 class ProcessingErrorCode(int, Enum):
     MESSAGE_ALREADY_EXPIRED = 501
@@ -2295,41 +2609,33 @@ class ProcessingEvent:
         Notifies the app that the current shard block will be fetched from
         the network. Fetched block will be used later in waiting phase
         """
-        def __init__(self, type: str = 'WillFetchFirstBlock'):
-            """
-            :param type:
-            """
+        def __init__(self):
             super(ProcessingEvent.WillFetchFirstBlock, self).__init__(
-                type=type)
+                type='WillFetchFirstBlock')
 
     class FetchFirstBlockFailed(BaseTypedType):
         """
         Notifies the app that the client has failed to fetch current shard
         block. Message processing has finished
         """
-        def __init__(
-                self, error: 'ClientError',
-                type: str = 'FetchFirstBlockFailed'):
+        def __init__(self, error: 'ClientError'):
             """
             :param error:
-            :param type:
             """
             super(ProcessingEvent.FetchFirstBlockFailed, self).__init__(
-                type=type)
+                type='FetchFirstBlockFailed')
             self.error = error
 
     class WillSend(BaseTypedType):
         """ Notifies the app that the message will be sent to the network """
         def __init__(
-                self, shard_block_id: str, message_id: str, message: str,
-                type: str = 'WillSend'):
+                self, shard_block_id: str, message_id: str, message: str):
             """
             :param shard_block_id:
             :param message_id:
             :param message:
-            :param type:
             """
-            super(ProcessingEvent.WillSend, self).__init__(type=type)
+            super(ProcessingEvent.WillSend, self).__init__(type='WillSend')
             self.shard_block_id = shard_block_id
             self.message_id = message_id
             self.message = message
@@ -2337,15 +2643,13 @@ class ProcessingEvent:
     class DidSend(BaseTypedType):
         """ Notifies the app that the message was sent to the network """
         def __init__(
-                self, shard_block_id: str, message_id: str, message: str,
-                type: str = 'DidSend'):
+                self, shard_block_id: str, message_id: str, message: str):
             """
             :param shard_block_id:
             :param message_id:
             :param message:
-            :param type:
             """
-            super(ProcessingEvent.DidSend, self).__init__(type=type)
+            super(ProcessingEvent.DidSend, self).__init__(type='DidSend')
             self.shard_block_id = shard_block_id
             self.message_id = message_id
             self.message = message
@@ -2358,15 +2662,14 @@ class ProcessingEvent:
         """
         def __init__(
                 self, shard_block_id: str, message_id: str, message: str,
-                error: 'ClientError', type: str = 'SendFailed'):
+                error: 'ClientError'):
             """
             :param shard_block_id:
             :param message_id:
             :param message:
             :param error:
-            :param type:
             """
-            super(ProcessingEvent.SendFailed, self).__init__(type=type)
+            super(ProcessingEvent.SendFailed, self).__init__(type='SendFailed')
             self.shard_block_id = shard_block_id
             self.message_id = message_id
             self.message = message
@@ -2378,16 +2681,14 @@ class ProcessingEvent:
         network. Event can occurs more than one time due to block walking
         procedure
         """
-        def __init__(
-                self, shard_block_id: str, message_id: str, message: str,
-                type: str = 'WillFetchNextBlock'):
+        def __init__(self, shard_block_id: str, message_id: str, message: str):
             """
             :param shard_block_id:
             :param message_id:
             :param message:
-            :param type:
             """
-            super(ProcessingEvent.WillFetchNextBlock, self).__init__(type=type)
+            super(ProcessingEvent.WillFetchNextBlock, self).__init__(
+                type='WillFetchNextBlock')
             self.shard_block_id = shard_block_id
             self.message_id = message_id
             self.message = message
@@ -2399,16 +2700,15 @@ class ProcessingEvent:
         """
         def __init__(
                 self, shard_block_id: str, message_id: str, message: str,
-                error: 'ClientError', type: str = 'FetchNextBlockFailed'):
+                error: 'ClientError'):
             """
             :param shard_block_id:
             :param message_id:
             :param message:
             :param error:
-            :param type:
             """
             super(ProcessingEvent.FetchNextBlockFailed, self).__init__(
-                type=type)
+                type='FetchNextBlockFailed')
             self.shard_block_id = shard_block_id
             self.message_id = message_id
             self.message = message
@@ -2422,22 +2722,22 @@ class ProcessingEvent:
         `expiration_retries_timeout`
         """
         def __init__(
-                self, message_id: str, message: str, error: 'ClientError',
-                type: str = 'MessageExpired'):
+                self, message_id: str, message: str, error: 'ClientError'):
             """
             :param message_id:
             :param message:
             :param error:
-            :param type:
             """
-            super(ProcessingEvent.MessageExpired, self).__init__(type=type)
+            super(ProcessingEvent.MessageExpired, self).__init__(
+                type='MessageExpired')
             self.message_id = message_id
             self.message = message
             self.error = error
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> 'ProcessingEventType':
-        return getattr(ProcessingEvent, data['type'])(**data)
+        kwargs = {k: v for k, v in data.items() if k != 'type'}
+        return getattr(ProcessingEvent, data['type'])(**kwargs)
 
 
 class ProcessingResponseType(int, Enum):
@@ -2653,32 +2953,23 @@ class AccountForExecutor:
         has no deploy data since transactions on the uninitialized account
         are always aborted
         """
-        def __init__(self, type: str = 'None'):
-            """
-            :param type:
-            """
-            super(AccountForExecutor.NoAccount, self).__init__(type=type)
+        def __init__(self):
+            super(AccountForExecutor.NoAccount, self).__init__(type='None')
 
     class Uninit(BaseTypedType):
         """ Emulate uninitialized account to run deploy message """
-        def __init__(self, type: str = 'Uninit'):
-            """
-            :param type:
-            """
-            super(AccountForExecutor.Uninit, self).__init__(type=type)
+        def __init__(self):
+            super(AccountForExecutor.Uninit, self).__init__(type='Uninit')
 
     class Account(BaseTypedType):
-        def __init__(
-                self, boc: str, unlimited_balance: bool = None,
-                type: str = 'Account'):
+        def __init__(self, boc: str, unlimited_balance: bool = None):
             """
             :param boc: Account BOC. Encoded as `base64`
             :param unlimited_balance: Flag for running account with the
                     unlimited balance. Can be used to calculate transaction
                     fees without balance check
-            :param type:
             """
-            super(AccountForExecutor.Account, self).__init__(type=type)
+            super(AccountForExecutor.Account, self).__init__(type='Account')
             self.boc = boc
             self.unlimited_balance = unlimited_balance
 
@@ -2695,32 +2986,43 @@ class ParamsOfRunExecutor(object):
     def __init__(
             self, message: str, account: 'AccountForExecutorType',
             execution_options: 'ExecutionOptions' = None,
-            abi: 'AbiType' = None, skip_transaction_check: bool = None):
+            abi: 'AbiType' = None, skip_transaction_check: bool = None,
+            boc_cache: 'BocCacheTypeType' = None,
+            return_updated_account: bool = None):
         """
         :param message: Input message BOC. Must be encoded as `base64`
         :param account: Account to run on executor
         :param execution_options: Execution options
         :param abi: Contract ABI for decoding output messages
         :param skip_transaction_check: Skip transaction check flag
+        :param boc_cache: Cache type to put the result. The BOC itself
+                returned if no cache type provided
+        :param return_updated_account: Return updated account flag. Empty
+                string is returned if the flag is `false`
         """
         self.message = message
         self.account = account
         self.execution_options = execution_options
         self.abi = abi
         self.skip_transaction_check = skip_transaction_check
+        self.boc_cache = boc_cache
+        self.return_updated_account = return_updated_account
 
     @property
     def dict(self):
         execution_options = self.execution_options.dict \
             if self.execution_options else self.execution_options
         abi = self.abi.dict if self.abi else self.abi
+        boc_cache = self.boc_cache.dict if self.boc_cache else self.boc_cache
 
         return {
             'message': self.message,
             'account': self.account.dict,
             'execution_options': execution_options,
             'abi': abi,
-            'skip_transaction_check': self.skip_transaction_check
+            'skip_transaction_check': self.skip_transaction_check,
+            'boc_cache': boc_cache,
+            'return_updated_account': self.return_updated_account
         }
 
 
@@ -2757,29 +3059,40 @@ class ResultOfRunExecutor(object):
 class ParamsOfRunTvm(object):
     def __init__(
             self, message: str, account: str, abi: 'AbiType' = None,
-            execution_options: 'ExecutionOptions' = None):
+            execution_options: 'ExecutionOptions' = None,
+            boc_cache: 'BocCacheTypeType' = None,
+            return_updated_account: bool = None):
         """
         :param message: Input message BOC. Must be encoded as `base64`
         :param account: Account BOC. Must be encoded as `base64`
-        :param abi: Contract ABI for dedcoding output messages
+        :param abi: Contract ABI for decoding output messages
         :param execution_options: Execution options
+        :param boc_cache: Cache type to put the result. The BOC itself
+                returned if no cache type provided
+        :param return_updated_account: Return updated account flag. Empty
+                string is returned if the flag is `false`
         """
         self.message = message
         self.account = account
         self.abi = abi
         self.execution_options = execution_options
+        self.boc_cache = boc_cache
+        self.return_updated_account = return_updated_account
 
     @property
     def dict(self):
         execution_options = self.execution_options.dict \
             if self.execution_options else self.execution_options
         abi = self.abi.dict if self.abi else self.abi
+        boc_cache = self.boc_cache.dict if self.boc_cache else self.boc_cache
 
         return {
             'message': self.message,
             'account': self.account,
             'execution_options': execution_options,
-            'abi': abi
+            'abi': abi,
+            'boc_cache': boc_cache,
+            'return_updated_account': self.return_updated_account
         }
 
 
@@ -2845,29 +3158,22 @@ class ResultOfRunGet(object):
 # UTILS module
 class AddressStringFormat:
     class AccountId(BaseTypedType):
-        def __init__(self, type: str = 'AccountId'):
-            """
-            :param type:
-            """
-            super(AddressStringFormat.AccountId, self).__init__(type=type)
+        def __init__(self):
+            super(AddressStringFormat.AccountId, self).__init__(
+                type='AccountId')
 
     class Hex(BaseTypedType):
-        def __init__(self, type: str = 'Hex'):
-            """
-            :param type:
-            """
-            super(AddressStringFormat.Hex, self).__init__(type=type)
+        def __init__(self):
+            super(AddressStringFormat.Hex, self).__init__(type='Hex')
 
     class Base64(BaseTypedType):
-        def __init__(
-                self, url: bool, test: bool, bounce: bool,
-                type: str = 'Base64'):
+        def __init__(self, url: bool, test: bool, bounce: bool):
             """
             :param url:
             :param test:
             :param bounce:
             """
-            super(AddressStringFormat.Base64, self).__init__(type=type)
+            super(AddressStringFormat.Base64, self).__init__(type='Base64')
             self.url = url
             self.test = test
             self.bounce = bounce
@@ -2916,6 +3222,12 @@ class DebotErrorCode(int, Enum):
     DEBOT_FETCH_FAILED = 802
     DEBOT_EXECUTION_FAILED = 803
     DEBOT_INVALID_HANDLE = 804
+    DEBOT_INVALID_JSON_PARAMS = 805,
+    DEBOT_INVALID_FUNCTION_ID = 806,
+    DEBOT_INVALID_ABI = 807,
+    DEBOT_GET_METHOD_FAILED = 808,
+    DEBOT_INVALID_MSG = 809,
+    DEBOT_EXTERNAL_CALL_FAILED = 810
 
 
 class DebotAction(object):
@@ -2992,58 +3304,51 @@ class ParamsOfAppDebotBrowser:
     """
     class Log(BaseTypedType):
         """ Print message to user """
-        def __init__(self, msg: str, type: str = 'Log'):
+        def __init__(self, msg: str):
             """
             :param msg: A string that must be printed to user
-            :param type:
             """
-            super(ParamsOfAppDebotBrowser.Log, self).__init__(type=type)
+            super(ParamsOfAppDebotBrowser.Log, self).__init__(type='Log')
             self.msg = msg
 
     class Switch(BaseTypedType):
         """ Switch debot to another context (menu) """
-        def __init__(self, context_id: int, type: str = 'Switch'):
+        def __init__(self, context_id: int):
             """
             :param context_id: Debot context ID to which debot is switched
-            :param type:
             """
-            super(ParamsOfAppDebotBrowser.Switch, self).__init__(type=type)
+            super(ParamsOfAppDebotBrowser.Switch, self).__init__(type='Switch')
             self.context_id = context_id
 
     class SwitchCompleted(BaseTypedType):
         """ Notify browser that all context actions are shown """
-        def __init__(self, type: str = 'SwitchCompleted'):
-            """
-            :param type:
-            """
+        def __init__(self):
             super(ParamsOfAppDebotBrowser.SwitchCompleted, self).__init__(
-                type=type)
+                type='SwitchCompleted')
 
     class ShowAction(BaseTypedType):
         """
         Show action to the user.
         Called after switch for each action in context
         """
-        def __init__(self, action: 'DebotAction', type: str = 'ShowAction'):
+        def __init__(self, action: 'DebotAction'):
             """
             :param action: Debot action that must be shown to user as menu
                     item. At least description property must be shown from
                     `DebotAction` structure
-            :param type:
             """
             super(ParamsOfAppDebotBrowser.ShowAction, self).__init__(
-                type=type)
+                type='ShowAction')
             self.action = action
 
     class Input(BaseTypedType):
         """ Request user input """
-        def __init__(self, prompt: str, type: str = 'Input'):
+        def __init__(self, prompt: str):
             """
             :param prompt: A prompt string that must be printed to user
                     before input request
-            :param type:
             """
-            super(ParamsOfAppDebotBrowser.Input, self).__init__(type=type)
+            super(ParamsOfAppDebotBrowser.Input, self).__init__(type='Input')
             self.prompt = prompt
 
     class GetSigningBox(BaseTypedType):
@@ -3051,45 +3356,49 @@ class ParamsOfAppDebotBrowser:
         Get signing box to sign data.
         Signing box returned is owned and disposed by debot engine
         """
-        def __init__(self, type: str = 'GetSigningBox'):
-            """
-            :param type:
-            """
+        def __init__(self):
             super(ParamsOfAppDebotBrowser.GetSigningBox, self).__init__(
-                type=type)
+                type='GetSigningBox')
 
     class InvokeDebot(BaseTypedType):
         """ Execute action of another debot """
-        def __init__(
-                self, debot_addr: str, action: 'DebotAction',
-                type: str = 'InvokeDebot'):
+        def __init__(self, debot_addr: str, action: 'DebotAction'):
             """
             :param debot_addr: Address of debot in blockchain
             :param action: Debot action to execute
-            :param type:
             """
             super(ParamsOfAppDebotBrowser.InvokeDebot, self).__init__(
-                type=type)
+                type='InvokeDebot')
             self.debot_addr = debot_addr
             self.action = action
+
+    class Send(BaseTypedType):
+        """ Used by Debot to call DInterface implemented by Debot Browser """
+        def __init__(self, message: str):
+            """
+            :param message: Internal message to DInterface address. Message
+                    body contains interface function and parameters
+            """
+            super(ParamsOfAppDebotBrowser.Send, self).__init__(type='Send')
+            self.message = message
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> 'ParamsOfAppDebotBrowserType':
         if data.get('action'):
             data['action'] = DebotAction(**data['action'])
-        return getattr(ParamsOfAppDebotBrowser, data['type'])(**data)
+        kwargs = {k: v for k, v in data.items() if k != 'type'}
+        return getattr(ParamsOfAppDebotBrowser, data['type'])(**kwargs)
 
 
 class ResultOfAppDebotBrowser(object):
     """ Returning values from Debot Browser callbacks """
     class Input(BaseTypedType):
         """ Result of user input """
-        def __init__(self, value: str, type: str = 'Input'):
+        def __init__(self, value: str):
             """
             :param value: String entered by user
-            :param type:
             """
-            super(ResultOfAppDebotBrowser.Input, self).__init__(type=type)
+            super(ResultOfAppDebotBrowser.Input, self).__init__(type='Input')
             self.value = value
 
         @property
@@ -3101,17 +3410,14 @@ class ResultOfAppDebotBrowser(object):
 
     class GetSigningBox(BaseTypedType):
         """ Result of getting signing box """
-        def __init__(
-                self, signing_box: 'SigningBoxHandle',
-                type: str = 'GetSigningBox'):
+        def __init__(self, signing_box: 'SigningBoxHandle'):
             """
             :param signing_box: Signing box for signing data requested by
                     debot engine. Signing box is owned and disposed by debot
                     engine
-            :param type:
             """
             super(ResultOfAppDebotBrowser.GetSigningBox, self).__init__(
-                type=type)
+                type='GetSigningBox')
             self.signing_box = signing_box
 
         @property
@@ -3123,12 +3429,9 @@ class ResultOfAppDebotBrowser(object):
 
     class InvokeDebot(BaseTypedType):
         """ Result of debot invoking """
-        def __init__(self, type: str = 'InvokeDebot'):
-            """
-            :param type:
-            """
+        def __init__(self):
             super(ResultOfAppDebotBrowser.InvokeDebot, self).__init__(
-                type=type)
+                type='InvokeDebot')
 
 
 class ParamsOfFetch(object):
@@ -3158,6 +3461,33 @@ class ParamsOfExecute(object):
     @property
     def dict(self):
         return {'debot_handle': self.debot_handle, 'action': self.action.dict}
+
+
+class ParamsOfSend(object):
+    """ Parameters of send function """
+    def __init__(
+            self, debot_handle: 'DebotHandle', source: str, func_id: int,
+            params: str):
+        """
+        :param debot_handle: Debot handle which references an instance of
+                debot engine
+        :param source: Std address of interface or debot
+        :param func_id: Function Id to call
+        :param params: Json string with parameters
+        """
+        self.debot_handle = debot_handle
+        self.source = source
+        self.func_id = func_id
+        self.params = params
+
+    @property
+    def dict(self):
+        return {
+            'debot_handle': self.debot_handle,
+            'source': self.source,
+            'func_id': self.func_id,
+            'params': self.params
+        }
 
 
 class DebotState(int, Enum):
@@ -3190,4 +3520,10 @@ ParamsOfAppDebotBrowserType = Union[
     ParamsOfAppDebotBrowser.Log, ParamsOfAppDebotBrowser.Switch,
     ParamsOfAppDebotBrowser.SwitchCompleted,
     ParamsOfAppDebotBrowser.ShowAction, ParamsOfAppDebotBrowser.Input,
-    ParamsOfAppDebotBrowser.GetSigningBox, ParamsOfAppDebotBrowser.InvokeDebot]
+    ParamsOfAppDebotBrowser.GetSigningBox, ParamsOfAppDebotBrowser.InvokeDebot,
+    ParamsOfAppDebotBrowser.Send]
+ParamsOfQueryOperationType = Union[
+    ParamsOfQueryOperation.QueryCollection,
+    ParamsOfQueryOperation.WaitForCollection,
+    ParamsOfQueryOperation.AggregateCollection]
+BocCacheTypeType = Union[BocCacheType.Pinned, BocCacheType.Unpinned]

@@ -1,5 +1,3 @@
-from typing import Callable
-
 from tonclient.module import TonModule
 from tonclient.decorators import result_as
 from tonclient.types import KeyPair, ParamsOfFactorize, ResultOfFactorize, \
@@ -24,7 +22,9 @@ from tonclient.types import KeyPair, ParamsOfFactorize, ResultOfFactorize, \
     ResultOfHDKeySecretFromXPrv, ParamsOfHDKeyPublicFromXPrv, \
     ResultOfHDKeyPublicFromXPrv, ParamsOfChaCha20, ResultOfChaCha20, \
     RegisteredSigningBox, ResultOfSigningBoxGetPublicKey, \
-    ParamsOfSigningBoxSign, ResultOfSigningBoxSign
+    ParamsOfSigningBoxSign, ResultOfSigningBoxSign, \
+    ParamsOfNaclSignDetachedVerify, ResultOfNaclSignDetachedVerify, \
+    ResponseHandler
 
 
 class TonCrypto(TonModule):
@@ -285,6 +285,18 @@ class TonCrypto(TonModule):
         """
         return self.request(method='crypto.nacl_sign_detached', **params.dict)
 
+    @result_as(classname=ResultOfNaclSignDetachedVerify)
+    def nacl_sign_detached_verify(
+            self, params: ParamsOfNaclSignDetachedVerify
+    ) -> ResultOfNaclSignDetachedVerify:
+        """
+        Verifies the signature with public key and unsigned data
+        :param params: See `types.ParamsOfNaclSignDetachedVerify`
+        :return: See `types.ResultOfNaclSignDetachedVerify`
+        """
+        return self.request(
+            method='crypto.nacl_sign_detached_verify', **params.dict)
+
     @result_as(classname=ResultOfNaclSignOpen)
     def nacl_sign_open(
             self, params: ParamsOfNaclSignOpen) -> ResultOfNaclSignOpen:
@@ -377,7 +389,8 @@ class TonCrypto(TonModule):
         return self.request(method='crypto.chacha20', **params.dict)
 
     @result_as(classname=RegisteredSigningBox)
-    def register_signing_box(self, callback: Callable) -> RegisteredSigningBox:
+    def register_signing_box(
+            self, callback: ResponseHandler) -> RegisteredSigningBox:
         """
         Register an application implemented signing box
         :param callback: Callback to send events to

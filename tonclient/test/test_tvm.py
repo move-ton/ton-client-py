@@ -9,7 +9,7 @@ from tonclient.test.helpers import send_grams, SAMPLES_DIR, async_core_client,\
 from tonclient.types import Abi, DeploySet, CallSet, Signer, StateInitSource, \
     AccountForExecutor, ParamsOfEncodeMessage, ParamsOfProcessMessage, \
     ParamsOfWaitForCollection, ParamsOfParse, ParamsOfRunExecutor, \
-    ParamsOfRunTvm, ParamsOfEncodeAccount, ParamsOfRunGet
+    ParamsOfRunTvm, ParamsOfEncodeAccount, ParamsOfRunGet, BocCacheType
 
 
 class TestTonTvmAsyncCore(unittest.TestCase):
@@ -70,20 +70,21 @@ class TestTonTvmAsyncCore(unittest.TestCase):
             boc=account.result['boc'], unlimited_balance=True)
         run_params = ParamsOfRunExecutor(
             message=encoded_message.message, account=account_for_executor,
-            abi=abi)
+            abi=abi, return_updated_account=True)
         result = async_custom_client.tvm.run_executor(params=run_params)
 
         # Get account balance again
         parse_params.boc = result.account
         parsed = async_custom_client.boc.parse_account(params=parse_params)
-        self.assertEqual(orig_balance, parsed.parsed['balance'])
+        self.assertLess(
+            int(orig_balance, 16), int(parsed.parsed['balance'], 16))
 
         # Run executor in standard mode (limited balance)
         account_for_executor = AccountForExecutor.Account(
             boc=account.result['boc'], unlimited_balance=False)
         run_params = ParamsOfRunExecutor(
             message=encoded_message.message, account=account_for_executor,
-            abi=abi)
+            abi=abi, return_updated_account=True)
         result = async_custom_client.tvm.run_executor(params=run_params)
         self.assertEqual(
             encoded_message.message_id, result.transaction['in_msg'])
@@ -143,7 +144,7 @@ class TestTonTvmAsyncCore(unittest.TestCase):
         message = 'te6ccgEBAQEAXAAAs0gAV2lB0HI8/VEO/pBKDJJJeoOcIh+dL9JzpmRzM8PfdicAPGNEGwRWGaJsR6UYmnsFVC2llSo1ZZN5mgUnCiHf7ZaUBKgXyAAGFFhgAAAB69+UmQS/LjmiQA=='
         run_params = ParamsOfRunExecutor(
             message=message, account=AccountForExecutor.NoAccount(),
-            skip_transaction_check=True)
+            skip_transaction_check=True, return_updated_account=True)
         result = async_core_client.tvm.run_executor(params=run_params)
 
         parse_params = ParamsOfParse(boc=result.account)
@@ -170,7 +171,8 @@ class TestTonTvmAsyncCore(unittest.TestCase):
 
         account_for_executor = AccountForExecutor.Uninit()
         run_params = ParamsOfRunExecutor(
-            message=deploy_message.message, account=account_for_executor)
+            message=deploy_message.message, account=account_for_executor,
+            return_updated_account=True)
         result = async_core_client.tvm.run_executor(params=run_params)
 
         # Parse account
@@ -179,6 +181,37 @@ class TestTonTvmAsyncCore(unittest.TestCase):
         self.assertEqual(deploy_message.address, parsed.parsed['id'])
         self.assertEqual('Active', parsed.parsed['acc_type_name'])
 
+    def test_cache(self):
+        with open(os.path.join(SAMPLES_DIR, 'boc'), 'r') as fp:
+            account = fp.read().strip()
+        abi = Abi.from_path(path=os.path.join(SAMPLES_DIR, 'boc.abi.json'))
+        address = '0:8ecb78f3be4bd981ea182079c76519520008d56991d16da40a868170e2efb3a2'
+        message = async_core_client.abi.encode_message(
+            params=ParamsOfEncodeMessage(
+                abi=abi, signer=Signer.NoSigner(), address=address,
+                call_set=CallSet(function_name='listContenders')))
+
+        result = async_core_client.tvm.run_tvm(
+            params=ParamsOfRunTvm(
+                message=message.message, account=account, abi=abi,
+                boc_cache=BocCacheType.Unpinned(),
+                return_updated_account=True))
+
+        for id in result.decoded.output['ids']:
+            for fn in ['getInfoFor', 'getStatsFor', 'getVotesFor',
+                       'getTotalRatingFor', 'getVotesPerJuror']:
+                _message = async_core_client.abi.encode_message(
+                    params=ParamsOfEncodeMessage(
+                        abi=abi, signer=Signer.NoSigner(), address=address,
+                        call_set=CallSet(
+                            function_name=fn, input={'id': id})))
+
+                async_core_client.tvm.run_tvm(
+                    params=ParamsOfRunTvm(
+                        message=_message.message, account=account, abi=abi,
+                        boc_cache=BocCacheType.Unpinned(),
+                        return_updated_account=None))
+
 
 class TestTonTvmSyncCore(unittest.TestCase):
     """ Sync core is not recommended to use, so make just a couple of tests """
@@ -186,7 +219,7 @@ class TestTonTvmSyncCore(unittest.TestCase):
         message = 'te6ccgEBAQEAXAAAs0gAV2lB0HI8/VEO/pBKDJJJeoOcIh+dL9JzpmRzM8PfdicAPGNEGwRWGaJsR6UYmnsFVC2llSo1ZZN5mgUnCiHf7ZaUBKgXyAAGFFhgAAAB69+UmQS/LjmiQA=='
         run_params = ParamsOfRunExecutor(
             message=message, account=AccountForExecutor.NoAccount(),
-            skip_transaction_check=True)
+            skip_transaction_check=True, return_updated_account=True)
         result = sync_core_client.tvm.run_executor(params=run_params)
 
         parse_params = ParamsOfParse(boc=result.account)
