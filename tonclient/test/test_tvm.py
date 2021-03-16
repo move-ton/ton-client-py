@@ -198,8 +198,7 @@ class TestTonTvmAsyncCore(unittest.TestCase):
                 return_updated_account=True))
 
         for id in result.decoded.output['ids']:
-            for fn in ['getInfoFor', 'getStatsFor', 'getVotesFor',
-                       'getTotalRatingFor', 'getVotesPerJuror']:
+            for fn in ['getInfoFor']:
                 _message = async_core_client.abi.encode_message(
                     params=ParamsOfEncodeMessage(
                         abi=abi, signer=Signer.NoSigner(), address=address,

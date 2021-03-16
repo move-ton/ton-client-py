@@ -578,7 +578,8 @@ class CallSet(object):
             self, function_name: str, header: 'FunctionHeader' = None,
             input: Any = None):
         """
-        :param function_name: Function name that is being called
+        :param function_name: Function name that is being called.
+                Or function id encoded as string in `hex` (starting with 0x)
         :param header: Function header. If an application omits some header
                 parameters required by the contract's ABI, the library will
                 set the default values for them
@@ -1094,11 +1095,13 @@ class ResultOfEncodeAccount(object):
 
 class ParamsOfEncodeInternalMessage(object):
     def __init__(
-            self, abi: 'AbiType', value: str, address: str = None,
+            self, value: str, abi: 'AbiType' = None, address: str = None,
             deploy_set: 'DeploySet' = None, call_set: 'CallSet' = None,
-            bounce: bool = None, enable_ihr: bool = None):
+            bounce: bool = None, enable_ihr: bool = None,
+            src_address: str = None):
         """
-        :param abi: Contract ABI
+        :param abi: Contract ABI. Can be None if both `deploy_set`
+                and `call_set` are None
         :param value: Value in nanograms to be sent with message
         :param address: Target address the message will be sent to. Must be
                 specified in case of non-deploy message
@@ -1111,6 +1114,7 @@ class ParamsOfEncodeInternalMessage(object):
         :param bounce: Flag of bounceable message. Default is true
         :param enable_ihr: Enable Instant Hypercube Routing for the message.
                 Default is false
+        :param src_address: Source address of the message
         """
         self.abi = abi
         self.value = value
@@ -1119,21 +1123,24 @@ class ParamsOfEncodeInternalMessage(object):
         self.call_set = call_set
         self.bounce = bounce
         self.enable_ihr = enable_ihr
+        self.src_address = src_address
 
     @property
     def dict(self):
+        abi = self.abi.dict if self.abi else self.abi
         deploy_set = self.deploy_set.dict \
             if self.deploy_set else self.deploy_set
         call_set = self.call_set.dict if self.call_set else self.call_set
 
         return {
-            'abi': self.abi.dict,
+            'abi': abi,
             'value': self.value,
             'address': self.address,
             'deploy_set': deploy_set,
             'call_set': call_set,
             'bounce': self.bounce,
-            'enable_ihr': self.enable_ihr
+            'enable_ihr': self.enable_ihr,
+            'src_address': self.src_address
         }
 
 
@@ -1203,7 +1210,7 @@ class ParamsOfParseShardstate(object):
 class ParamsOfGetBlockchainConfig(object):
     def __init__(self, block_boc: str):
         """
-        :param block_boc: Key block BOC encoded as `base64`
+        :param block_boc: Key block BOC or zero state BOC encoded as `base64`
         """
         self.block_boc = block_boc
 
@@ -1337,6 +1344,119 @@ class ParamsOfBocCacheUnpin(object):
     @property
     def dict(self):
         return {'pin': self.pin, 'boc_ref': self.boc_ref}
+
+
+class BuilderOp:
+    class Integer(BaseTypedType):
+        def __init__(self, size: int, value: Any):
+            """
+            Append integer to cell data
+            :param size: Bit size of the value
+            :param value: Number containing integer number, e.g. 123, -123.
+                    - Decimal string. e.g. "123", "-123".
+                    - 0x prefixed hexadecimal string, e.g 0x123, 0X123, -0x123
+            """
+            super(BuilderOp.Integer, self).__init__(type='Integer')
+            self.size = size
+            self.value = value
+
+        @property
+        def dict(self):
+            return {
+                **super(BuilderOp.Integer, self).dict,
+                'size': self.size,
+                'value': self.value
+            }
+
+    class BitString(BaseTypedType):
+        def __init__(self, value: str):
+            """
+            Append bit string to cell data
+            :param value: Bit string content using bitstring notation.
+                    See `TON VM specification 1.0`.
+                    Contains hexadecimal string representation:
+                        - Can end with `_` tag;
+                        - Can be prefixed with `x` or `X`;
+                        - Can be prefixed with `x{` or `X{` and ended with `}`.
+
+                    Contains binary string represented as a sequence
+                    of `0` and `1` prefixed with `n` or `N`.
+                    Examples:
+                        `1AB`, `x1ab`, `X1AB`, `x{1abc}`, `X{1ABC}`
+                        `2D9_`, `x2D9_`, `X2D9_`, `x{2D9_}`, `X{2D9_}`
+                        `n00101101100`, `N00101101100`
+            """
+            super(BuilderOp.BitString, self).__init__(type='BitString')
+            self.value = value
+
+        @property
+        def dict(self):
+            return {
+                **super(BuilderOp.BitString, self).dict,
+                'value': self.value
+            }
+
+    class Cell(BaseTypedType):
+        def __init__(self, builder: List['BuilderOpType']):
+            """
+            Append ref to nested cells
+            :param builder: Nested cell builder
+            """
+            super(BuilderOp.Cell, self).__init__(type='Cell')
+            self.builder = builder
+
+        @property
+        def dict(self):
+            return {
+                **super(BuilderOp.Cell, self).dict,
+                'builder': [b.dict for b in self.builder]
+            }
+
+    class CellBoc(BaseTypedType):
+        def __init__(self, boc: str):
+            """
+            Append ref to nested cell
+            :param boc: Nested cell BOC encoded with `base64` or BOC cache key
+            """
+            super(BuilderOp.CellBoc, self).__init__(type='CellBoc')
+            self.boc = boc
+
+        @property
+        def dict(self):
+            return {
+                **super(BuilderOp.CellBoc, self).dict,
+                'boc': self.boc
+            }
+
+
+class ParamsOfEncodeBoc(object):
+    def __init__(
+            self, builder: List['BuilderOpType'],
+            boc_cache: 'BocCacheTypeType' = None):
+        """
+        :param builder: Cell builder operations
+        :param boc_cache: Cache type to put the result. The BOC itself
+                returned if no cache type provided
+        """
+        self.builder = builder
+        self.boc_cache = boc_cache
+
+    @property
+    def dict(self):
+        boc_cache = self.boc_cache.dict if self.boc_cache else self.boc_cache
+
+        return {
+            'builder': [b.dict for b in self.builder],
+            'boc_cache': boc_cache
+        }
+
+
+class ResultOfEncodeBoc(object):
+    def __init__(self, boc: str):
+        """
+        :param boc: Encoded cell BOC or BOC cache key
+        """
+        self.boc = boc
 
 
 # CRYPTO module
@@ -3122,17 +3242,26 @@ class ResultOfRunTvm(object):
 class ParamsOfRunGet(object):
     def __init__(
             self, account: str, function_name: str, input: Any = None,
-            execution_options: 'ExecutionOptions' = None):
+            execution_options: 'ExecutionOptions' = None,
+            tuple_list_as_array: bool = None):
         """
         :param account: Account BOC in `base64`
         :param function_name: Function name
         :param input: Input parameters
         :param execution_options: Execution options
+        :param tuple_list_as_array: Convert lists based on nested tuples in
+                the result into plain arrays. Default is false.
+                Input parameters may use any of lists representations.
+                If you receive this error on Web: "Runtime error. Unreachable
+                code should not be executed...", set this flag to true.
+                This may happen, for example, when elector contract contains
+                too many participants
         """
         self.account = account
         self.function_name = function_name
         self.input = input
         self.execution_options = execution_options
+        self.tuple_list_as_array = tuple_list_as_array
 
     @property
     def dict(self):
@@ -3143,7 +3272,8 @@ class ParamsOfRunGet(object):
             'account': self.account,
             'function_name': self.function_name,
             'input': self.input,
-            'execution_options': execution_options
+            'execution_options': execution_options,
+            'tuple_list_as_array': self.tuple_list_as_array
         }
 
 
@@ -3211,6 +3341,28 @@ class ResultOfConvertAddress(object):
         :param address: Address in the specified format
         """
         self.address = address
+
+
+class ParamsOfCalcStorageFee(object):
+    def __init__(self, account: str, period: int):
+        """
+        :param account:
+        :param period:
+        """
+        self.account = account
+        self.period = period
+
+    @property
+    def dict(self):
+        return {'account': self.account, 'period': self.period}
+
+
+class ResultOfCalcStorageFee(object):
+    def __init__(self, fee: str):
+        """
+        :param fee:
+        """
+        self.fee = fee
 
 
 # DEBOT module
@@ -3285,16 +3437,18 @@ class RegisteredDebot(object):
     Structure for storing debot handle returned from `start` and `fetch`
     functions
     """
-    def __init__(self, debot_handle: 'DebotHandle'):
+    def __init__(self, debot_handle: 'DebotHandle', debot_abi: str):
         """
         :param debot_handle: Debot handle which references an instance of
                 debot engine
+        :param debot_abi: Debot abi as json string
         """
         self.debot_handle = debot_handle
+        self.debot_abi = debot_abi
 
     @property
     def dict(self):
-        return {'debot_handle': self.debot_handle}
+        return {'debot_handle': self.debot_handle, 'debot_abi': self.debot_abi}
 
 
 class ParamsOfAppDebotBrowser:
@@ -3465,28 +3619,20 @@ class ParamsOfExecute(object):
 
 class ParamsOfSend(object):
     """ Parameters of send function """
-    def __init__(
-            self, debot_handle: 'DebotHandle', source: str, func_id: int,
-            params: str):
+    def __init__(self, debot_handle: 'DebotHandle', message: str):
         """
         :param debot_handle: Debot handle which references an instance of
                 debot engine
-        :param source: Std address of interface or debot
-        :param func_id: Function Id to call
-        :param params: Json string with parameters
+        :param message: BOC of internal message to debot encoded in `base64`
         """
         self.debot_handle = debot_handle
-        self.source = source
-        self.func_id = func_id
-        self.params = params
+        self.message = message
 
     @property
     def dict(self):
         return {
             'debot_handle': self.debot_handle,
-            'source': self.source,
-            'func_id': self.func_id,
-            'params': self.params
+            'message': self.message
         }
 
 
@@ -3527,3 +3673,5 @@ ParamsOfQueryOperationType = Union[
     ParamsOfQueryOperation.WaitForCollection,
     ParamsOfQueryOperation.AggregateCollection]
 BocCacheTypeType = Union[BocCacheType.Pinned, BocCacheType.Unpinned]
+BuilderOpType = Union[
+    BuilderOp.Integer, BuilderOp.BitString, BuilderOp.Cell, BuilderOp.CellBoc]

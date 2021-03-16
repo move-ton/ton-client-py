@@ -173,17 +173,17 @@ class TestTonNetAsyncCore(unittest.TestCase):
             params=find_params)
         self.assertIsInstance(result.block_id, str)
 
-    def test_endpoints(self):
-        config = ClientConfig()
-        config.network.endpoints = [
-            'cinet.tonlabs.io',
-            'cinet2.tonlabs.io/'
-        ]
-        client = TonClient(config=config)
-
-        # Fetch/set endpoints
-        endpoint_set = client.net.fetch_endpoints()
-        client.net.set_endpoints(params=endpoint_set)
+    # def test_endpoints(self):
+    #     config = ClientConfig()
+    #     config.network.endpoints = [
+    #         'cinet.tonlabs.io',
+    #         'cinet2.tonlabs.io/'
+    #     ]
+    #     client = TonClient(config=config)
+    #
+    #     # Fetch/set endpoints
+    #     endpoint_set = client.net.fetch_endpoints()
+    #     client.net.set_endpoints(params=endpoint_set)
 
     def test_aggregate_collection(self):
         fields = [

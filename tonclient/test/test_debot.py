@@ -14,7 +14,11 @@ from tonclient.types import Abi, Signer, CallSet, DeploySet, DebotAction, \
     ResultOfAppDebotBrowser, ParamsOfEncodeMessage, ParamsOfProcessMessage, \
     ParamsOfStart, ParamsOfFetch, ParamsOfExecute, ParamsOfAppRequest, \
     ParamsOfResolveAppRequest, KeyPair, ParamsOfQueryCollection, ParamsOfParse, \
-    ParamsOfDecodeMessageBody, ParamsOfSend
+    ParamsOfDecodeMessageBody, ParamsOfSend, ParamsOfEncodeInternalMessage, \
+    ParamsOfGetCodeFromTvc, ParamsOfGetBocHash, ParamsOfAggregateCollection, \
+    FieldAggregation, AggregationFn
+
+DEBOT_WC = -31
 
 INTERFACES = [
     # Echo
@@ -252,9 +256,16 @@ class TestTonDebotAsyncCore(unittest.TestCase):
             'test substring2 passed',
             'test mnemonicDeriveSignKeys passed',
             'test genRandom passed',
+            'test naclbox passed',
+            'test naclKeypairFromSecret passed',
+            'test hex encode passed',
+            'test base64 encode passed',
             'test mnemonic passed',
+            'test naclboxopen passed',
             'test account passed',
-            'test hdkeyXprv passed'
+            'test hdkeyXprv passed',
+            'test hex decode passed',
+            'test base64 decode passed'
         ]
         debot_browser(
             steps=[], params=params, start_fn='start', keypair=keypair,
@@ -292,6 +303,42 @@ class TestTonDebotAsyncCore(unittest.TestCase):
         account = async_custom_client.boc.parse_account(
             params=ParamsOfParse(boc=target_boc))
         self.assertEqual(1, account.parsed['acc_type'])
+
+    def test_debot_invoke_msgs(self):
+        keypair = async_custom_client.crypto.generate_random_sign_keys()
+        debot_a, _ = self.__init_debot_pair(keypair=keypair)
+
+        # Run debot
+        params = ParamsOfStart(address=debot_a)
+        terminal_outputs = [
+            'Invoking Debot B',
+            'DebotB receives question: What is your name?',
+            'DebotA receives answer: My name is DebotB'
+        ]
+        debot_browser(
+            steps=[], params=params, start_fn='start', keypair=keypair,
+            terminal_outputs=terminal_outputs)
+
+    def test_debot_sdk_get_accounts_by_hash(self):
+        count = 2
+        keypair = async_custom_client.crypto.generate_random_sign_keys()
+        addresses, contract_hash = self.__init_debot5(count=count)
+
+        # Get contracts with hash count
+        params = ParamsOfAggregateCollection(
+            collection='accounts', filter={'code_hash': {'eq': contract_hash}},
+            fields=[FieldAggregation(field='', fn=AggregationFn.COUNT)])
+        result = async_custom_client.net.aggregate_collection(params=params)
+        exists = int(result.values[0])
+
+        # Run debot
+        params = ParamsOfStart(address=addresses[0])
+        terminal_outputs = [
+            f'{exists} contracts.'
+        ]
+        debot_browser(
+            steps=[], params=params, start_fn='start', keypair=keypair,
+            terminal_outputs=terminal_outputs)
 
     @staticmethod
     def debot_print_state(state: Dict[str, Any]):
@@ -503,6 +550,131 @@ class TestTonDebotAsyncCore(unittest.TestCase):
 
         return debot_address, target_address
 
+    def __init_debot5(self, count: int) -> Tuple[List[str], str]:
+        debot_abi = Abi.from_path(
+            path=os.path.join(SAMPLES_DIR, 'Debot5.abi.json'))
+        with open(os.path.join(SAMPLES_DIR, 'Debot5.tvc'), 'rb') as fp:
+            debot_tvc = base64.b64encode(fp.read()).decode()
+
+        result = async_custom_client.boc.get_code_from_tvc(
+            params=ParamsOfGetCodeFromTvc(tvc=debot_tvc))
+        result = async_custom_client.boc.get_boc_hash(
+            params=ParamsOfGetBocHash(boc=result.code))
+        contract_hash = result.hash
+
+        call_set = CallSet(
+            function_name='constructor',
+            input={'codeHash': f'0x{contract_hash}'})
+        deploy_set = DeploySet(tvc=debot_tvc)
+        deploy_params = ParamsOfEncodeMessage(
+            abi=debot_abi, deploy_set=deploy_set, call_set=call_set,
+            signer=Signer.NoSigner())
+
+        addresses = []
+        for i in range(count):
+            # Set signer for deploy params
+            keypair = async_custom_client.crypto.generate_random_sign_keys()
+            deploy_params.signer = Signer.Keys(keys=keypair)
+
+            # Calculate address
+            message = async_custom_client.abi.encode_message(
+                params=deploy_params)
+            self.__check_address(address=message.address)
+
+            # Deploy address
+            process_params = ParamsOfProcessMessage(
+                message_encode_params=deploy_params, send_events=False)
+            result = async_custom_client.processing.process_message(
+                params=process_params)
+            debot_address = result.transaction['account_addr']
+            addresses.append(debot_address)
+            if i > 0:
+                continue
+
+            # Set ABI
+            call_set = CallSet(
+                function_name='setABI',
+                input={'dabi': debot_abi.value.encode().hex()})
+            async_custom_client.processing.process_message(
+                params=ParamsOfProcessMessage(
+                    message_encode_params=ParamsOfEncodeMessage(
+                        abi=debot_abi, signer=deploy_params.signer,
+                        address=debot_address, call_set=call_set),
+                    send_events=False))
+
+        return addresses, contract_hash
+
+    def __init_debot_pair(self, keypair: KeyPair) -> Tuple[str, str]:
+        signer = Signer.Keys(keys=keypair)
+        debot_a_abi = Abi.from_path(
+            path=os.path.join(SAMPLES_DIR, 'DebotPairA.abi.json'))
+        with open(os.path.join(SAMPLES_DIR, 'DebotPairA.tvc'), 'rb') as fp:
+            debot_a_tvc = base64.b64encode(fp.read()).decode()
+
+        debot_b_abi = Abi.from_path(
+            path=os.path.join(SAMPLES_DIR, 'DebotPairB.abi.json'))
+        with open(os.path.join(SAMPLES_DIR, 'DebotPairB.tvc'), 'rb') as fp:
+            debot_b_tvc = base64.b64encode(fp.read()).decode()
+
+        # Deploy debot B
+        call_set = CallSet(function_name='constructor')
+        deploy_set = DeploySet(tvc=debot_b_tvc)
+        encode_params = ParamsOfEncodeMessage(
+            abi=debot_b_abi, signer=signer, deploy_set=deploy_set,
+            call_set=call_set)
+        message = async_custom_client.abi.encode_message(params=encode_params)
+        b_address = message.address
+
+        self.__check_address(address=b_address)
+        process_params = ParamsOfProcessMessage(
+            message_encode_params=encode_params, send_events=False)
+        debot_b = async_custom_client.processing.process_message(
+            params=process_params)
+        b_address = debot_b.transaction['account_addr']
+
+        # Set ABI
+        call_set = CallSet(
+            function_name='setAbi',
+            input={'debotAbi': debot_b_abi.value.encode().hex()})
+        async_custom_client.processing.process_message(
+            params=ParamsOfProcessMessage(
+                message_encode_params=ParamsOfEncodeMessage(
+                    abi=debot_b_abi, signer=signer, address=b_address,
+                    call_set=call_set),
+                send_events=False))
+
+        # Deploy debot A
+        call_set = CallSet(
+            function_name='constructor', input={
+                'targetAddr': b_address
+            })
+        deploy_set = DeploySet(tvc=debot_a_tvc)
+        encode_params = ParamsOfEncodeMessage(
+            abi=debot_a_abi, signer=signer, deploy_set=deploy_set,
+            call_set=call_set)
+        message = async_custom_client.abi.encode_message(params=encode_params)
+        a_address = message.address
+
+        self.__check_address(address=a_address)
+        process_params = ParamsOfProcessMessage(
+            message_encode_params=encode_params, send_events=False)
+        debot_a = async_custom_client.processing.process_message(
+            params=process_params)
+        a_address = debot_a.transaction['account_addr']
+
+        # Set ABI
+        call_set = CallSet(
+            function_name='setAbi',
+            input={'debotAbi': debot_a_abi.value.encode().hex()})
+        async_custom_client.processing.process_message(
+            params=ParamsOfProcessMessage(
+                message_encode_params=ParamsOfEncodeMessage(
+                    abi=debot_a_abi, signer=signer, address=a_address,
+                    call_set=call_set),
+                send_events=False))
+
+        return a_address, b_address
+
     @staticmethod
     def __check_address(address: str) -> Union[str, None]:
         """ Check if address exists or `send_grams` """
@@ -530,7 +702,8 @@ class TestTonDebotAsyncCore(unittest.TestCase):
 def debot_browser(
         steps: List[Dict[str, Any]], start_fn: str, keypair: KeyPair,
         params: Union[ParamsOfStart, ParamsOfFetch],
-        actions: List[DebotAction] = None, terminal_outputs: List[str] = None):
+        state: Dict[str, Any] = None, actions: List[DebotAction] = None,
+        terminal_outputs: List[str] = None):
 
     def __callback(response_data, response_type, *args):
         # Process notifications
@@ -601,65 +774,87 @@ def debot_browser(
                     params=resolve_params)
                 future.result()
 
-    def __execute_interface_calls():
+    def __handle_message_queue():
         while len(state['msg_queue']):
             msg_opt = state['msg_queue'].pop(0)
 
             parsed = async_custom_client.boc.parse_message(
                 params=ParamsOfParse(boc=msg_opt))
             body = parsed.parsed['body']
-            interface_address = parsed.parsed['dst']
-            wc, interface_id = interface_address.split(':')
-            test_case.assertIn(interface_id, INTERFACES)
+            dest_address = parsed.parsed['dst']
+            src_address = parsed.parsed['src']
+            wc, interface_id = dest_address.split(':')
 
-            if interface_id == INTERFACES[0]:
-                abi = Abi.Json(value=json.dumps(ECHO_ABI))
-            elif interface_id == INTERFACES[1]:
-                abi = Abi.Json(value=json.dumps(TERMINAL_ABI))
+            if wc == str(DEBOT_WC):
+                if interface_id == INTERFACES[0]:
+                    abi = Abi.Json(value=json.dumps(ECHO_ABI))
+                elif interface_id == INTERFACES[1]:
+                    abi = Abi.Json(value=json.dumps(TERMINAL_ABI))
+                else:
+                    raise ValueError('Unsupported interface')
+
+                decoded = async_custom_client.abi.decode_message_body(
+                    params=ParamsOfDecodeMessageBody(
+                        abi=abi, body=body, is_internal=True))
+                logging.info(f'Request: `{decoded.name}` ({decoded.value})')
+
+                if interface_id == INTERFACES[0]:
+                    method = state['echo'].methods[decoded.name]
+                elif interface_id == INTERFACES[1]:
+                    method = state['terminal'].methods[decoded.name]
+                else:
+                    raise ValueError('Unsupported interface')
+
+                func_id, kwargs = method(decoded.value)
+                logging.info(f'Response: `{func_id}` ({kwargs})')
+                call_set = CallSet(function_name=hex(func_id), input=kwargs) \
+                    if func_id > 0 else None
+                internal = async_custom_client.abi.encode_internal_message(
+                    params=ParamsOfEncodeInternalMessage(
+                        value='1000000000000000',
+                        abi=Abi.Json(value=debot.debot_abi),
+                        address=src_address, call_set=call_set))
+                async_custom_client.debot.send(
+                    params=ParamsOfSend(
+                        debot_handle=debot.debot_handle,
+                        message=internal.message))
             else:
-                raise ValueError('Unsupported interface')
+                debot_fetched = state['bots'].get(dest_address)
+                if not debot_fetched:
+                    fetch_params = ParamsOfFetch(address=dest_address)
+                    debot_browser(
+                        steps=[], start_fn='fetch', keypair=keypair,
+                        params=fetch_params, state=state)
 
-            decoded = async_custom_client.abi.decode_message_body(
-                params=ParamsOfDecodeMessageBody(
-                    abi=abi, body=body, is_internal=True))
-            logging.info(f'Request: `{decoded.name}` ({decoded.value})')
-
-            if interface_id == INTERFACES[0]:
-                method = state['echo'].methods[decoded.name]
-            elif interface_id == INTERFACES[1]:
-                method = state['terminal'].methods[decoded.name]
-            else:
-                raise ValueError('Unsupported interface')
-
-            func_id, kwargs = method(decoded.value)
-            logging.info(f'Response: `{func_id}` ({kwargs})')
-
-            async_custom_client.debot.send(
-                params=ParamsOfSend(
-                    debot_handle=debot.debot_handle, source=interface_address,
-                    func_id=func_id, params=json.dumps(kwargs)))
+                debot_fetched = state['bots'][dest_address].debot_handle
+                async_custom_client.debot.send(
+                    params=ParamsOfSend(
+                        debot_handle=debot_fetched, message=msg_opt))
 
     # Create initial state
     test_case = unittest.TestCase()  # For unit tests only
-    state: Dict[str, Any] = {
-        'messages': [],
-        'actions': actions or [],
-        'steps': steps,
-        'step': None,
-        'switch_started': False,
-        'finished': False,
-        'msg_queue': [],
-        'terminal': Terminal(messages=terminal_outputs),
-        'echo': Echo()
-    }
+    if not state:
+        state: Dict[str, Any] = {
+            'messages': [],
+            'actions': actions or [],
+            'steps': steps,
+            'step': None,
+            'switch_started': False,
+            'finished': False,
+            'msg_queue': [],
+            'terminal': Terminal(messages=terminal_outputs),
+            'echo': Echo(),
+            'bots': {}
+        }
 
     # Start debot browser and get handle
     debot = getattr(async_custom_client.debot, start_fn)(
         params=params, callback=__callback)
+    state['bots'][params.address] = debot
     TestTonDebotAsyncCore.debot_print_state(state=state)
 
     while not state['finished']:
-        __execute_interface_calls()
+        __handle_message_queue()
 
         if not len(state['steps']):
             break
@@ -677,4 +872,6 @@ def debot_browser(
         test_case.assertEqual(
             len(state['step']['outputs']), len(state['messages']))
 
-    async_custom_client.debot.remove(params=debot)
+    if start_fn == 'start':
+        for bot in state['bots'].values():
+            async_custom_client.debot.remove(params=bot)

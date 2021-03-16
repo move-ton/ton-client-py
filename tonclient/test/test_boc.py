@@ -8,7 +8,7 @@ from tonclient.test.helpers import async_core_client, sync_core_client, \
 from tonclient.types import ParamsOfParse, ParamsOfParseShardstate, \
     ParamsOfGetBocHash, ParamsOfGetBlockchainConfig, ParamsOfGetCodeFromTvc, \
     ParamsOfBocCacheSet, BocCacheType, ParamsOfBocCacheGet, \
-    ParamsOfBocCacheUnpin
+    ParamsOfBocCacheUnpin, ParamsOfEncodeBoc, BuilderOp
 
 
 class TestTonBocAsyncCore(unittest.TestCase):
@@ -177,6 +177,59 @@ class TestTonBocAsyncCore(unittest.TestCase):
         result = async_core_client.boc.cache_get(
             params=ParamsOfBocCacheGet(boc_ref=ref))
         self.assertEqual(hello_tvc, result.boc)
+
+    def test_encode_boc(self):
+        params = ParamsOfEncodeBoc(
+            builder=[
+                BuilderOp.Integer(size=1, value=1),
+                BuilderOp.Integer(size=1, value=0),
+                BuilderOp.Integer(size=8, value=255),
+                BuilderOp.Integer(size=8, value=127),
+                BuilderOp.Integer(size=8, value=-127),
+                BuilderOp.Integer(size=128, value=123456789123456789),
+                BuilderOp.BitString(value='8A_'),
+                BuilderOp.BitString(value='x{8A0_}'),
+                BuilderOp.BitString(value='123'),
+                BuilderOp.BitString(value='x2d9_'),
+                BuilderOp.BitString(value='80_'),
+                BuilderOp.Cell(
+                    builder=[
+                        BuilderOp.BitString(value='n101100111000'),
+                        BuilderOp.BitString(value='N100111000'),
+                        BuilderOp.Integer(size=3, value=-1),
+                        BuilderOp.Integer(size=3, value=2),
+                        BuilderOp.Integer(size=16, value=312),
+                        BuilderOp.Integer(size=16, value='0x123'),
+                        BuilderOp.Integer(size=16, value='0x123'),
+                        BuilderOp.Integer(size=16, value='-0x123')
+                    ])
+            ])
+        result = async_core_client.boc.encode_boc(params=params)
+        self.assertEqual(
+            'te6ccgEBAgEAKQABL7/f4EAAAAAAAAAAAG2m0us0F8ViiEjLZAEAF7OJx0AnACRgJH/bsA==',
+            result.boc)
+
+        # Test with cell BOC
+        inner_cell = 'te6ccgEBAQEADgAAF7OJx0AnACRgJH/bsA=='
+        params = ParamsOfEncodeBoc(
+            builder=[
+                BuilderOp.Integer(size=1, value=1),
+                BuilderOp.Integer(size=1, value=0),
+                BuilderOp.Integer(size=8, value=255),
+                BuilderOp.Integer(size=8, value=127),
+                BuilderOp.Integer(size=8, value=-127),
+                BuilderOp.Integer(size=128, value=123456789123456789),
+                BuilderOp.BitString(value='8A_'),
+                BuilderOp.BitString(value='x{8A0_}'),
+                BuilderOp.BitString(value='123'),
+                BuilderOp.BitString(value='x2d9_'),
+                BuilderOp.BitString(value='80_'),
+                BuilderOp.CellBoc(boc=inner_cell)
+            ])
+        result = async_core_client.boc.encode_boc(params=params)
+        self.assertEqual(
+            'te6ccgEBAgEAKQABL7/f4EAAAAAAAAAAAG2m0us0F8ViiEjLZAEAF7OJx0AnACRgJH/bsA==',
+            result.boc)
 
 
 class TestTonBocSyncCore(unittest.TestCase):

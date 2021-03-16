@@ -5,7 +5,7 @@ from tonclient.types import ParamsOfParse, ResultOfParse, \
     ParamsOfGetBlockchainConfig, ResultOfGetBlockchainConfig, \
     ParamsOfGetCodeFromTvc, ResultOfGetCodeFromTvc, ParamsOfBocCacheGet, \
     ResultOfBocCacheGet, ParamsOfBocCacheSet, ResultOfBocCacheSet, \
-    ParamsOfBocCacheUnpin
+    ParamsOfBocCacheUnpin, ParamsOfEncodeBoc, ResultOfEncodeBoc
 
 
 class TonBoc(TonModule):
@@ -75,6 +75,8 @@ class TonBoc(TonModule):
             self, params: ParamsOfGetBlockchainConfig
     ) -> ResultOfGetBlockchainConfig:
         """
+        Extract blockchain configuration from key block and also from
+        zero state
         :param params: See `ParamsOfGetBlockchainConfig`
         :return: See `ResultOfGetBlockchainConfig`
         """
@@ -117,3 +119,12 @@ class TonBoc(TonModule):
         :return:
         """
         return self.request(method='boc.cache_unpin', **params.dict)
+
+    @result_as(classname=ResultOfEncodeBoc)
+    def encode_boc(self, params: ParamsOfEncodeBoc) -> ResultOfEncodeBoc:
+        """
+        Encodes BOC from builder operations
+        :param params: See `types.ParamsOfEncodeBoc`
+        :return: See `types.ResultOfEncodeBoc`
+        """
+        return self.request(method='boc.encode_boc', **params.dict)
