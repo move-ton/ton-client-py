@@ -3365,6 +3365,53 @@ class ResultOfCalcStorageFee(object):
         self.fee = fee
 
 
+class ParamsOfCompressZstd(object):
+    def __init__(self, uncompressed: str, level: int = None):
+        """
+        :param uncompressed: Uncompressed data. Must be encoded as `base64`
+        :param level: Compression level, from 1 to 21.
+                Where:
+                    1 - lowest compression level (fastest compression);
+                    21 - highest compression level (slowest compression).
+                If level is omitted, the default compression level is used
+                (currently 3)
+        """
+        self.uncompressed = uncompressed
+        self.level = level
+
+    @property
+    def dict(self):
+        return {'uncompressed': self.uncompressed, 'level': self.level}
+
+
+class ResultOfCompressZstd(object):
+    def __init__(self, compressed: str):
+        """
+        :param compressed: Compressed data. Encoded as `base64`
+        """
+        self.compressed = compressed
+
+
+class ParamsOfDecompressZstd(object):
+    def __init__(self, compressed: str):
+        """
+        :param compressed: Compressed data. Must be encoded as `base64`
+        """
+        self.compressed = compressed
+
+    @property
+    def dict(self):
+        return {'compressed': self.compressed}
+
+
+class ResultOfDecompressZstd(object):
+    def __init__(self, decompressed: str):
+        """
+        :param decompressed: Decompressed data. Encoded as `base64`
+        """
+        self.decompressed = decompressed
+
+
 # DEBOT module
 DebotHandle = int
 
@@ -3374,12 +3421,14 @@ class DebotErrorCode(int, Enum):
     DEBOT_FETCH_FAILED = 802
     DEBOT_EXECUTION_FAILED = 803
     DEBOT_INVALID_HANDLE = 804
-    DEBOT_INVALID_JSON_PARAMS = 805,
-    DEBOT_INVALID_FUNCTION_ID = 806,
-    DEBOT_INVALID_ABI = 807,
-    DEBOT_GET_METHOD_FAILED = 808,
-    DEBOT_INVALID_MSG = 809,
+    DEBOT_INVALID_JSON_PARAMS = 805
+    DEBOT_INVALID_FUNCTION_ID = 806
+    DEBOT_INVALID_ABI = 807
+    DEBOT_GET_METHOD_FAILED = 808
+    DEBOT_INVALID_MSG = 809
     DEBOT_EXTERNAL_CALL_FAILED = 810
+    DEBOT_BROWSER_CALLBACK_FAILED = 811
+    DEBOT_OPERATION_REJECTED = 812
 
 
 class DebotAction(object):
@@ -3419,8 +3468,99 @@ class DebotAction(object):
         return self.description
 
 
-class ParamsOfStart(object):
-    """ Parameters to start debot """
+class DebotInfo(object):
+    def __init__(
+            self, interfaces: List[str], name: str = None, version: str = None,
+            publisher: str = None, key: str = None, author: str = None,
+            support: str = None, hello: str = None, language: str = None,
+            dabi: str = None, icon: str = None):
+        """
+        :param interfaces: Vector with IDs of DInterfaces used by DeBot
+        :param name: DeBot short name
+        :param version: DeBot semantic version
+        :param publisher: The name of DeBot deployer
+        :param key: Short info about DeBot
+        :param author: The name of DeBot developer
+        :param support: TON address of author for questions and donations
+        :param hello: String with the first message from DeBot
+        :param language: String with DeBot interface language (ISO-639)
+        :param dabi: String with DeBot ABI
+        :param icon: DeBot icon
+        """
+        self.interfaces = interfaces
+        self.name = name
+        self.version = version
+        self.publisher = publisher
+        self.key = key
+        self.author = author
+        self.support = support
+        self.hello = hello
+        self.language = language
+        self.dabi = dabi
+        self.icon = icon
+
+    @property
+    def dict(self):
+        return {
+            'interfaces': self.interfaces,
+            'name': self.name,
+            'version': self.version,
+            'publisher': self.publisher,
+            'key': self.key,
+            'author': self.author,
+            'support': self.support,
+            'hello': self.hello,
+            'language': self.language,
+            'dabi': self.dabi,
+            'icon': self.icon
+        }
+
+
+class DebotActivity:
+    """ Describes the operation that the DeBot wants to perform """
+    class Transaction(BaseTypedType):
+        def __init__(
+                self, msg: str, dst: str, out: List['Spending'], fee: int,
+                setcode: bool, signkey: str):
+            """
+            :param msg: External inbound message BOC
+            :param dst: Target smart contract address
+            :param out: List of spending as a result of transaction
+            :param fee: Transaction total fee
+            :param setcode: Indicates if target smart contract updates its code
+            :param signkey: Public key from keypair that was used to sign
+                    external message
+            """
+            super(DebotActivity.Transaction, self).__init__(type='Transaction')
+            self.msg = msg
+            self.dst = dst
+            self.out = out
+            self.fee = fee
+            self.setcode = setcode
+            self.signkey = signkey
+
+    @staticmethod
+    def from_dict(data: Dict[str, Any]) -> 'DebotActivityType':
+        if data.get('out'):
+            data['out'] = [Spending(**item) for item in data['out']]
+        kwargs = {k: v for k, v in data.items() if k != 'type'}
+        return getattr(DebotActivity, data['type'])(**kwargs)
+
+
+class Spending(object):
+    def __init__(self, amount: int, dst: str):
+        """
+        Describes how much funds will be debited from the target contract
+        balance as a result of the transaction
+        :param amount: Amount of nano tokens that will be sent to `dst` address
+        :param dst: Destination address of recipient of funds
+        """
+        self.amount = amount
+        self.dst = dst
+
+
+class ParamsOfInit(object):
+    """ Parameters to init DeBot """
     def __init__(self, address: str):
         """
         :param address: Debot smart contract address
@@ -3437,18 +3577,26 @@ class RegisteredDebot(object):
     Structure for storing debot handle returned from `start` and `fetch`
     functions
     """
-    def __init__(self, debot_handle: 'DebotHandle', debot_abi: str):
+    def __init__(
+            self, debot_handle: 'DebotHandle', debot_abi: str,
+            info: 'DebotInfo'):
         """
         :param debot_handle: Debot handle which references an instance of
                 debot engine
         :param debot_abi: Debot abi as json string
+        :param info: Debot metadata
         """
         self.debot_handle = debot_handle
         self.debot_abi = debot_abi
+        self.info = info
 
     @property
     def dict(self):
-        return {'debot_handle': self.debot_handle, 'debot_abi': self.debot_abi}
+        return {
+            'debot_handle': self.debot_handle,
+            'debot_abi': self.debot_abi,
+            'info': self.info.dict
+        }
 
 
 class ParamsOfAppDebotBrowser:
@@ -3536,10 +3684,24 @@ class ParamsOfAppDebotBrowser:
             super(ParamsOfAppDebotBrowser.Send, self).__init__(type='Send')
             self.message = message
 
+    class Approve(BaseTypedType):
+        """
+        Requests permission from DeBot Browser to execute DeBot operation
+        """
+        def __init__(self, activity: 'DebotActivityType'):
+            """
+            :param activity: DeBot activity details
+            """
+            super(ParamsOfAppDebotBrowser.Approve, self).__init__(
+                type='Approve')
+            self.activity = activity
+
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> 'ParamsOfAppDebotBrowserType':
         if data.get('action'):
             data['action'] = DebotAction(**data['action'])
+        if data.get('activity'):
+            data['activity'] = DebotActivity.from_dict(data=data['activity'])
         kwargs = {k: v for k, v in data.items() if k != 'type'}
         return getattr(ParamsOfAppDebotBrowser, data['type'])(**kwargs)
 
@@ -3587,6 +3749,38 @@ class ResultOfAppDebotBrowser(object):
             super(ResultOfAppDebotBrowser.InvokeDebot, self).__init__(
                 type='InvokeDebot')
 
+    class Approve(BaseTypedType):
+        """ Result of approve callback """
+        def __init__(self, approved: bool):
+            """
+            :param approved: Indicates whether the DeBot is allowed to
+                    perform the specified operation
+            """
+            super(ResultOfAppDebotBrowser.Approve, self).__init__(
+                type='Approve')
+            self.approved = approved
+
+        @property
+        def dict(self):
+            return {
+                **super(ResultOfAppDebotBrowser.Approve, self).dict,
+                'approved': self.approved
+            }
+
+
+class ParamsOfStart(object):
+    """ Parameters to start debot """
+    def __init__(self, debot_handle: 'DebotHandle'):
+        """
+        :param debot_handle: Debot handle which references an instance of
+                debot engine
+        """
+        self.debot_handle = debot_handle
+
+    @property
+    def dict(self):
+        return {'debot_handle': self.debot_handle}
+
 
 class ParamsOfFetch(object):
     """ Parameters to fetch debot """
@@ -3599,6 +3793,14 @@ class ParamsOfFetch(object):
     @property
     def dict(self):
         return {'address': self.address}
+
+
+class ResultOfFetch(object):
+    def __init__(self, info: 'DebotInfo'):
+        """
+        :param info: Debot metadata
+        """
+        self.info = info
 
 
 class ParamsOfExecute(object):
@@ -3636,6 +3838,19 @@ class ParamsOfSend(object):
         }
 
 
+class ParamsOfRemove(object):
+    def __init__(self, debot_handle: 'DebotHandle'):
+        """
+        :param debot_handle: Debot handle which references an instance of
+                debot engine
+        """
+        self.debot_handle = debot_handle
+
+    @property
+    def dict(self):
+        return {'debot_handle': self.debot_handle}
+
+
 class DebotState(int, Enum):
     ZERO = 0
     CURRENT = 253
@@ -3662,12 +3877,13 @@ AccountForExecutorType = Union[
 AddressStringFormatType = Union[
     AddressStringFormat.AccountId, AddressStringFormat.Hex,
     AddressStringFormat.Base64]
+DebotActivityType = Union[DebotActivity.Transaction]
 ParamsOfAppDebotBrowserType = Union[
     ParamsOfAppDebotBrowser.Log, ParamsOfAppDebotBrowser.Switch,
     ParamsOfAppDebotBrowser.SwitchCompleted,
     ParamsOfAppDebotBrowser.ShowAction, ParamsOfAppDebotBrowser.Input,
     ParamsOfAppDebotBrowser.GetSigningBox, ParamsOfAppDebotBrowser.InvokeDebot,
-    ParamsOfAppDebotBrowser.Send]
+    ParamsOfAppDebotBrowser.Send, ParamsOfAppDebotBrowser.Approve]
 ParamsOfQueryOperationType = Union[
     ParamsOfQueryOperation.QueryCollection,
     ParamsOfQueryOperation.WaitForCollection,

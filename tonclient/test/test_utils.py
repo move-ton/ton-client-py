@@ -1,9 +1,10 @@
+import base64
 import unittest
 
 from tonclient.errors import TonException
 from tonclient.test.helpers import async_core_client, sync_core_client
 from tonclient.types import AddressStringFormat, ParamsOfConvertAddress, \
-    ParamsOfCalcStorageFee
+    ParamsOfCalcStorageFee, ParamsOfCompressZstd, ParamsOfDecompressZstd
 
 
 class TestTonUtilsAsyncCore(unittest.TestCase):
@@ -61,6 +62,28 @@ class TestTonUtilsAsyncCore(unittest.TestCase):
         params = ParamsOfCalcStorageFee(account=account, period=1000)
         result = async_core_client.utils.calc_storage_fee(params=params)
         self.assertEqual('330', result.fee)
+
+    def test_compression(self):
+        uncompressed = 'Lorem ipsum dolor sit amet, consectetur adipiscing ' \
+                       'elit, sed do eiusmod tempor incididunt ut labore et ' \
+                       'dolore magna aliqua. Ut enim ad minim veniam, quis ' \
+                       'nostrud exercitation ullamco laboris nisi ut aliquip '\
+                       'ex ea commodo consequat. Duis aute irure dolor in ' \
+                       'reprehenderit in voluptate velit esse cillum dolore ' \
+                       'eu fugiat nulla pariatur. Excepteur sint occaecat ' \
+                       'cupidatat non proident, sunt in culpa qui officia ' \
+                       'deserunt mollit anim id est laborum.'
+        uncompressed = base64.b64encode(uncompressed.encode()).decode()
+
+        compressed = async_core_client.utils.compress_zstd(
+            params=ParamsOfCompressZstd(uncompressed=uncompressed, level=21))
+        self.assertEqual(
+            'KLUv/QCAdQgAJhc5GJCnsA2AIm2tVzjno88mHb3Ttx9b8fXHHDAAMgAyAMUsVo6Pi3rPTDF2WDl510aHTwt44hrUxbn5oF6iUfiUiRbQhYo/PSM2WvKYt/hMIOQmuOaY/bmJQoRky46EF+cEd+Thsep5Hloo9DLCSwe1vFwcqIHycEKlMqBSo+szAiIBhkukH5kSIVlFukEWNF2SkIv6HBdPjFAjoUliCPjzKB/4jK91X95rTAKoASkPNqwUEw2Gkscdb3lR8YRYOR+P0sULCqzPQ8mQFJWnBSyP25mWIY2bFEUSJiGsWD+9NBqLhIAGDggQkLMbt5Y1aDR4uLKqwJXmQFPg/XTXIL7LCgspIF1YYplND4Uo',
+            compressed.compressed)
+
+        decompressed = async_core_client.utils.decompress_zstd(
+            params=ParamsOfDecompressZstd(compressed=compressed.compressed))
+        self.assertEqual(uncompressed, decompressed.decompressed)
 
 
 class TestTonUtilsSyncCore(unittest.TestCase):

@@ -1,3 +1,8 @@
+## Version 1.12.0.0
+  * Binaries updated to `1.12.0`;
+  * Changes `1.12.0` (https://github.com/tonlabs/TON-SDK/blob/master/CHANGELOG.md#1120--2021-04-01)  
+    _**Has breaking changes in DeBot module**_ 
+
 ## Version 1.11.0.0
   * Binaries updated to `1.11.0`;
   * Changes `1.9.0` (https://github.com/tonlabs/TON-SDK/blob/master/CHANGELOG.md#190-feb-19-2021)

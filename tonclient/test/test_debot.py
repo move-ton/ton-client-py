@@ -12,11 +12,12 @@ from tonclient.test.helpers import SAMPLES_DIR, async_custom_client, send_grams
 from tonclient.types import Abi, Signer, CallSet, DeploySet, DebotAction, \
     DebotState, AppRequestResult, ParamsOfAppDebotBrowser, \
     ResultOfAppDebotBrowser, ParamsOfEncodeMessage, ParamsOfProcessMessage, \
-    ParamsOfStart, ParamsOfFetch, ParamsOfExecute, ParamsOfAppRequest, \
-    ParamsOfResolveAppRequest, KeyPair, ParamsOfQueryCollection, ParamsOfParse, \
-    ParamsOfDecodeMessageBody, ParamsOfSend, ParamsOfEncodeInternalMessage, \
-    ParamsOfGetCodeFromTvc, ParamsOfGetBocHash, ParamsOfAggregateCollection, \
-    FieldAggregation, AggregationFn
+    ParamsOfStart, ParamsOfExecute, ParamsOfAppRequest, \
+    ParamsOfResolveAppRequest, KeyPair, ParamsOfQueryCollection, \
+    ParamsOfParse, ParamsOfDecodeMessageBody, ParamsOfSend, \
+    ParamsOfEncodeInternalMessage, ParamsOfGetCodeFromTvc, ParamsOfGetBocHash,\
+    ParamsOfAggregateCollection, FieldAggregation, AggregationFn, \
+    ParamsOfInit, ParamsOfRemove
 
 DEBOT_WC = -31
 
@@ -131,9 +132,9 @@ class TestTonDebotAsyncCore(unittest.TestCase):
             {'choice': 0, 'inputs': [], 'outputs': ['Debot Tests']},
             {'choice': 8, 'inputs': [], 'outputs': []}
         ]
-        params = ParamsOfStart(address=debot_address)
+        params = ParamsOfInit(address=debot_address)
         debot_browser(
-            steps=steps, params=params, start_fn='start', keypair=self.keypair)
+            steps=steps, params=params, start=True, keypair=self.keypair)
 
     def test_print(self):
         debot_address, target_address = self.__init_debot(keypair=self.keypair)
@@ -144,9 +145,9 @@ class TestTonDebotAsyncCore(unittest.TestCase):
             {'choice': 2, 'inputs': [], 'outputs': ['Debot Tests']},
             {'choice': 8, 'inputs': [], 'outputs': []}
         ]
-        params = ParamsOfStart(address=debot_address)
+        params = ParamsOfInit(address=debot_address)
         debot_browser(
-            steps=steps, params=params, start_fn='start', keypair=self.keypair)
+            steps=steps, params=params, start=True, keypair=self.keypair)
 
     def test_run_action(self):
         debot_address, _ = self.__init_debot(keypair=self.keypair)
@@ -159,9 +160,9 @@ class TestTonDebotAsyncCore(unittest.TestCase):
             {'choice': 3, 'inputs': [], 'outputs': ['Debot Tests']},
             {'choice': 8, 'inputs': [], 'outputs': []}
         ]
-        params = ParamsOfStart(address=debot_address)
+        params = ParamsOfInit(address=debot_address)
         debot_browser(
-            steps=steps, params=params, start_fn='start', keypair=self.keypair)
+            steps=steps, params=params, start=True, keypair=self.keypair)
 
     def test_run_method(self):
         keypair = async_custom_client.crypto.generate_random_sign_keys()
@@ -174,9 +175,9 @@ class TestTonDebotAsyncCore(unittest.TestCase):
             {'choice': 2, 'inputs': [], 'outputs': ['Debot Tests']},
             {'choice': 8, 'inputs': [], 'outputs': []}
         ]
-        params = ParamsOfStart(address=debot_address)
+        params = ParamsOfInit(address=debot_address)
         debot_browser(
-            steps=steps, params=params, start_fn='start', keypair=keypair)
+            steps=steps, params=params, start=True, keypair=keypair)
 
     def test_send_message(self):
         debot_address, _ = self.__init_debot(keypair=self.keypair)
@@ -188,9 +189,9 @@ class TestTonDebotAsyncCore(unittest.TestCase):
             {'choice': 3, 'inputs': [], 'outputs': ['Debot Tests']},
             {'choice': 8, 'inputs': [], 'outputs': []}
         ]
-        params = ParamsOfStart(address=debot_address)
+        params = ParamsOfInit(address=debot_address)
         debot_browser(
-            steps=steps, params=params, start_fn='start', keypair=self.keypair)
+            steps=steps, params=params, start=True, keypair=self.keypair)
 
     def test_invoke(self):
         debot_address, _ = self.__init_debot(keypair=self.keypair)
@@ -203,9 +204,9 @@ class TestTonDebotAsyncCore(unittest.TestCase):
             {'choice': 1, 'inputs': [], 'outputs': ['Debot Tests']},
             {'choice': 8, 'inputs': [], 'outputs': []}
         ]
-        params = ParamsOfStart(address=debot_address)
+        params = ParamsOfInit(address=debot_address)
         debot_browser(
-            steps=steps, params=params, start_fn='start', keypair=self.keypair)
+            steps=steps, params=params, start=True, keypair=self.keypair)
 
     def test_engine_calls(self):
         debot_address, _ = self.__init_debot(keypair=self.keypair)
@@ -219,9 +220,9 @@ class TestTonDebotAsyncCore(unittest.TestCase):
             {'choice': 5, 'inputs': [], 'outputs': ['Debot Tests']},
             {'choice': 8, 'inputs': [], 'outputs': []}
         ]
-        params = ParamsOfStart(address=debot_address)
+        params = ParamsOfInit(address=debot_address)
         debot_browser(
-            steps=steps, params=params, start_fn='start', keypair=self.keypair)
+            steps=steps, params=params, start=True, keypair=self.keypair)
 
     def test_interface_calls(self):
         debot_address, _ = self.__init_debot(keypair=self.keypair)
@@ -230,27 +231,27 @@ class TestTonDebotAsyncCore(unittest.TestCase):
             {'choice': 0, 'inputs': [], 'outputs': ['Debot Tests']},
             {'choice': 8, 'inputs': [], 'outputs': []},
         ]
-        params = ParamsOfStart(address=debot_address)
+        params = ParamsOfInit(address=debot_address)
         debot_browser(
-            steps=steps, params=params, start_fn='start', keypair=self.keypair)
+            steps=steps, params=params, start=True, keypair=self.keypair)
 
     def test_debot_msg_interface(self):
         keypair = async_custom_client.crypto.generate_random_sign_keys()
         debot_address = self.__init_debot2(keypair=keypair)
-        params = ParamsOfStart(address=debot_address)
+        params = ParamsOfInit(address=debot_address)
         terminal_outputs = [
             'counter=10',
             'Increment succeeded',
             'counter=15'
         ]
         debot_browser(
-            steps=[], params=params, start_fn='start', keypair=keypair,
+            steps=[], params=params, start=True, keypair=keypair,
             terminal_outputs=terminal_outputs)
 
     def test_debot_sdk_interface(self):
         keypair = async_custom_client.crypto.generate_random_sign_keys()
         debot_address = self.__init_debot3(keypair=keypair)
-        params = ParamsOfStart(address=debot_address)
+        params = ParamsOfInit(address=debot_address)
         terminal_outputs = [
             'test substring1 passed',
             'test substring2 passed',
@@ -268,7 +269,7 @@ class TestTonDebotAsyncCore(unittest.TestCase):
             'test base64 decode passed'
         ]
         debot_browser(
-            steps=[], params=params, start_fn='start', keypair=keypair,
+            steps=[], params=params, start=True, keypair=keypair,
             terminal_outputs=terminal_outputs)
 
     def test_debot4(self):
@@ -283,7 +284,7 @@ class TestTonDebotAsyncCore(unittest.TestCase):
         self.assertEqual(0, account.parsed['acc_type'])
 
         # Run debot
-        params = ParamsOfStart(address=debot_address)
+        params = ParamsOfInit(address=debot_address)
         terminal_outputs = [
             'Target contract deployed.',
             'Enter 1',
@@ -294,7 +295,7 @@ class TestTonDebotAsyncCore(unittest.TestCase):
             'setData2(129)'
         ]
         debot_browser(
-            steps=[], params=params, start_fn='start', keypair=keypair,
+            steps=[], params=params, start=True, keypair=keypair,
             terminal_outputs=terminal_outputs)
 
         # Check address type again
@@ -309,14 +310,14 @@ class TestTonDebotAsyncCore(unittest.TestCase):
         debot_a, _ = self.__init_debot_pair(keypair=keypair)
 
         # Run debot
-        params = ParamsOfStart(address=debot_a)
+        params = ParamsOfInit(address=debot_a)
         terminal_outputs = [
             'Invoking Debot B',
             'DebotB receives question: What is your name?',
             'DebotA receives answer: My name is DebotB'
         ]
         debot_browser(
-            steps=[], params=params, start_fn='start', keypair=keypair,
+            steps=[], params=params, start=True, keypair=keypair,
             terminal_outputs=terminal_outputs)
 
     def test_debot_sdk_get_accounts_by_hash(self):
@@ -332,12 +333,12 @@ class TestTonDebotAsyncCore(unittest.TestCase):
         exists = int(result.values[0])
 
         # Run debot
-        params = ParamsOfStart(address=addresses[0])
+        params = ParamsOfInit(address=addresses[0])
         terminal_outputs = [
             f'{exists} contracts.'
         ]
         debot_browser(
-            steps=[], params=params, start_fn='start', keypair=keypair,
+            steps=[], params=params, start=True, keypair=keypair,
             terminal_outputs=terminal_outputs)
 
     @staticmethod
@@ -700,10 +701,9 @@ class TestTonDebotAsyncCore(unittest.TestCase):
 
 
 def debot_browser(
-        steps: List[Dict[str, Any]], start_fn: str, keypair: KeyPair,
-        params: Union[ParamsOfStart, ParamsOfFetch],
-        state: Dict[str, Any] = None, actions: List[DebotAction] = None,
-        terminal_outputs: List[str] = None):
+        steps: List[Dict[str, Any]], start: bool, keypair: KeyPair,
+        params: ParamsOfInit, state: Dict[str, Any] = None,
+        actions: List[DebotAction] = None, terminal_outputs: List[str] = None):
 
     def __callback(response_data, response_type, *args):
         # Process notifications
@@ -749,7 +749,7 @@ def debot_browser(
             if isinstance(
                     request_data, ParamsOfAppDebotBrowser.InvokeDebot):
                 invoke_steps = state['step']['invokes']
-                fetch_params = ParamsOfFetch(address=request_data.debot_addr)
+                _params = ParamsOfInit(address=request_data.debot_addr)
 
                 # Here we should call `debot_browser` in `spawn` mode
                 # subprocess for compatibility with `Unix` systems.
@@ -757,12 +757,14 @@ def debot_browser(
                 with get_context('spawn').Pool() as pool:
                     pool.apply(debot_browser, kwds={
                         'steps': invoke_steps,
-                        'params': fetch_params,
-                        'start_fn': 'fetch',
+                        'params': _params,
+                        'start': False,
                         'actions': [request_data.action],
                         'keypair': keypair
                     })
                 result = ResultOfAppDebotBrowser.InvokeDebot()
+            if isinstance(request_data, ParamsOfAppDebotBrowser.Approve):
+                result = ResultOfAppDebotBrowser.Approve(approved=True)
 
             # Resolve app request
             result = AppRequestResult.Ok(result=result.dict)
@@ -821,10 +823,10 @@ def debot_browser(
             else:
                 debot_fetched = state['bots'].get(dest_address)
                 if not debot_fetched:
-                    fetch_params = ParamsOfFetch(address=dest_address)
+                    _params = ParamsOfInit(address=dest_address)
                     debot_browser(
-                        steps=[], start_fn='fetch', keypair=keypair,
-                        params=fetch_params, state=state)
+                        steps=[], start=False, keypair=keypair,
+                        params=_params, state=state)
 
                 debot_fetched = state['bots'][dest_address].debot_handle
                 async_custom_client.debot.send(
@@ -848,9 +850,11 @@ def debot_browser(
         }
 
     # Start debot browser and get handle
-    debot = getattr(async_custom_client.debot, start_fn)(
-        params=params, callback=__callback)
+    debot = async_custom_client.debot.init(params=params, callback=__callback)
     state['bots'][params.address] = debot
+    if start:
+        async_custom_client.debot.start(
+            params=ParamsOfStart(debot_handle=debot.debot_handle))
     TestTonDebotAsyncCore.debot_print_state(state=state)
 
     while not state['finished']:
@@ -872,6 +876,7 @@ def debot_browser(
         test_case.assertEqual(
             len(state['step']['outputs']), len(state['messages']))
 
-    if start_fn == 'start':
+    if start:
         for bot in state['bots'].values():
-            async_custom_client.debot.remove(params=bot)
+            async_custom_client.debot.remove(
+                params=ParamsOfRemove(debot_handle=bot.debot_handle))

@@ -1,7 +1,8 @@
 from tonclient.decorators import result_as
 from tonclient.module import TonModule
 from tonclient.types import ParamsOfConvertAddress, ResultOfConvertAddress, \
-    ParamsOfCalcStorageFee, ResultOfCalcStorageFee
+    ParamsOfCalcStorageFee, ResultOfCalcStorageFee, ParamsOfCompressZstd, \
+    ResultOfCompressZstd, ParamsOfDecompressZstd, ResultOfDecompressZstd
 
 
 class TonUtils(TonModule):
@@ -25,3 +26,23 @@ class TonUtils(TonModule):
         :return: See `types.ResultOfCalcStorageFee`
         """
         return self.request(method='utils.calc_storage_fee', **params.dict)
+
+    @result_as(classname=ResultOfCompressZstd)
+    def compress_zstd(
+            self, params: ParamsOfCompressZstd) -> ResultOfCompressZstd:
+        """
+        Compresses data using Zstandard algorithm
+        :param params: See `types.ParamsOfCompressZstd`
+        :return: See `types.ResultOfCompressZstd`
+        """
+        return self.request(method='utils.compress_zstd', **params.dict)
+
+    @result_as(classname=ResultOfDecompressZstd)
+    def decompress_zstd(
+            self, params: ParamsOfDecompressZstd) -> ResultOfDecompressZstd:
+        """
+        Decompresses data using Zstandard algorithm
+        :param params: See `types.ParamsOfDecompressZstd`
+        :return: See `types.ResultOfDecompressZstd`
+        """
+        return self.request(method='utils.decompress_zstd', **params.dict)
