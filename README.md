@@ -246,4 +246,4 @@ client = TonClient(config=config, is_async=True)
 # Get version (simple method with result)
 version = await client.version()
 ```
-Please, dig in `tonclient/test/test_async.py` to get more info.
+Please, dig in `tonclient/test/test_async.py` to get more info
