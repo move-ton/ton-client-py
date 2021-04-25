@@ -121,7 +121,8 @@ class TestTonProcessingAsyncCore(unittest.TestCase):
         # Wait for transaction
         wait_params = ParamsOfWaitForTransaction(
             message=encoded.message, shard_block_id=send.shard_block_id,
-            send_events=False, abi=self.events_abi)
+            send_events=False, abi=self.events_abi,
+            sending_endpoints=send.sending_endpoints)
         wait = async_custom_client.processing.wait_for_transaction(
             params=wait_params)
         self.assertEqual([], wait.out_messages)
@@ -166,7 +167,8 @@ class TestTonProcessingAsyncCore(unittest.TestCase):
         events.clear()
         wait_params = ParamsOfWaitForTransaction(
             message=encoded.message, shard_block_id=send.shard_block_id,
-            send_events=True, abi=self.events_abi)
+            send_events=True, abi=self.events_abi,
+            sending_endpoints=send.sending_endpoints)
         wait = async_custom_client.processing.wait_for_transaction(
             params=wait_params, callback=__callback)
 

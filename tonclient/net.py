@@ -6,7 +6,8 @@ from tonclient.types import ParamsOfQuery, ResultOfQuery, \
     ResultOfSubscribeCollection, ParamsOfSubscribeCollection, \
     ParamsOfFindLastShardBlock, ResultOfFindLastShardBlock, EndpointsSet, \
     ParamsOfAggregateCollection, ResultOfAggregateCollection, \
-    ParamsOfBatchQuery, ResultOfBatchQuery, ResponseHandler
+    ParamsOfBatchQuery, ResultOfBatchQuery, ResponseHandler, \
+    ParamsOfQueryCounterparties
 
 
 class TonNet(TonModule):
@@ -129,3 +130,22 @@ class TonNet(TonModule):
         :return: See `types.ResultOfBatchQuery`
         """
         return self.request(method='net.batch_query', **params.dict)
+
+    @result_as(classname=ResultOfQueryCollection)
+    def query_counterparties(
+            self, params: ParamsOfQueryCounterparties
+    ) -> ResultOfQueryCollection:
+        """
+        Allows to query and paginate through the list of accounts that the
+        specified account has interacted with, sorted by the time of the last
+        internal message between accounts.
+
+        Attention: this query retrieves data from 'Counterparties' service
+        which is not supported in the opensource version of DApp Server
+        (and will not be supported) as well as in TON OS SE
+        (will be supported in SE in future), but is always accessible via
+        TON OS Devnet/Mainnet Clouds
+        :param params: See `types.ParamsOfQueryCounterparties`
+        :return: See `types.ResultOfQueryCollection`
+        """
+        return self.request(method='net.query_counterparties', **params.dict)

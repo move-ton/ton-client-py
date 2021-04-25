@@ -16,7 +16,8 @@ from tonclient.types import ParamsOfQueryCollection, OrderBy, SortDirection, \
     SubscriptionResponseType, ResultOfSubscription, ClientError, Abi, \
     ParamsOfEncodeMessage, Signer, DeploySet, CallSet, ParamsOfProcessMessage, \
     ClientConfig, ParamsOfFindLastShardBlock, ParamsOfAggregateCollection, \
-    FieldAggregation, AggregationFn, ParamsOfBatchQuery, ParamsOfQueryOperation
+    FieldAggregation, AggregationFn, ParamsOfBatchQuery, \
+    ParamsOfQueryOperation, ParamsOfQueryCounterparties
 
 
 class TestTonNetAsyncCore(unittest.TestCase):
@@ -219,6 +220,20 @@ class TestTonNetAsyncCore(unittest.TestCase):
         params = ParamsOfBatchQuery(operations=operations)
         result = async_core_client.net.batch_query(params=params)
         self.assertEqual(3, len(result.results))
+
+    def test_query_counterparties(self):
+        params = ParamsOfQueryCounterparties(
+            account='-1:7777777777777777777777777777777777777777777777777777777777777777',
+            first=5, result='counterparty last_message_id cursor')
+        result = async_core_client.net.query_counterparties(params=params)
+        counterparties_1 = result.result
+        self.assertIsInstance(counterparties_1, list)
+
+        if len(counterparties_1):
+            params.after = counterparties_1[-1]['cursor']
+            result = async_core_client.net.query_counterparties(params=params)
+            counterparties_2 = result.result
+            self.assertNotEqual(counterparties_1, counterparties_2)
 
 
 class TestTonNetSyncCore(unittest.TestCase):

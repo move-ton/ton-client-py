@@ -341,6 +341,15 @@ class TestTonDebotAsyncCore(unittest.TestCase):
             steps=[], params=params, start=True, keypair=keypair,
             terminal_outputs=terminal_outputs)
 
+    def test_debot_json_interface(self):
+        keypair = async_custom_client.crypto.generate_random_sign_keys()
+        debot_address = self.__init_debot7(keypair=keypair)
+        params = ParamsOfInit(address=debot_address)
+        terminal_outputs = []
+        debot_browser(
+            steps=[], params=params, start=True, keypair=keypair,
+            terminal_outputs=terminal_outputs)
+
     @staticmethod
     def debot_print_state(state: Dict[str, Any]):
         # Print messages
@@ -451,40 +460,7 @@ class TestTonDebotAsyncCore(unittest.TestCase):
         return debot_address
 
     def __init_debot3(self, keypair: KeyPair) -> str:
-        signer = Signer.Keys(keys=keypair)
-        debot_abi = Abi.from_path(
-            path=os.path.join(SAMPLES_DIR, 'Debot3.abi.json'))
-        with open(os.path.join(SAMPLES_DIR, 'Debot3.tvc'), 'rb') as fp:
-            debot_tvc = base64.b64encode(fp.read()).decode()
-
-        call_set = CallSet(function_name='constructor')
-        deploy_set = DeploySet(tvc=debot_tvc)
-        encode_params = ParamsOfEncodeMessage(
-            abi=debot_abi, signer=signer, deploy_set=deploy_set,
-            call_set=call_set)
-        message = async_custom_client.abi.encode_message(params=encode_params)
-
-        # Check if debot contract does not exists
-        debot_address = self.__check_address(address=message.address)
-        if not debot_address:
-            process_params = ParamsOfProcessMessage(
-                message_encode_params=encode_params, send_events=False)
-            debot = async_custom_client.processing.process_message(
-                params=process_params)
-            debot_address = debot.transaction['account_addr']
-
-            # Set ABI
-            call_set = CallSet(
-                function_name='setABI',
-                input={'dabi': debot_abi.value.encode().hex()})
-            async_custom_client.processing.process_message(
-                params=ParamsOfProcessMessage(
-                    message_encode_params=ParamsOfEncodeMessage(
-                        abi=debot_abi, signer=signer, address=debot_address,
-                        call_set=call_set),
-                    send_events=False))
-
-        return debot_address
+        return self.__init_simple_debot(name='Debot3', keypair=keypair)
 
     def __init_debot4(self, keypair: KeyPair) -> Tuple[str, str]:
         signer = Signer.Keys(keys=keypair)
@@ -605,6 +581,9 @@ class TestTonDebotAsyncCore(unittest.TestCase):
 
         return addresses, contract_hash
 
+    def __init_debot7(self, keypair: KeyPair) -> str:
+        return self.__init_simple_debot(name='Debot7', keypair=keypair)
+
     def __init_debot_pair(self, keypair: KeyPair) -> Tuple[str, str]:
         signer = Signer.Keys(keys=keypair)
         debot_a_abi = Abi.from_path(
@@ -675,6 +654,44 @@ class TestTonDebotAsyncCore(unittest.TestCase):
                 send_events=False))
 
         return a_address, b_address
+
+    def __init_simple_debot(self, name: str, keypair: KeyPair) -> str:
+        """ Common method to init simple DeBots """
+
+        signer = Signer.Keys(keys=keypair)
+        debot_abi = Abi.from_path(
+            path=os.path.join(SAMPLES_DIR, f'{name}.abi.json'))
+        with open(os.path.join(SAMPLES_DIR, f'{name}.tvc'), 'rb') as fp:
+            debot_tvc = base64.b64encode(fp.read()).decode()
+
+        call_set = CallSet(function_name='constructor')
+        deploy_set = DeploySet(tvc=debot_tvc)
+        encode_params = ParamsOfEncodeMessage(
+            abi=debot_abi, signer=signer, deploy_set=deploy_set,
+            call_set=call_set)
+        message = async_custom_client.abi.encode_message(params=encode_params)
+
+        # Check if debot contract does not exists
+        debot_address = self.__check_address(address=message.address)
+        if not debot_address:
+            process_params = ParamsOfProcessMessage(
+                message_encode_params=encode_params, send_events=False)
+            debot = async_custom_client.processing.process_message(
+                params=process_params)
+            debot_address = debot.transaction['account_addr']
+
+            # Set ABI
+            call_set = CallSet(
+                function_name='setABI',
+                input={'dabi': debot_abi.value.encode().hex()})
+            async_custom_client.processing.process_message(
+                params=ParamsOfProcessMessage(
+                    message_encode_params=ParamsOfEncodeMessage(
+                        abi=debot_abi, signer=signer, address=debot_address,
+                        call_set=call_set),
+                    send_events=False))
+
+        return debot_address
 
     @staticmethod
     def __check_address(address: str) -> Union[str, None]:

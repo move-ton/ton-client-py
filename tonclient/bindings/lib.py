@@ -8,9 +8,8 @@ from typing import Dict, Union
 from .types import TCStringData, TCResponseHandler
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-LIB_VERSION = '1.12.0'
 LIB_DIR = os.path.join(BASE_DIR, 'bin')
-LIB_FILENAME = f'ton-rust-client-{LIB_VERSION}'
+LIB_FILENAME = 'ton-rust-client'
 
 
 def _get_lib_path():

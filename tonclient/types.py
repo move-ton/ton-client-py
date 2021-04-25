@@ -87,8 +87,8 @@ class ClientConfig(object):
         :param abi:
         :param boc:
         """
-        network = network or NetworkConfig(server_address='http://localhost')
-        self.network = network
+        self.network = \
+            network or NetworkConfig(server_address='http://localhost')
         self.crypto = crypto or CryptoConfig()
         self.abi = abi or AbiConfig()
         self.boc = boc or BocConfig()
@@ -105,19 +105,20 @@ class ClientConfig(object):
 
 class NetworkConfig(object):
     def __init__(
-            self, server_address: str, endpoints: List[str] = None,
+            self, server_address: str = None, endpoints: List[str] = None,
             network_retries_count: int = None, reconnect_timeout: int = None,
             max_reconnect_timeout: int = None,
             message_retries_count: int = None,
             message_processing_timeout: int = None,
             wait_for_timeout: int = None, out_of_sync_threshold: int = None,
-            access_key: str = None):
+            sending_endpoint_count: int = None, access_key: str = None):
         """
         :param server_address: DApp Server public address. For instance,
                 for `net.ton.dev/graphql` GraphQL endpoint the server
                 address will be net.ton.dev
         :param endpoints: List of DApp Server addresses. Any correct URL
-                format can be specified, including IP addresses
+                format can be specified, including IP addresses.
+                This parameter is prevailing over `server_address`
         :param network_retries_count: (DEPRECATED) The number of automatic
                 network retries that SDK performs in case of connection
                 problems. The default value is 5
@@ -142,6 +143,9 @@ class NetworkConfig(object):
                 Also the error will occur if the specified threshold is more
                 than `message_processing_timeout / 2`.
                 The default value is 15 sec
+        :param sending_endpoint_count: Maximum number of randomly chosen
+                endpoints the library uses to send message.
+                The default value is 2 endpoints
         :param access_key: Access key to GraphQL API. At the moment is not
                 used in production
         """
@@ -154,6 +158,7 @@ class NetworkConfig(object):
         self.wait_for_timeout = wait_for_timeout
         self.out_of_sync_threshold = out_of_sync_threshold
         self.reconnect_timeout = reconnect_timeout
+        self.sending_endpoint_count = sending_endpoint_count
         self.access_key = access_key
 
     @property
@@ -168,6 +173,7 @@ class NetworkConfig(object):
             'wait_for_timeout': self.wait_for_timeout,
             'out_of_sync_threshold': self.out_of_sync_threshold,
             'reconnect_timeout': self.reconnect_timeout,
+            'sending_endpoint_count': self.sending_endpoint_count,
             'access_key': self.access_key
         }
 
@@ -358,6 +364,7 @@ class AbiErrorCode(int, Enum):
     REQUIRED_PUBLIC_KEY_MISSING_FOR_FUNCTION_HEADER = 309
     INVALID_SIGNER = 310
     INVALID_ABI = 311
+    INVALID_FUNCTION_ID = 312
 
 
 class Abi:
@@ -1061,17 +1068,21 @@ class ParamsOfDecodeMessageBody(object):
 class ParamsOfEncodeAccount(object):
     def __init__(
             self, state_init: 'StateInitSourceType', balance: int = None,
-            last_trans_lt: int = None, last_paid: int = None):
+            last_trans_lt: int = None, last_paid: int = None,
+            boc_cache: 'BocCacheTypeType' = None):
         """
         :param state_init: Source of the account state init
         :param balance: Initial balance
         :param last_trans_lt: Initial value for the `last_trans_lt`
         :param last_paid: Initial value for the `last_paid`
+        :param boc_cache: Cache type to put the result. The BOC itself
+                returned if no cache type provided
         """
         self.state_init = state_init
         self.balance = balance
         self.last_trans_lt = last_trans_lt
         self.last_paid = last_paid
+        self.boc_cache = boc_cache
 
     @property
     def dict(self):
@@ -1079,7 +1090,8 @@ class ParamsOfEncodeAccount(object):
             'state_init': self.state_init.dict,
             'balance': self.balance,
             'last_trans_lt': self.last_trans_lt,
-            'last_paid': self.last_paid
+            'last_paid': self.last_paid,
+            'boc_cache': self.boc_cache
         }
 
 
@@ -2501,7 +2513,8 @@ class ResultOfWaitForCollection(object):
 
 
 class ParamsOfSubscribeCollection(object):
-    def __init__(self, collection: str, result: str, filter: Dict[str, Any]):
+    def __init__(
+            self, collection: str, result: str, filter: Dict[str, Any] = None):
         """
         :param collection: Collection name (accounts, blocks, transactions,
                 messages, block_signatures)
@@ -2670,7 +2683,7 @@ class ParamsOfQueryOperation:
     class AggregateCollection(BaseTypedType):
         def __init__(self, params: 'ParamsOfAggregateCollection'):
             """
-            :param params: ParamsOfWaitForCollection
+            :param params: ParamsOfAggregateCollection
             """
             super(ParamsOfQueryOperation.AggregateCollection, self).__init__(
                 type='AggregateCollection')
@@ -2680,6 +2693,22 @@ class ParamsOfQueryOperation:
         def dict(self):
             return {
                 **super(ParamsOfQueryOperation.AggregateCollection, self).dict,
+                **self.params.dict
+            }
+
+    class QueryCounterparties(BaseTypedType):
+        def __init__(self, params: 'ParamsOfQueryCounterparties'):
+            """
+            :param params: ParamsOfQueryCounterparties
+            """
+            super(ParamsOfQueryOperation.QueryCounterparties, self).__init__(
+                type='QueryCounterparties')
+            self.params = params
+
+        @property
+        def dict(self):
+            return {
+                **super(ParamsOfQueryOperation.QueryCounterparties, self).dict,
                 **self.params.dict
             }
 
@@ -2704,6 +2733,31 @@ class ResultOfBatchQuery(object):
                 of values. Each value corresponds to queries item
         """
         self.results = results
+
+
+class ParamsOfQueryCounterparties(object):
+    def __init__(
+            self, account: str, result: str, first: int = None,
+            after: str = None):
+        """
+        :param account: Account address
+        :param result: Projection (result) string
+        :param first: Number of counterparties to return
+        :param after: `cursor` field of the last received result
+        """
+        self.account = account
+        self.result = result
+        self.first = first
+        self.after = after
+
+    @property
+    def dict(self):
+        return {
+            'account': self.account,
+            'result': self.result,
+            'first': self.first,
+            'after': self.after
+        }
 
 
 # PROCESSING module
@@ -2893,7 +2947,7 @@ class ResultOfProcessMessage(object):
 
 class DecodedOutput(object):
     def __init__(
-            self, out_messages: List['DecodedMessageBody'],
+            self, out_messages: List[Union['DecodedMessageBody', None]],
             output: Any = None):
         """
         :param out_messages: Decoded bodies of the out messages. If the
@@ -2908,8 +2962,8 @@ class DecodedOutput(object):
     def from_dict(data: Dict[str, Any]) -> 'DecodedOutput':
         if data['out_messages']:
             data['out_messages'] = [
-                DecodedMessageBody.from_dict(data=m)
-                for m in data['out_messages'] if m
+                DecodedMessageBody.from_dict(data=m) if m else None
+                for m in data['out_messages']
             ]
 
         return DecodedOutput(**data)
@@ -2943,19 +2997,23 @@ class ParamsOfSendMessage(object):
 
 
 class ResultOfSendMessage(object):
-    def __init__(self, shard_block_id: str):
+    def __init__(self, shard_block_id: str, sending_endpoints: List[str]):
         """
         :param shard_block_id: The last generated shard block of the message
                 destination account before the message was sent. This block id
                 must be used as a parameter of the `wait_for_transaction`
+        :param sending_endpoints: The list of endpoints to which the message
+                was sent. This list id must be used as a parameter of the
+                `wait_for_transaction`
         """
         self.shard_block_id = shard_block_id
+        self.sending_endpoints = sending_endpoints
 
 
 class ParamsOfWaitForTransaction(object):
     def __init__(
             self, message: str, shard_block_id: str, send_events: bool,
-            abi: 'AbiType' = None):
+            abi: 'AbiType' = None, sending_endpoints: List[str] = None):
         """
         :param message: Message BOC. Encoded with base64
         :param shard_block_id: The last generated block id of the destination
@@ -2966,11 +3024,15 @@ class ParamsOfWaitForTransaction(object):
                 If it is specified, then the output messages' bodies will be
                 decoded according to this ABI. The `abi_decoded` result field
                 will be filled out
+        :param sending_endpoints: The list of endpoints to which the message
+                was sent. You must provide the same value as the `send_message`
+                has returned
         """
         self.message = message
         self.shard_block_id = shard_block_id
         self.send_events = send_events
         self.abi = abi
+        self.sending_endpoints = sending_endpoints
 
     @property
     def dict(self):
@@ -2979,7 +3041,8 @@ class ParamsOfWaitForTransaction(object):
             'message': self.message,
             'shard_block_id': self.shard_block_id,
             'send_events': self.send_events,
-            'abi': abi
+            'abi': abi,
+            'sending_endpoints': self.sending_endpoints
         }
 
 
@@ -3042,8 +3105,8 @@ class TransactionFees(object):
 
 class ExecutionOptions(object):
     def __init__(
-            self, blockchain_config: str, block_time: int, block_lt: int,
-            transaction_lt: int):
+            self, blockchain_config: str = None, block_time: int = None,
+            block_lt: int = None, transaction_lt: int = None):
         """
         :param blockchain_config: boc with config
         :param block_time: time that is used as transaction time
@@ -3887,7 +3950,8 @@ ParamsOfAppDebotBrowserType = Union[
 ParamsOfQueryOperationType = Union[
     ParamsOfQueryOperation.QueryCollection,
     ParamsOfQueryOperation.WaitForCollection,
-    ParamsOfQueryOperation.AggregateCollection]
+    ParamsOfQueryOperation.AggregateCollection,
+    ParamsOfQueryOperation.QueryCounterparties]
 BocCacheTypeType = Union[BocCacheType.Pinned, BocCacheType.Unpinned]
 BuilderOpType = Union[
     BuilderOp.Integer, BuilderOp.BitString, BuilderOp.Cell, BuilderOp.CellBoc]

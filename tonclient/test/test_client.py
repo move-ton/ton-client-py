@@ -1,8 +1,10 @@
 import unittest
 
-from tonclient.bindings.lib import LIB_VERSION
 from tonclient.client import TonClient, DEVNET_BASE_URL
 from tonclient.types import ClientConfig
+
+
+LIB_VERSION = '1.13.0'
 
 
 class TestTonClientAsyncCore(unittest.TestCase):

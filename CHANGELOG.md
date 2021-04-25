@@ -1,3 +1,9 @@
+## Version 1.13.0.0
+  * Binaries updated to `1.13.0`;
+  * Changes `1.13.0` (https://github.com/tonlabs/TON-SDK/blob/master/CHANGELOG.md#1130--2021-04-23);
+  * Bug fixed in `types.DecodedOutput.from_dict` method;
+  * Modules' types rechecked
+
 ## Version 1.12.0.0
   * Binaries updated to `1.12.0`;
   * Changes `1.12.0` (https://github.com/tonlabs/TON-SDK/blob/master/CHANGELOG.md#1120--2021-04-01)  

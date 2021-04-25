@@ -4,7 +4,6 @@ import logging
 import asyncio
 from datetime import datetime
 
-from tonclient.bindings.lib import LIB_VERSION
 from tonclient.client import TonClient, DEVNET_BASE_URL
 from tonclient.errors import TonException
 from tonclient.types import ClientConfig, ParamsOfMnemonicFromRandom, \
@@ -14,6 +13,8 @@ from tonclient.types import ClientConfig, ParamsOfMnemonicFromRandom, \
     ResultOfSubscription, ClientError, ParamsOfSubscribeCollection, \
     ParamsOfConvertAddress, AddressStringFormat, ParamsOfRunExecutor, \
     AccountForExecutor
+
+from tonclient.test.test_client import LIB_VERSION
 
 
 class TestTonClientAsync(unittest.TestCase):
