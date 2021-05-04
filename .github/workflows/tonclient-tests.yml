@@ -37,10 +37,5 @@ jobs:
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=12 --max-line-length=127 --statistics
     - name: Test with unittest
-      if: ${{ matrix.python-version == '3.6' || runner.os == 'Windows' }}
       run: |
         python -m unittest -v
-    - name: Test with pytest
-      if: ${{ matrix.python-version != '3.6' && runner.os != 'Windows' }}
-      run: |
-        pipenv run pytest -v
