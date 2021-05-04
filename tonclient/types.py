@@ -3534,7 +3534,7 @@ class DebotAction(object):
 class DebotInfo(object):
     def __init__(
             self, interfaces: List[str], name: str = None, version: str = None,
-            publisher: str = None, key: str = None, author: str = None,
+            publisher: str = None, caption: str = None, author: str = None,
             support: str = None, hello: str = None, language: str = None,
             dabi: str = None, icon: str = None):
         """
@@ -3542,7 +3542,7 @@ class DebotInfo(object):
         :param name: DeBot short name
         :param version: DeBot semantic version
         :param publisher: The name of DeBot deployer
-        :param key: Short info about DeBot
+        :param caption: Short info about DeBot
         :param author: The name of DeBot developer
         :param support: TON address of author for questions and donations
         :param hello: String with the first message from DeBot
@@ -3554,7 +3554,7 @@ class DebotInfo(object):
         self.name = name
         self.version = version
         self.publisher = publisher
-        self.key = key
+        self.caption = caption
         self.author = author
         self.support = support
         self.hello = hello
@@ -3569,7 +3569,7 @@ class DebotInfo(object):
             'name': self.name,
             'version': self.version,
             'publisher': self.publisher,
-            'key': self.key,
+            'caption': self.caption,
             'author': self.author,
             'support': self.support,
             'hello': self.hello,
