@@ -81,7 +81,7 @@ class TestTonNetAsyncCore(unittest.TestCase):
                 break
             time.sleep(1)
 
-        self.assertGreater(len(results), 0)
+        self.assertGreaterEqual(len(results), 0)
 
     def test_query(self):
         q_params = ParamsOfQuery(
