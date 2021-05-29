@@ -10,11 +10,13 @@ from tonclient.types import ParamsOfParse, ResultOfParse, \
 
 class TonBoc(TonModule):
     """ Free TON boc SDK API implementation """
+
     @result_as(classname=ResultOfParse)
     def parse_message(self, params: ParamsOfParse) -> ResultOfParse:
         """
         Parses message boc into a JSON.
         JSON structure is compatible with GraphQL API message object
+
         :param params: See `types.ParamsOfParse`
         :return: See `types.ResultOfParse`
         """
@@ -25,6 +27,7 @@ class TonBoc(TonModule):
         """
         Parses transaction boc into a JSON.
         JSON structure is compatible with GraphQL API transaction object
+
         :param params: See `types.ParamsOfParse`
         :return: See `types.ResultOfParse`
         """
@@ -35,6 +38,7 @@ class TonBoc(TonModule):
         """
         Parses account boc into a JSON.
         JSON structure is compatible with GraphQL API account object
+
         :param params: See `types.ParamsOfParse`
         :return: See `types.ResultOfParse`
         """
@@ -45,6 +49,7 @@ class TonBoc(TonModule):
         """
         Parses block boc into a JSON.
         JSON structure is compatible with GraphQL API block object
+
         :param params: See `types.ParamsOfParse`
         :return: See `types.ResultOfParse`
         """
@@ -56,6 +61,7 @@ class TonBoc(TonModule):
         """
         Parses shardstate boc into a JSON.
         JSON structure is compatible with GraphQL API shardstate object
+
         :param params: See `ParamsOfParseShardstate`
         :return: See `ResultOfParse`
         """
@@ -65,6 +71,7 @@ class TonBoc(TonModule):
     def get_boc_hash(self, params: ParamsOfGetBocHash) -> ResultOfGetBocHash:
         """
         Calculates BOC root hash
+
         :param params: See `ParamsOfGetBocHash`
         :return: See `ResultOfGetBocHash`
         """
@@ -77,6 +84,7 @@ class TonBoc(TonModule):
         """
         Extract blockchain configuration from key block and also from
         zero state
+
         :param params: See `ParamsOfGetBlockchainConfig`
         :return: See `ResultOfGetBlockchainConfig`
         """
@@ -88,6 +96,7 @@ class TonBoc(TonModule):
             self, params: ParamsOfGetCodeFromTvc) -> ResultOfGetCodeFromTvc:
         """
         Extracts code from TVC contract image
+
         :param params: See `types.ParamsOfGetCodeFromTvc`
         :return: See `types.ResultOfGetCodeFromTvc`
         """
@@ -97,6 +106,7 @@ class TonBoc(TonModule):
     def cache_get(self, params: ParamsOfBocCacheGet) -> ResultOfBocCacheGet:
         """
         Get BOC from cache
+
         :param params: See `types.ParamsOfBocCacheGet`
         :return: See `types.ResultOfBocCacheGet`
         """
@@ -106,6 +116,7 @@ class TonBoc(TonModule):
     def cache_set(self, params: ParamsOfBocCacheSet) -> ResultOfBocCacheSet:
         """
         Save BOC into cache
+
         :param params: See `types.ParamsOfBocCacheSet`
         :return: See `types.ResultOfBocCacheSet`
         """
@@ -115,6 +126,7 @@ class TonBoc(TonModule):
         """
         Unpin BOCs with specified pin.
         BOCs which don't have another pins will be removed from cache
+
         :param params: See `types.ParamsOfBocCacheUnpin`
         :return:
         """
@@ -124,6 +136,7 @@ class TonBoc(TonModule):
     def encode_boc(self, params: ParamsOfEncodeBoc) -> ResultOfEncodeBoc:
         """
         Encodes BOC from builder operations
+
         :param params: See `types.ParamsOfEncodeBoc`
         :return: See `types.ResultOfEncodeBoc`
         """

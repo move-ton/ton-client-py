@@ -11,11 +11,13 @@ from tonclient.types import ParamsOfEncodeMessageBody, DecodedMessageBody, \
 
 class TonAbi(TonModule):
     """ Free TON abi SDK API implementation """
+
     @result_as(classname=DecodedMessageBody)
     def decode_message(
             self, params: ParamsOfDecodeMessage) -> DecodedMessageBody:
         """
         Decodes message body using provided message BOC and ABI
+
         :param params: See `types.ParamsOfDecodeMessage`
         :return: See `types.DecodedMessageBody`
         """
@@ -26,6 +28,7 @@ class TonAbi(TonModule):
             self, params: ParamsOfDecodeMessageBody) -> DecodedMessageBody:
         """
         Decodes message body using provided body BOC and ABI
+
         :param params: See `types.ParamsOfDecodeMessageBody`
         :return: See `types.DecodedMessageBody`
         """
@@ -40,6 +43,7 @@ class TonAbi(TonModule):
         Creates account state provided with one of these sets of data:
             - BOC of code, BOC of data, BOC of library
             - TVC (string in base64), keys, init params
+
         :param params: See `types.ParamsOfEncodeAccount`
         :return: See `types.ResultOfEncodeAccount`
         """
@@ -71,6 +75,7 @@ class TonAbi(TonModule):
               implement signing without private key disclosure to SDK.
               For instance, in case of using a cold wallet or HSM, when
               application calls some API to sign data.
+
         :param params: See `types.ParamsOfEncodeMessage`
         :return: See `types.ResultOfEncodeMessage`
         """
@@ -82,6 +87,7 @@ class TonAbi(TonModule):
     ) -> ResultOfEncodeMessageBody:
         """
         Encodes message body according to ABI function call
+
         :param params: See `types.ParamsOfEncodeMessageBody`
         :return: See `types.ResultOfEncodeMessageBody`
         """
@@ -94,6 +100,7 @@ class TonAbi(TonModule):
         """
         Combines `hex`-encoded `signature` with `base64`-encoded
         `unsigned_message`. Returns signed message encoded in `base64`
+
         :param params: See `types.ParamsOfAttachSignature`
         :return: See `types.ResultOfAttachSignature`
         """
@@ -128,6 +135,7 @@ class TonAbi(TonModule):
         Public key resolving priority:
           - public key from deploy set;
           - public key, specified in TVM file
+
         :param params: See `types.ParamsOfEncodeInternalMessage`
         :return: See `types.ResultOfEncodeInternalMessage`
         """

@@ -7,6 +7,7 @@ from tonclient.types import ParamsOfSendMessage, ResultOfSendMessage, \
 
 class TonProcessing(TonModule):
     """ Free TON processing SDK API implementation """
+
     @result_as(classname=ResultOfProcessMessage)
     def process_message(
             self, params: ParamsOfProcessMessage,
@@ -28,6 +29,7 @@ class TonProcessing(TonModule):
         If contract's ABI does not include "expire" header then, if no
         transaction is found within the network timeout (see config parameter),
         exits with error
+
         :param params: See `types.ParamsOfProcessMessage`
         :param callback: Additional responses handler
         :return: See `types.ResultOfProcessMessage`
@@ -45,6 +47,7 @@ class TonProcessing(TonModule):
         Sends message to the network and returns the last generated shard
         block of the destination account before the message was sent.
         It will be required later for message processing
+
         :param params: See `types.ParamsOfSendMessage`
         :param callback: Additional responses handler
         :return: See `types.ResultOfSendMessage`
@@ -81,6 +84,7 @@ class TonProcessing(TonModule):
               `now() + transaction_wait_timeout`.
             - If maximum block gen time is reached and no result transaction
               is found, the processing will exit with an error.
+
         :param params: See `types.ParamsOfWaitForTransaction`
         :param callback: Additional responses handler
         :return: See `types.ResultOfProcessMessage`

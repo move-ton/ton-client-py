@@ -7,11 +7,13 @@ from tonclient.types import ParamsOfConvertAddress, ResultOfConvertAddress, \
 
 class TonUtils(TonModule):
     """ Free TON utils SDK API implementation """
+
     @result_as(classname=ResultOfConvertAddress)
     def convert_address(
             self, params: ParamsOfConvertAddress) -> ResultOfConvertAddress:
         """
         Converts address from any TON format to any TON format
+
         :param params: See `types.ParamsOfConvertAddress`
         :return: See `types.ResultOfConvertAddress`
         """
@@ -22,6 +24,7 @@ class TonUtils(TonModule):
             self, params: ParamsOfCalcStorageFee) -> ResultOfCalcStorageFee:
         """
         Calculates storage fee for an account over a specified time period
+
         :param params: See `types.ParamsOfCalcStorageFee`
         :return: See `types.ResultOfCalcStorageFee`
         """
@@ -32,6 +35,7 @@ class TonUtils(TonModule):
             self, params: ParamsOfCompressZstd) -> ResultOfCompressZstd:
         """
         Compresses data using Zstandard algorithm
+
         :param params: See `types.ParamsOfCompressZstd`
         :return: See `types.ResultOfCompressZstd`
         """
@@ -42,6 +46,7 @@ class TonUtils(TonModule):
             self, params: ParamsOfDecompressZstd) -> ResultOfDecompressZstd:
         """
         Decompresses data using Zstandard algorithm
+
         :param params: See `types.ParamsOfDecompressZstd`
         :return: See `types.ResultOfDecompressZstd`
         """

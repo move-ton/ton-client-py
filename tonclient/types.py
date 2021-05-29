@@ -10,6 +10,7 @@ class BaseTypedType(object):
     Base class for objects which should be sent as dict {'type': '', ...}.
     E.g. `Abi`, `Signer`, `MessageSource`, etc.
     """
+
     def __init__(self, type: str):
         """
         :param type:
@@ -111,7 +112,8 @@ class NetworkConfig(object):
             message_retries_count: int = None,
             message_processing_timeout: int = None,
             wait_for_timeout: int = None, out_of_sync_threshold: int = None,
-            sending_endpoint_count: int = None, access_key: str = None):
+            sending_endpoint_count: int = None, access_key: str = None,
+            latency_detection_interval: int = None, max_latency: int = None):
         """
         :param server_address: DApp Server public address. For instance,
                 for `net.ton.dev/graphql` GraphQL endpoint the server
@@ -136,18 +138,31 @@ class NetworkConfig(object):
                 "expire" header. If the message is not delivered within the
                 specified timeout the appropriate error occurs
         :param wait_for_timeout: Maximum timeout that is used for query
-                response. The default value is 40 sec
+                response in ms. The default value is 40000 (40 sec)
         :param out_of_sync_threshold: Maximum time difference between server
                 and client. If client's device time is out of sink and
                 difference is more than the threshold then error will occur.
                 Also the error will occur if the specified threshold is more
                 than `message_processing_timeout / 2`.
-                The default value is 15 sec
+                The default value is 15000 (15 sec)
         :param sending_endpoint_count: Maximum number of randomly chosen
                 endpoints the library uses to send message.
                 The default value is 2 endpoints
         :param access_key: Access key to GraphQL API. At the moment is not
                 used in production
+        :param latency_detection_interval: Frequency of sync latency detection.
+                Library periodically checks the current endpoint for blockchain
+                data synchronization latency. If the latency (time-lag) is
+                less then `NetworkConfig.max_latency` then library selects
+                another endpoint.
+                Must be specified in milliseconds. Default is 60000 (1 min)
+        :param max_latency: Maximum value for the endpoint's blockchain data
+                synchronization latency (time-lag). Library periodically checks
+                the current endpoint for blockchain data synchronization
+                latency. If the latency (time-lag) is less then
+                `NetworkConfig.max_latency` then library selects another
+                endpoint.
+                Must be specified in milliseconds. Default is 60000 (1 min)
         """
         self.server_address = server_address
         self.endpoints = endpoints
@@ -160,6 +175,8 @@ class NetworkConfig(object):
         self.reconnect_timeout = reconnect_timeout
         self.sending_endpoint_count = sending_endpoint_count
         self.access_key = access_key
+        self.latency_detection_interval = latency_detection_interval
+        self.max_latency = max_latency
 
     @property
     def dict(self):
@@ -174,7 +191,9 @@ class NetworkConfig(object):
             'out_of_sync_threshold': self.out_of_sync_threshold,
             'reconnect_timeout': self.reconnect_timeout,
             'sending_endpoint_count': self.sending_endpoint_count,
-            'access_key': self.access_key
+            'access_key': self.access_key,
+            'latency_detection_interval': self.latency_detection_interval,
+            'max_latency': self.max_latency
         }
 
 
@@ -271,6 +290,7 @@ class ParamsOfAppRequest(object):
 class AppRequestResult:
     class Error(object):
         """ Error occurred during request processing """
+
         def __init__(self, text: str):
             """
             :param text: Error description
@@ -283,6 +303,7 @@ class AppRequestResult:
 
     class Ok(object):
         """ Request processed successfully """
+
         def __init__(self, result: Any):
             """
             :param result: Request processing result
@@ -554,6 +575,7 @@ class FunctionHeader(object):
     If a contract's ABI does not include some headers, then they are
     not filled.
     """
+
     def __init__(
             self, expire: int = None, time: int = None, pubkey: str = None):
         """
@@ -642,6 +664,7 @@ class DeploySet(object):
 class Signer:
     class NoSigner(BaseTypedType):
         """ No keys are provided. Creates an unsigned message """
+
         def __init__(self):
             super(Signer.NoSigner, self).__init__(type='None')
 
@@ -650,6 +673,7 @@ class Signer:
         Only public key is provided in unprefixed hex string format to
         generate unsigned message and data_to_sign which can be signed later
         """
+
         def __init__(self, public_key: str):
             """
             :param public_key:
@@ -666,6 +690,7 @@ class Signer:
 
     class Keys(BaseTypedType):
         """ Key pair is provided for signing """
+
         def __init__(self, keys: 'KeyPair'):
             """
             :param keys:
@@ -682,6 +707,7 @@ class Signer:
         Signing Box interface is provided for signing, allows DApps to sign
         messages using external APIs, such as HSM, cold wallet, etc.
         """
+
         def __init__(self, handle: 'SigningBoxHandle'):
             """
             :param handle:
@@ -713,6 +739,7 @@ class MessageBodyType(str, Enum):
 class StateInitSource:
     class Message(BaseTypedType):
         """ Deploy message """
+
         def __init__(self, source: 'MessageSourceType'):
             """
             :param source:
@@ -729,6 +756,7 @@ class StateInitSource:
 
     class StateInit(BaseTypedType):
         """ State init data """
+
         def __init__(self, code: str, data: str, library: str = None):
             """
             :param code: Code BOC. Encoded in `base64`
@@ -751,6 +779,7 @@ class StateInitSource:
 
     class Tvc(BaseTypedType):
         """ Content of the TVC file """
+
         def __init__(
                 self, tvc: str, public_key: str = None,
                 init_params: 'StateInitParams' = None):
@@ -1512,6 +1541,7 @@ class MnemonicDictionary(int, Enum):
 
 class KeyPair(object):
     """ Keypair object representation """
+
     def __init__(self, public: str, secret: str):
         """
         :param public: Public key - 64 symbols `hex` string
@@ -2260,12 +2290,14 @@ class RegisteredSigningBox(object):
 class ParamsOfAppSigningBox:
     class GetPublicKey(BaseTypedType):
         """ Get signing box public key """
+
         def __init__(self):
             super(ParamsOfAppSigningBox.GetPublicKey, self).__init__(
                 type='GetPublicKey')
 
     class Sign(BaseTypedType):
         """ Sign data """
+
         def __init__(self, unsigned: str):
             """
             :param unsigned: Data to sign encoded as `base64`
@@ -2289,6 +2321,7 @@ class ParamsOfAppSigningBox:
 class ResultOfAppSigningBox:
     class GetPublicKey(BaseTypedType):
         """ Result of getting public key """
+
         def __init__(self, public_key: str):
             """
             :param public_key: Signing box public key
@@ -2306,6 +2339,7 @@ class ResultOfAppSigningBox:
 
     class Sign(BaseTypedType):
         """ Result of signing data """
+
         def __init__(self, signature: str):
             """
             :param signature: Data signature encoded as `hex`
@@ -2760,6 +2794,120 @@ class ParamsOfQueryCounterparties(object):
         }
 
 
+class ResultOfGetEndpoints(object):
+    def __init__(self, query: str, endpoints: List[str]):
+        """
+        :param query: Current query endpoint
+        :param endpoints: List of all endpoints used by client
+        """
+        self.query = query
+        self.endpoints = endpoints
+
+
+class MessageNode(object):
+    def __init__(
+            self, id: str, bounce: bool, src_transaction_id: str = None,
+            dst_transaction_id: str = None, src: str = None, dst: str = None,
+            value: str = None, decoded_body: 'DecodedMessageBody' = None):
+        """
+        :param id: Message id
+        :param bounce: Bounce flag
+        :param src_transaction_id: Source transaction id. This field is
+                missing for an external inbound messages
+        :param dst_transaction_id: Destination transaction id. This field is
+                missing for an external outbound messages
+        :param src: Source address
+        :param dst: Destination address
+        :param value: Transferred tokens value
+        :param decoded_body: Decoded body. Library tries to decode message
+                body using provided `params.abi_registry`. This field will be
+                missing if none of the provided abi can be used to decode
+        """
+        self.id = id
+        self.bounce = bounce
+        self.src_transaction_id = src_transaction_id
+        self.dst_transaction_id = dst_transaction_id
+        self.src = src
+        self.dst = dst
+        self.value = value
+        self.decoded_body = decoded_body
+
+    @staticmethod
+    def from_dict(data: Dict[str, Any]) -> 'MessageNode':
+        if data['decoded_body']:
+            data['decoded_body'] = \
+                DecodedMessageBody.from_dict(data=data['decoded_body'])
+
+        return MessageNode(**data)
+
+
+class TransactionNode(object):
+    def __init__(
+            self, id: str, in_msg: str, out_msgs: List[str], account_addr: str,
+            total_fees: str, aborted: bool, exit_code: int = None):
+        """
+        :param id: Transaction id
+        :param in_msg: In message id
+        :param out_msgs: Out message ids
+        :param account_addr: Account address
+        :param total_fees: Transactions total fees
+        :param aborted: Aborted flag
+        :param exit_code: Compute phase exit code
+        """
+        self.id = id
+        self.in_msg = in_msg
+        self.out_msgs = out_msgs
+        self.account_addr = account_addr
+        self.total_fees = total_fees
+        self.aborted = aborted
+        self.exit_code = exit_code
+
+
+class ParamsOfQueryTransactionTree(object):
+    def __init__(self, in_msg: str, abi_registry: List['AbiType'] = None):
+        """
+        :param in_msg: Input message id
+        :param abi_registry:  List of contract ABIs that will be used to
+                decode message bodies. Library will try to decode each
+                returned message body using any ABI from the registry
+        """
+        self.in_msg = in_msg
+        self.abi_registry = abi_registry
+
+    @property
+    def dict(self):
+        abi_registry = [abi.dict for abi in self.abi_registry] \
+            if self.abi_registry else self.abi_registry
+
+        return {
+            'in_msg': self.in_msg,
+            'abi_registry': abi_registry
+        }
+
+
+class ResultOfQueryTransactionTree(object):
+    def __init__(
+            self, messages: List['MessageNode'],
+            transactions: List['TransactionNode']):
+        """
+        :param messages: Messages
+        :param transactions: Transactions
+        """
+        self.messages = messages
+        self.transactions = transactions
+
+    @staticmethod
+    def from_dict(data: Dict[str, Any]) -> 'ResultOfQueryTransactionTree':
+        data['messages'] = [
+            MessageNode.from_dict(msg) for msg in data['messages']
+        ]
+        data['transactions'] = [
+            TransactionNode(**tx) for tx in data['transactions']
+        ]
+
+        return ResultOfQueryTransactionTree(**data)
+
+
 # PROCESSING module
 class ProcessingErrorCode(int, Enum):
     MESSAGE_ALREADY_EXPIRED = 501
@@ -2783,6 +2931,7 @@ class ProcessingEvent:
         Notifies the app that the current shard block will be fetched from
         the network. Fetched block will be used later in waiting phase
         """
+
         def __init__(self):
             super(ProcessingEvent.WillFetchFirstBlock, self).__init__(
                 type='WillFetchFirstBlock')
@@ -2792,6 +2941,7 @@ class ProcessingEvent:
         Notifies the app that the client has failed to fetch current shard
         block. Message processing has finished
         """
+
         def __init__(self, error: 'ClientError'):
             """
             :param error:
@@ -2802,6 +2952,7 @@ class ProcessingEvent:
 
     class WillSend(BaseTypedType):
         """ Notifies the app that the message will be sent to the network """
+
         def __init__(
                 self, shard_block_id: str, message_id: str, message: str):
             """
@@ -2816,6 +2967,7 @@ class ProcessingEvent:
 
     class DidSend(BaseTypedType):
         """ Notifies the app that the message was sent to the network """
+
         def __init__(
                 self, shard_block_id: str, message_id: str, message: str):
             """
@@ -2834,6 +2986,7 @@ class ProcessingEvent:
         error. Nevertheless the processing will be continued at the waiting
         phase because the message possibly has been delivered to the node
         """
+
         def __init__(
                 self, shard_block_id: str, message_id: str, message: str,
                 error: 'ClientError'):
@@ -2855,6 +3008,7 @@ class ProcessingEvent:
         network. Event can occurs more than one time due to block walking
         procedure
         """
+
         def __init__(self, shard_block_id: str, message_id: str, message: str):
             """
             :param shard_block_id:
@@ -2872,6 +3026,7 @@ class ProcessingEvent:
         Notifies the app that the next block can't be fetched due to error.
         Processing will be continued after `network_resume_timeout`
         """
+
         def __init__(
                 self, shard_block_id: str, message_id: str, message: str,
                 error: 'ClientError'):
@@ -2895,6 +3050,7 @@ class ProcessingEvent:
         Processing will be continued from encoding phase after
         `expiration_retries_timeout`
         """
+
         def __init__(
                 self, message_id: str, message: str, error: 'ClientError'):
             """
@@ -3136,11 +3292,13 @@ class AccountForExecutor:
         has no deploy data since transactions on the uninitialized account
         are always aborted
         """
+
         def __init__(self):
             super(AccountForExecutor.NoAccount, self).__init__(type='None')
 
     class Uninit(BaseTypedType):
         """ Emulate uninitialized account to run deploy message """
+
         def __init__(self):
             super(AccountForExecutor.Uninit, self).__init__(type='Uninit')
 
@@ -3581,10 +3739,11 @@ class DebotInfo(object):
 
 class DebotActivity:
     """ Describes the operation that the DeBot wants to perform """
+
     class Transaction(BaseTypedType):
         def __init__(
                 self, msg: str, dst: str, out: List['Spending'], fee: int,
-                setcode: bool, signkey: str):
+                setcode: bool, signkey: str, signing_box_handle: int):
             """
             :param msg: External inbound message BOC
             :param dst: Target smart contract address
@@ -3592,6 +3751,8 @@ class DebotActivity:
             :param fee: Transaction total fee
             :param setcode: Indicates if target smart contract updates its code
             :param signkey: Public key from keypair that was used to sign
+                    external message
+            :param signing_box_handle: Signing box handle used to sign
                     external message
             """
             super(DebotActivity.Transaction, self).__init__(type='Transaction')
@@ -3601,6 +3762,7 @@ class DebotActivity:
             self.fee = fee
             self.setcode = setcode
             self.signkey = signkey
+            self.signing_box_handle = signing_box_handle
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> 'DebotActivityType':
@@ -3624,6 +3786,7 @@ class Spending(object):
 
 class ParamsOfInit(object):
     """ Parameters to init DeBot """
+
     def __init__(self, address: str):
         """
         :param address: Debot smart contract address
@@ -3640,6 +3803,7 @@ class RegisteredDebot(object):
     Structure for storing debot handle returned from `start` and `fetch`
     functions
     """
+
     def __init__(
             self, debot_handle: 'DebotHandle', debot_abi: str,
             info: 'DebotInfo'):
@@ -3667,8 +3831,10 @@ class ParamsOfAppDebotBrowser:
     Debot Browser callbacks.
     Called by debot engine to communicate with debot browser
     """
+
     class Log(BaseTypedType):
         """ Print message to user """
+
         def __init__(self, msg: str):
             """
             :param msg: A string that must be printed to user
@@ -3678,6 +3844,7 @@ class ParamsOfAppDebotBrowser:
 
     class Switch(BaseTypedType):
         """ Switch debot to another context (menu) """
+
         def __init__(self, context_id: int):
             """
             :param context_id: Debot context ID to which debot is switched
@@ -3687,6 +3854,7 @@ class ParamsOfAppDebotBrowser:
 
     class SwitchCompleted(BaseTypedType):
         """ Notify browser that all context actions are shown """
+
         def __init__(self):
             super(ParamsOfAppDebotBrowser.SwitchCompleted, self).__init__(
                 type='SwitchCompleted')
@@ -3696,6 +3864,7 @@ class ParamsOfAppDebotBrowser:
         Show action to the user.
         Called after switch for each action in context
         """
+
         def __init__(self, action: 'DebotAction'):
             """
             :param action: Debot action that must be shown to user as menu
@@ -3708,6 +3877,7 @@ class ParamsOfAppDebotBrowser:
 
     class Input(BaseTypedType):
         """ Request user input """
+
         def __init__(self, prompt: str):
             """
             :param prompt: A prompt string that must be printed to user
@@ -3721,12 +3891,14 @@ class ParamsOfAppDebotBrowser:
         Get signing box to sign data.
         Signing box returned is owned and disposed by debot engine
         """
+
         def __init__(self):
             super(ParamsOfAppDebotBrowser.GetSigningBox, self).__init__(
                 type='GetSigningBox')
 
     class InvokeDebot(BaseTypedType):
         """ Execute action of another debot """
+
         def __init__(self, debot_addr: str, action: 'DebotAction'):
             """
             :param debot_addr: Address of debot in blockchain
@@ -3739,6 +3911,7 @@ class ParamsOfAppDebotBrowser:
 
     class Send(BaseTypedType):
         """ Used by Debot to call DInterface implemented by Debot Browser """
+
         def __init__(self, message: str):
             """
             :param message: Internal message to DInterface address. Message
@@ -3751,6 +3924,7 @@ class ParamsOfAppDebotBrowser:
         """
         Requests permission from DeBot Browser to execute DeBot operation
         """
+
         def __init__(self, activity: 'DebotActivityType'):
             """
             :param activity: DeBot activity details
@@ -3771,8 +3945,10 @@ class ParamsOfAppDebotBrowser:
 
 class ResultOfAppDebotBrowser(object):
     """ Returning values from Debot Browser callbacks """
+
     class Input(BaseTypedType):
         """ Result of user input """
+
         def __init__(self, value: str):
             """
             :param value: String entered by user
@@ -3789,6 +3965,7 @@ class ResultOfAppDebotBrowser(object):
 
     class GetSigningBox(BaseTypedType):
         """ Result of getting signing box """
+
         def __init__(self, signing_box: 'SigningBoxHandle'):
             """
             :param signing_box: Signing box for signing data requested by
@@ -3808,12 +3985,14 @@ class ResultOfAppDebotBrowser(object):
 
     class InvokeDebot(BaseTypedType):
         """ Result of debot invoking """
+
         def __init__(self):
             super(ResultOfAppDebotBrowser.InvokeDebot, self).__init__(
                 type='InvokeDebot')
 
     class Approve(BaseTypedType):
         """ Result of approve callback """
+
         def __init__(self, approved: bool):
             """
             :param approved: Indicates whether the DeBot is allowed to
@@ -3833,6 +4012,7 @@ class ResultOfAppDebotBrowser(object):
 
 class ParamsOfStart(object):
     """ Parameters to start debot """
+
     def __init__(self, debot_handle: 'DebotHandle'):
         """
         :param debot_handle: Debot handle which references an instance of
@@ -3847,6 +4027,7 @@ class ParamsOfStart(object):
 
 class ParamsOfFetch(object):
     """ Parameters to fetch debot """
+
     def __init__(self, address: str):
         """
         :param address: Debot smart contract address
@@ -3868,6 +4049,7 @@ class ResultOfFetch(object):
 
 class ParamsOfExecute(object):
     """ Parameters for executing debot action """
+
     def __init__(self, debot_handle: 'DebotHandle', action: 'DebotAction'):
         """
         :param debot_handle: Debot handle which references an instance of
@@ -3884,6 +4066,7 @@ class ParamsOfExecute(object):
 
 class ParamsOfSend(object):
     """ Parameters of send function """
+
     def __init__(self, debot_handle: 'DebotHandle', message: str):
         """
         :param debot_handle: Debot handle which references an instance of

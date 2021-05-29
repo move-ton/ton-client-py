@@ -126,11 +126,14 @@ from tonclient.types import NetworkConfig, CryptoConfig, AbiConfig, BocConfig, C
 #     `sending_endpoint_count=2`
 #     `reconnect_timeout=` (DEPRECATED)
 #     `access_key=''`
+#     `latency_detection_interval=60000`
+#     `max_latency=60000`
 network = NetworkConfig(
     server_address='http://localhost', endpoints=None, network_retries_count=None, 
     message_retries_count=None, message_processing_timeout=None, reconnect_timeout=None,
     wait_for_timeout=None, out_of_sync_threshold=None, sending_endpoint_count=None, 
-    access_key=None, max_reconnect_timeout=None)
+    access_key=None, max_reconnect_timeout=None, latency_detection_interval=None,
+    max_latency=None)
 
 # Default crypto config is below.
 # `None` attributes are filled by core with defaults values: 

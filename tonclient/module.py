@@ -20,6 +20,7 @@ class TonModule(object):
     All modules, such as 'crypto', 'contracts', etc. should be inherited
     from this class.
     """
+
     _async_response_map = {}
 
     def __init__(self, client):
@@ -120,6 +121,7 @@ class TonModule(object):
     def _generate_request_id(self, size: int = 3) -> int:
         """
         Generate random int of size in bytes
+
         :param size: Length in bytes
         :return:
         """

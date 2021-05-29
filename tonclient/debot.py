@@ -16,6 +16,7 @@ class TonDebot(TonModule):
         Creates and instance of DeBot.
         Downloads debot smart contract (code and data) from blockchain and
         creates an instance of Debot Engine for it
+
         :param params: See `types.ParamsOfInit`
         :param callback: Callback for debot events
         :return: See `types.RegisteredDebot`
@@ -36,6 +37,7 @@ class TonDebot(TonModule):
         Therefore when `debot.remove` is called the debot is being deleted and
         the callback is called with `finish=true` which indicates that it will
         never be used again
+
         :param params: See `types.ParamsOfStart`
         :return:
         """
@@ -46,6 +48,7 @@ class TonDebot(TonModule):
         """
         Fetches DeBot metadata from blockchain.
         Downloads DeBot from blockchain and creates and fetches its metadata
+
         :param params: See `types.ParamsOfFetch`
         :return: See `types.ResultOfFetch`
         """
@@ -59,6 +62,7 @@ class TonDebot(TonModule):
 
         Chain of actions can be executed if input action generates a list of
         subactions
+
         :param params: See `types.ParamsOfExecute`
         :return:
         """
@@ -69,6 +73,7 @@ class TonDebot(TonModule):
         Sends message to Debot.
         Used by Debot Browser to send response on DInterface call or from
         other Debots
+
         :param params: See `types.ParamsOfSend`
         :return:
         """
@@ -79,6 +84,7 @@ class TonDebot(TonModule):
         Destroys debot handle.
         Removes handle from Client Context and drops debot engine referenced
         by that handle
+
         :param params: See `types.ParamsOfRemove`
         :return:
         """

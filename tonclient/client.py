@@ -42,6 +42,7 @@ class TonClientBase(TonModule):
 
 class TonClient(object):
     """ Main client class to create object of """
+
     def __init__(
             self, config: ClientConfig, is_core_async: bool = True,
             is_async: bool = False):

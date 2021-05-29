@@ -17,7 +17,8 @@ from tonclient.types import ParamsOfQueryCollection, OrderBy, SortDirection, \
     ParamsOfEncodeMessage, Signer, DeploySet, CallSet, ParamsOfProcessMessage, \
     ClientConfig, ParamsOfFindLastShardBlock, ParamsOfAggregateCollection, \
     FieldAggregation, AggregationFn, ParamsOfBatchQuery, \
-    ParamsOfQueryOperation, ParamsOfQueryCounterparties
+    ParamsOfQueryOperation, ParamsOfQueryCounterparties, \
+    ParamsOfQueryTransactionTree, MessageNode, TransactionNode
 
 
 class TestTonNetAsyncCore(unittest.TestCase):
@@ -186,6 +187,10 @@ class TestTonNetAsyncCore(unittest.TestCase):
     #     endpoint_set = client.net.fetch_endpoints()
     #     client.net.set_endpoints(params=endpoint_set)
 
+    def test_get_endpoints(self):
+        result = async_core_client.net.get_endpoints()
+        self.assertGreaterEqual(1, len(result.endpoints))
+
     def test_aggregate_collection(self):
         fields = [
             FieldAggregation(field='', fn=AggregationFn.COUNT)
@@ -221,19 +226,41 @@ class TestTonNetAsyncCore(unittest.TestCase):
         result = async_core_client.net.batch_query(params=params)
         self.assertEqual(3, len(result.results))
 
-    def test_query_counterparties(self):
-        params = ParamsOfQueryCounterparties(
-            account='-1:7777777777777777777777777777777777777777777777777777777777777777',
-            first=5, result='counterparty last_message_id cursor')
-        result = async_core_client.net.query_counterparties(params=params)
-        counterparties_1 = result.result
-        self.assertIsInstance(counterparties_1, list)
+    # def test_query_counterparties(self):
+    #     params = ParamsOfQueryCounterparties(
+    #         account='-1:7777777777777777777777777777777777777777777777777777777777777777',
+    #         first=5, result='counterparty last_message_id cursor')
+    #     result = async_core_client.net.query_counterparties(params=params)
+    #     counterparties_1 = result.result
+    #     self.assertIsInstance(counterparties_1, list)
+    #
+    #     if len(counterparties_1):
+    #         params.after = counterparties_1[-1]['cursor']
+    #         result = async_core_client.net.query_counterparties(params=params)
+    #         counterparties_2 = result.result
+    #         self.assertNotEqual(counterparties_1, counterparties_2)
 
-        if len(counterparties_1):
-            params.after = counterparties_1[-1]['cursor']
-            result = async_core_client.net.query_counterparties(params=params)
-            counterparties_2 = result.result
-            self.assertNotEqual(counterparties_1, counterparties_2)
+    def test_query_transaction_tree(self):
+        query_params = ParamsOfQueryCollection(
+            collection='messages', filter={'msg_type': {'eq': 1}},
+            result='id dst dst_transaction {id aborted out_messages {id dst msg_type_name dst_transaction {id aborted out_messages {id dst msg_type_name dst_transaction {id aborted}}}}}')
+        query_result = async_core_client.net.query_collection(
+            params=query_params)
+
+        abi_registry = [
+            Abi.from_path(path=os.path.join(SAMPLES_DIR, 'Hello.abi.json'))
+        ]
+
+        for message in query_result.result:
+            tree_params = ParamsOfQueryTransactionTree(
+                in_msg=message['id'], abi_registry=abi_registry)
+            tree_result = async_core_client.net.query_transaction_tree(
+                params=tree_params)
+
+            self.assertIsInstance(tree_result.messages, list)
+            self.assertIsInstance(tree_result.messages[0], MessageNode)
+            self.assertIsInstance(tree_result.transactions, list)
+            self.assertIsInstance(tree_result.transactions[0], TransactionNode)
 
 
 class TestTonNetSyncCore(unittest.TestCase):
