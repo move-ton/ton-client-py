@@ -1503,6 +1503,8 @@ class ResultOfEncodeBoc(object):
 # CRYPTO module
 SigningBoxHandle = int
 
+EncryptionBoxHandle = int
+
 
 class CryptoErrorCode(int, Enum):
     INVALID_PUBLIC_KEY = 100
@@ -1525,6 +1527,7 @@ class CryptoErrorCode(int, Enum):
     MNEMONIC_FROM_ENTROPY_FAILED = 120
     SIGNING_BOX_NOT_REGISTERED = 121
     INVALID_SIGNATURE = 122
+    ENCRYPTION_BOX_NOT_REGISTERED = 123
 
 
 class MnemonicDictionary(int, Enum):
@@ -2415,6 +2418,204 @@ class ResultOfNaclSignDetachedVerify(object):
         self.succeeded = succeeded
 
 
+class EncryptionBoxInfo(object):
+    """ Encryption box information """
+
+    def __init__(
+            self, hdpath: str = None, algorithm: str = None,
+            options: Any = None, public: Any = None):
+        """
+        :param hdpath: Derivation path, for instance "m/44'/396'/0'/0/0"
+        :param algorithm: Cryptographic algorithm, used by this encryption box
+        :param options: Options, depends on algorithm and specific encryption
+                box implementation
+        :param public: Public information, depends on algorithm
+        """
+        self.hdpath = hdpath
+        self.algorithm = algorithm
+        self.options = options
+        self.public = public
+
+    @property
+    def dict(self):
+        return {
+            'hdpath': self.hdpath,
+            'algorithm': self.algorithm,
+            'options': self.options,
+            'public': self.public
+        }
+
+
+class RegisteredEncryptionBox(object):
+    def __init__(self, handle: 'EncryptionBoxHandle'):
+        """
+        :param handle: Handle of the encryption box
+        """
+        self.handle = handle
+
+    @property
+    def dict(self):
+        return {'handle': self.handle}
+
+
+class ParamsOfAppEncryptionBox:
+    """ Encryption box callbacks """
+
+    class GetInfo(BaseTypedType):
+        def __init__(self):
+            super(ParamsOfAppEncryptionBox.GetInfo, self).__init__(
+                type='GetInfo')
+
+    class Encrypt(BaseTypedType):
+        def __init__(self, data: str):
+            """
+            :param data: Data, encoded in `base64`
+            """
+            super(ParamsOfAppEncryptionBox.Encrypt, self).__init__(
+                type='Encrypt')
+            self.data = data
+
+        @property
+        def dict(self):
+            return {
+                **super(ParamsOfAppEncryptionBox.Encrypt, self).dict,
+                'data': self.data
+            }
+
+    class Decrypt(BaseTypedType):
+        def __init__(self, data: str):
+            """
+            :param data: Data, encoded in `base64`
+            """
+            super(ParamsOfAppEncryptionBox.Decrypt, self).__init__(
+                type='Decrypt')
+            self.data = data
+
+        @property
+        def dict(self):
+            return {
+                **super(ParamsOfAppEncryptionBox.Decrypt, self).dict,
+                'data': self.data
+            }
+
+    @staticmethod
+    def from_dict(data: Dict[str, Any]) -> Union[GetInfo, Encrypt, Decrypt]:
+        kwargs = {k: v for k, v in data.items() if k != 'type'}
+        return getattr(ParamsOfAppEncryptionBox, data['type'])(**kwargs)
+
+
+class ResultOfAppEncryptionBox:
+    """ Returning values from signing box callbacks """
+
+    class GetInfo(BaseTypedType):
+        def __init__(self, info: 'EncryptionBoxInfo'):
+            super(ResultOfAppEncryptionBox.GetInfo, self).__init__(
+                type='GetInfo')
+            self.info = info
+
+        @property
+        def dict(self):
+            return {
+                **super(ResultOfAppEncryptionBox.GetInfo, self).dict,
+                'info': self.info.dict
+            }
+
+    class Encrypt(BaseTypedType):
+        def __init__(self, data: str):
+            """
+            :param data: Encrypted data, encoded in `base64`
+            """
+            super(ResultOfAppEncryptionBox.Encrypt, self).__init__(
+                type='Encrypt')
+            self.data = data
+
+        @property
+        def dict(self):
+            return {
+                **super(ResultOfAppEncryptionBox.Encrypt, self).dict,
+                'data': self.data
+            }
+
+    class Decrypt(BaseTypedType):
+        def __init__(self, data: str):
+            """
+            :param data: Decrypted data, encoded in `base64`
+            """
+            super(ResultOfAppEncryptionBox.Decrypt, self).__init__(
+                type='Decrypt')
+            self.data = data
+
+        @property
+        def dict(self):
+            return {
+                **super(ResultOfAppEncryptionBox.Decrypt, self).dict,
+                'data': self.data
+            }
+
+
+class ParamsOfEncryptionBoxGetInfo(object):
+    def __init__(self, encryption_box: 'EncryptionBoxHandle'):
+        self.encryption_box = encryption_box
+
+    @property
+    def dict(self):
+        return {'encryption_box': self.encryption_box}
+
+
+class ResultOfEncryptionBoxGetInfo(object):
+    def __init__(self, info: 'EncryptionBoxInfo'):
+        self.info = info
+
+    @staticmethod
+    def from_dict(data: Dict[str, Any]) -> 'ResultOfEncryptionBoxGetInfo':
+        data['info'] = EncryptionBoxInfo(**data['info'])
+        return ResultOfEncryptionBoxGetInfo(**data)
+
+
+class ParamsOfEncryptionBoxEncrypt(object):
+    def __init__(self, encryption_box: 'EncryptionBoxHandle', data: str):
+        """
+        :param encryption_box: Encryption box handle
+        :param data: Data to be encrypted, encoded in `base64`
+        """
+        self.encryption_box = encryption_box
+        self.data = data
+
+    @property
+    def dict(self):
+        return {'encryption_box': self.encryption_box, 'data': self.data}
+
+
+class ResultOfEncryptionBoxEncrypt(object):
+    def __init__(self, data: str):
+        """
+        :param data: Encrypted data, encoded in `base64`
+        """
+        self.data = data
+
+
+class ParamsOfEncryptionBoxDecrypt(object):
+    def __init__(self, encryption_box: 'EncryptionBoxHandle', data: str):
+        """
+        :param encryption_box: Encryption box handle
+        :param data: Data to be decrypted, encoded in `base64`
+        """
+        self.encryption_box = encryption_box
+        self.data = data
+
+    @property
+    def dict(self):
+        return {'encryption_box': self.encryption_box, 'data': self.data}
+
+
+class ResultOfEncryptionBoxDecrypt(object):
+    def __init__(self, data: str):
+        """
+        :param data: Decrypted data, encoded in `base64`
+        """
+        self.data = data
+
+
 # NET module
 class NetErrorCode(int, Enum):
     QUERY_FAILED = 601
@@ -2864,15 +3065,22 @@ class TransactionNode(object):
 
 
 class ParamsOfQueryTransactionTree(object):
-    def __init__(self, in_msg: str, abi_registry: List['AbiType'] = None):
+    def __init__(
+            self, in_msg: str, abi_registry: List['AbiType'] = None,
+            timeout: int = None):
         """
         :param in_msg: Input message id
         :param abi_registry:  List of contract ABIs that will be used to
                 decode message bodies. Library will try to decode each
                 returned message body using any ABI from the registry
+        :param timeout: Timeout used to limit waiting time for the missing
+                messages and transaction. If some of the following messages
+                and transactions are missing yet. The maximum waiting time is
+                regulated by this option. Default value is 60000 (1 min)
         """
         self.in_msg = in_msg
         self.abi_registry = abi_registry
+        self.timeout = timeout
 
     @property
     def dict(self):
@@ -2881,7 +3089,8 @@ class ParamsOfQueryTransactionTree(object):
 
         return {
             'in_msg': self.in_msg,
-            'abi_registry': abi_registry
+            'abi_registry': abi_registry,
+            'timeout': self.timeout
         }
 
 

@@ -24,7 +24,10 @@ from tonclient.types import KeyPair, ParamsOfFactorize, ResultOfFactorize, \
     RegisteredSigningBox, ResultOfSigningBoxGetPublicKey, \
     ParamsOfSigningBoxSign, ResultOfSigningBoxSign, \
     ParamsOfNaclSignDetachedVerify, ResultOfNaclSignDetachedVerify, \
-    ResponseHandler
+    ResponseHandler, RegisteredEncryptionBox, ParamsOfEncryptionBoxGetInfo, \
+    ResultOfEncryptionBoxGetInfo, ParamsOfEncryptionBoxEncrypt, \
+    ResultOfEncryptionBoxEncrypt, ParamsOfEncryptionBoxDecrypt, \
+    ResultOfEncryptionBoxDecrypt
 
 
 class TonCrypto(TonModule):
@@ -475,3 +478,59 @@ class TonCrypto(TonModule):
         :return:
         """
         return self.request(method='crypto.remove_signing_box', **params.dict)
+
+    @result_as(classname=RegisteredEncryptionBox)
+    def register_encryption_box(
+            self, callback: ResponseHandler) -> RegisteredEncryptionBox:
+        """
+        Register an application implemented encryption box
+
+        :param callback: Callback to send events to
+        :return: See `types.RegisteredEncryptionBox`
+        """
+        return self.request(
+            method='crypto.register_encryption_box', callback=callback)
+
+    def remove_encryption_box(self, params: RegisteredEncryptionBox):
+        """ Removes encryption box from SDK """
+        return self.request(
+            method='crypto.remove_encryption_box', **params.dict)
+
+    @result_as(classname=ResultOfEncryptionBoxGetInfo)
+    def encryption_box_get_info(
+            self, params: ParamsOfEncryptionBoxGetInfo
+    ) -> ResultOfEncryptionBoxGetInfo:
+        """
+        Queries info from the given encryption box
+
+        :param params: See `types.ParamsOfEncryptionBoxGetInfo`
+        :return: See `types.ResultOfEncryptionBoxGetInfo`
+        """
+        return self.request(
+            method='crypto.encryption_box_get_info', **params.dict)
+
+    @result_as(classname=ResultOfEncryptionBoxEncrypt)
+    def encryption_box_encrypt(
+            self, params: ParamsOfEncryptionBoxEncrypt
+    ) -> ResultOfEncryptionBoxEncrypt:
+        """
+        Encrypts data using given encryption box
+
+        :param params: See `types.ParamsOfEncryptionBoxEncrypt`
+        :return: See `types.ResultOfEncryptionBoxEncrypt`
+        """
+        return self.request(
+            method='crypto.encryption_box_encrypt', **params.dict)
+
+    @result_as(classname=ResultOfEncryptionBoxDecrypt)
+    def encryption_box_decrypt(
+            self, params: ParamsOfEncryptionBoxDecrypt
+    ) -> ResultOfEncryptionBoxDecrypt:
+        """
+        Decrypts data using given encryption box
+
+        :param params: See `types.ParamsOfEncryptionBoxDecrypt`
+        :return: See `types.ResultOfEncryptionBoxDecrypt`
+        """
+        return self.request(
+            method='crypto.encryption_box_decrypt', **params.dict)

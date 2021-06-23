@@ -18,7 +18,9 @@ from tonclient.types import KeyPair, MnemonicDictionary, ParamsOfHash, \
     ParamsOfNaclSecretBoxOpen, ParamsOfScrypt, ParamsOfChaCha20, \
     ParamsOfSigningBoxSign, ParamsOfAppRequest, ParamsOfAppSigningBox, \
     ParamsOfResolveAppRequest, ResultOfAppSigningBox, AppRequestResult, \
-    ParamsOfNaclSignDetachedVerify
+    ParamsOfNaclSignDetachedVerify, ParamsOfEncryptionBoxGetInfo, \
+    ParamsOfAppEncryptionBox, ResultOfAppEncryptionBox, EncryptionBoxInfo, \
+    ParamsOfEncryptionBoxEncrypt, ParamsOfEncryptionBoxDecrypt
 
 
 class TestTonCryptoAsyncCore(unittest.TestCase):
@@ -608,6 +610,65 @@ class TestTonCryptoAsyncCore(unittest.TestCase):
         self.assertEqual(keys_sign.signature, box_sign.signature)
 
         async_core_client.crypto.remove_signing_box(params=external_box)
+
+    def test_encryption_box(self):
+        from concurrent.futures import ThreadPoolExecutor
+
+        def __callback(response_data, *args):
+            request = ParamsOfAppRequest(**response_data)
+            box_params = ParamsOfAppEncryptionBox.from_dict(
+                data=request.request_data)
+            box_result = None
+
+            if isinstance(box_params, ParamsOfAppEncryptionBox.GetInfo):
+                _info = EncryptionBoxInfo(algorithm='duplicator')
+                box_result = ResultOfAppEncryptionBox.GetInfo(info=_info)
+            if isinstance(box_params, ParamsOfAppEncryptionBox.Encrypt):
+                data = box_params.data * 2
+                box_result = ResultOfAppEncryptionBox.Encrypt(data=data)
+            if isinstance(box_params, ParamsOfAppEncryptionBox.Decrypt):
+                end = int(len(box_params.data) / 2)
+                data = box_params.data[:end]
+                box_result = ResultOfAppEncryptionBox.Decrypt(data=data)
+
+            # Create resolve app request params
+            request_result = AppRequestResult.Ok(
+                result=box_result.dict)
+            resolve_params = ParamsOfResolveAppRequest(
+                app_request_id=request.app_request_id,
+                result=request_result)
+            with ThreadPoolExecutor() as executor:
+                future = executor.submit(
+                    async_core_client.resolve_app_request,
+                    params=resolve_params)
+                future.result()
+
+        # Register box
+        box = async_core_client.crypto.register_encryption_box(
+            callback=__callback)
+
+        # Get info
+        info_result = async_core_client.crypto.encryption_box_get_info(
+            params=ParamsOfEncryptionBoxGetInfo(encryption_box=box.handle))
+        self.assertEqual(info_result.info.algorithm, 'duplicator')
+
+        # Encrypt
+        enc_data = '12345'
+        params = ParamsOfEncryptionBoxEncrypt(
+            encryption_box=box.handle, data=enc_data)
+        enc_result = async_core_client.crypto.encryption_box_encrypt(
+            params=params)
+        self.assertEqual(enc_data * 2, enc_result.data)
+
+        # Decrypt
+        params = ParamsOfEncryptionBoxDecrypt(
+            encryption_box=box.handle, data=enc_result.data)
+        dec_result = async_core_client.crypto.encryption_box_decrypt(
+            params=params)
+        self.assertEqual(enc_data, dec_result.data)
+
+        # Remove box
+        async_core_client.crypto.remove_encryption_box(params=box)
 
 
 class TestTonCryptoSyncCore(unittest.TestCase):
