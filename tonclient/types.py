@@ -2316,7 +2316,7 @@ class ParamsOfAppSigningBox:
             }
 
     @staticmethod
-    def from_dict(data: Dict[str, Any]) -> Union[GetPublicKey, Sign]:
+    def from_dict(data: Dict[str, Any]) -> 'ParamsOfAppSigningBoxType':
         kwargs = {k: v for k, v in data.items() if k != 'type'}
         return getattr(ParamsOfAppSigningBox, data['type'])(**kwargs)
 
@@ -2499,7 +2499,7 @@ class ParamsOfAppEncryptionBox:
             }
 
     @staticmethod
-    def from_dict(data: Dict[str, Any]) -> Union[GetInfo, Encrypt, Decrypt]:
+    def from_dict(data: Dict[str, Any]) -> 'ParamsOfAppEncryptionBoxType':
         kwargs = {k: v for k, v in data.items() if k != 'type'}
         return getattr(ParamsOfAppEncryptionBox, data['type'])(**kwargs)
 
@@ -4316,34 +4316,49 @@ class DebotState(int, Enum):
 # Aggregated types
 AbiType = Union[Abi.Contract, Abi.Json, Abi.Handle, Abi.Serialized]
 SignerType = Union[
-    Signer.NoSigner, Signer.External, Signer.Keys, Signer.SigningBox]
+    Signer.NoSigner, Signer.External, Signer.Keys, Signer.SigningBox
+]
 AppRequestResultType = Union[AppRequestResult.Ok, AppRequestResult.Error]
 MessageSourceType = Union[MessageSource.Encoded, MessageSource.EncodingParams]
 StateInitSourceType = Union[
-    StateInitSource.Message, StateInitSource.StateInit, StateInitSource.Tvc]
+    StateInitSource.Message, StateInitSource.StateInit, StateInitSource.Tvc
+]
 ProcessingEventType = Union[
     ProcessingEvent.WillFetchFirstBlock, ProcessingEvent.FetchNextBlockFailed,
     ProcessingEvent.WillSend, ProcessingEvent.DidSend,
     ProcessingEvent.SendFailed, ProcessingEvent.WillFetchNextBlock,
-    ProcessingEvent.FetchNextBlockFailed, ProcessingEvent.MessageExpired]
+    ProcessingEvent.FetchNextBlockFailed, ProcessingEvent.MessageExpired
+]
 AccountForExecutorType = Union[
     AccountForExecutor.NoAccount, AccountForExecutor.Uninit,
-    AccountForExecutor.Account]
+    AccountForExecutor.Account
+]
 AddressStringFormatType = Union[
     AddressStringFormat.AccountId, AddressStringFormat.Hex,
-    AddressStringFormat.Base64]
+    AddressStringFormat.Base64
+]
 DebotActivityType = Union[DebotActivity.Transaction]
 ParamsOfAppDebotBrowserType = Union[
     ParamsOfAppDebotBrowser.Log, ParamsOfAppDebotBrowser.Switch,
     ParamsOfAppDebotBrowser.SwitchCompleted,
     ParamsOfAppDebotBrowser.ShowAction, ParamsOfAppDebotBrowser.Input,
     ParamsOfAppDebotBrowser.GetSigningBox, ParamsOfAppDebotBrowser.InvokeDebot,
-    ParamsOfAppDebotBrowser.Send, ParamsOfAppDebotBrowser.Approve]
+    ParamsOfAppDebotBrowser.Send, ParamsOfAppDebotBrowser.Approve
+]
 ParamsOfQueryOperationType = Union[
     ParamsOfQueryOperation.QueryCollection,
     ParamsOfQueryOperation.WaitForCollection,
     ParamsOfQueryOperation.AggregateCollection,
-    ParamsOfQueryOperation.QueryCounterparties]
+    ParamsOfQueryOperation.QueryCounterparties
+]
 BocCacheTypeType = Union[BocCacheType.Pinned, BocCacheType.Unpinned]
 BuilderOpType = Union[
-    BuilderOp.Integer, BuilderOp.BitString, BuilderOp.Cell, BuilderOp.CellBoc]
+    BuilderOp.Integer, BuilderOp.BitString, BuilderOp.Cell, BuilderOp.CellBoc
+]
+ParamsOfAppSigningBoxType = Union[
+    ParamsOfAppSigningBox.GetPublicKey, ParamsOfAppSigningBox.Sign
+]
+ParamsOfAppEncryptionBoxType = Union[
+    ParamsOfAppEncryptionBox.GetInfo, ParamsOfAppEncryptionBox.Encrypt,
+    ParamsOfAppEncryptionBox.Decrypt
+]

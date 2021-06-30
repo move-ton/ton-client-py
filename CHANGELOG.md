@@ -1,3 +1,12 @@
+## Version 1.17.0.1
+  * `AppObject`, `AppSigningBox`, `AppEncryptionBox`, `AppDebotBrowser` interfaces implementation.  
+    Can be found in `tonclient.objects`.  
+    Now you can create child class from any of `AppObject` classes, implement required methods, 
+    create instance of resulting class and pass it's `dispatcher` method instead of raw `callback` 
+    for SDK methods which require `AppObject` as callback.  
+    <br/>
+    More info and usage examples can be found in `test/[test_crypto|test_async|test_debot]`
+
 ## Version 1.17.0.0
   * Binaries updated to `1.17.0`;
   * Changes `1.16.1` (https://github.com/tonlabs/TON-SDK/blob/master/CHANGELOG.md#1161--2021-06-16);

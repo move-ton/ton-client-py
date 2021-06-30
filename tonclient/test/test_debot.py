@@ -1,23 +1,24 @@
+import asyncio
 import base64
 import json
 import os
 import unittest
 import logging
-from multiprocessing import get_context
-from concurrent.futures.thread import ThreadPoolExecutor
 from typing import List, Dict, Tuple, Any, Union
 
-from tonclient.bindings.types import TCResponseType
-from tonclient.test.helpers import SAMPLES_DIR, async_custom_client, send_grams
+from tonclient.client import TonClient
+from tonclient.objects import AppDebotBrowser
+from tonclient.test.helpers import SAMPLES_DIR, async_custom_client, \
+    send_grams, CUSTOM_BASE_URL
 from tonclient.types import Abi, Signer, CallSet, DeploySet, DebotAction, \
-    DebotState, AppRequestResult, ParamsOfAppDebotBrowser, \
-    ResultOfAppDebotBrowser, ParamsOfEncodeMessage, ParamsOfProcessMessage, \
-    ParamsOfStart, ParamsOfExecute, ParamsOfAppRequest, \
-    ParamsOfResolveAppRequest, KeyPair, ParamsOfQueryCollection, \
-    ParamsOfParse, ParamsOfDecodeMessageBody, ParamsOfSend, \
-    ParamsOfEncodeInternalMessage, ParamsOfGetCodeFromTvc, ParamsOfGetBocHash,\
-    ParamsOfAggregateCollection, FieldAggregation, AggregationFn, \
-    ParamsOfInit, ParamsOfRemove
+    DebotState, ParamsOfAppDebotBrowser, \
+    ParamsOfEncodeMessage, ParamsOfProcessMessage, ParamsOfStart, \
+    ParamsOfExecute, KeyPair, ParamsOfQueryCollection, ParamsOfParse, \
+    ParamsOfDecodeMessageBody, ParamsOfSend, ParamsOfEncodeInternalMessage, \
+    ParamsOfGetCodeFromTvc, ParamsOfGetBocHash, ParamsOfAggregateCollection, \
+    FieldAggregation, AggregationFn, ParamsOfInit, ParamsOfRemove, \
+    RegisteredDebot, ClientConfig
+
 
 DEBOT_WC = -31
 
@@ -101,6 +102,7 @@ class Terminal(object):
     def print(self, kwargs: Dict[str, str]) -> Tuple[int, Dict[str, Any]]:
         answer_id = int(kwargs['answerId'])
         message = bytes.fromhex(kwargs['message']).decode()
+        logging.info(f'[TERMINAL MESSAGE]\t{message}')
         self.test_case.assertGreater(
             len(self.messages), 0,
             f'Terminal.messages list is empty but must contain `{message}`')
@@ -114,6 +116,365 @@ class Terminal(object):
         answer_id, _ = self.print(kwargs=kwargs)
         # Use test return value here
         return answer_id, {'value': 1}
+
+
+class DebotBrowser(object):
+    debot: RegisteredDebot = None
+    debots: Dict[str, RegisteredDebot] = {}
+    switched: bool = False
+    finished: bool = False
+    logs: List[str] = []
+    actions: List[DebotAction] = []
+    messages: List[str] = []
+
+    class AppDebot(AppDebotBrowser):
+        def __init__(self, client: TonClient, browser: 'DebotBrowser'):
+            super(DebotBrowser.AppDebot, self).__init__(client=client)
+            self.browser = browser
+
+        def perform_log(self, params: ParamsOfAppDebotBrowser.Log):
+            logging.info(f'[LOG]\t{params.msg}')
+            self.browser.logs.append(params.msg)
+
+        def perform_switch(self, params: ParamsOfAppDebotBrowser.Switch):
+            logging.info(f'[SWITCHED]\tFalse')
+            self.browser.switched = False
+            if params.context_id == DebotState.EXIT:
+                self.browser.finished = True
+            self.browser.actions.clear()
+
+        def perform_switch_completed(self):
+            logging.info(f'[SWITCHED]\tTrue')
+            self.browser.switched = True
+
+        def perform_show_action(
+                self, params: ParamsOfAppDebotBrowser.ShowAction):
+            logging.info(
+                f'[ACTION]\t{len(self.browser.actions)}: '
+                f'{params.action.__str__()}')
+            self.browser.actions.append(params.action)
+
+        def perform_input(self, params: ParamsOfAppDebotBrowser.Input) -> str:
+            logging.info(f"[INPUT]\t{self.browser.step['inputs'][0]}")
+            return self.browser.step['inputs'][0]
+
+        def perform_get_signing_box(self) -> int:
+            logging.info('[SIGNING BOX]')
+            result = self.client.crypto.get_signing_box(
+                params=self.browser.keypair)
+            return result.handle
+
+        def perform_invoke_debot(
+                self, params: ParamsOfAppDebotBrowser.InvokeDebot):
+            logging.info(f'[INVOKE]\t{params.debot_addr}')
+            steps = self.browser.step['invokes']
+            _browser = DebotBrowser(
+                client=self.client, address=params.debot_addr, steps=steps,
+                keypair=self.browser.keypair)
+            _browser.actions = [params.action]
+            _browser.init_debot()
+            _browser.execute_from_state()
+
+        def perform_send(self, params: ParamsOfAppDebotBrowser.Send):
+            logging.info(f'[SEND]\t{params.message}')
+            self.browser.messages.append(params.message)
+
+        def perform_approve(
+                self, params: ParamsOfAppDebotBrowser.Approve) -> bool:
+            logging.info('[APPROVE]')
+            return True
+
+    def __init__(
+            self, client: TonClient, address: str,
+            steps: List[Dict[str, Any]] = None, keypair: KeyPair = None,
+            terminal_outputs: List[str] = None):
+        """
+        :param client: Ton client instance to use
+        :param address: DeBot address
+        """
+        self.client = client
+        self.address = address
+        self.steps = steps
+        self.step = None
+        self.keypair = keypair
+        self.echo = Echo()
+        self.terminal = Terminal(messages=terminal_outputs)
+
+    def init_debot(self):
+        app_debot_browser = DebotBrowser.AppDebot(
+            client=self.client, browser=self)
+
+        params = ParamsOfInit(address=self.address)
+        self.debot = self.client.debot.init(
+            params=params, callback=app_debot_browser.dispatcher)
+
+        self.debots[self.address] = self.debot
+
+    def execute(self):
+        params = ParamsOfStart(debot_handle=self.debot.debot_handle)
+        self.client.debot.start(params=params)
+        self.execute_from_state()
+
+    def execute_from_state(self):
+        while not self.finished:
+            self.handle_message_queue()
+
+            if not self.steps or not len(self.steps):
+                break
+
+            # Execute test step
+            self.step = self.steps.pop(0)
+            action = self.actions[self.step['choice']]
+            logging.info(f'[ACTION SELECTED]\t{action}')
+            self.logs.clear()
+
+            exec_params = ParamsOfExecute(
+                debot_handle=self.debot.debot_handle, action=action)
+            self.client.debot.execute(params=exec_params)
+
+        for bot in self.debots.values():
+            self.client.debot.remove(
+                params=ParamsOfRemove(debot_handle=bot.debot_handle))
+
+    def handle_message_queue(self):
+        while len(self.messages):
+            msg_opt = self.messages.pop(0)
+
+            params_parse = ParamsOfParse(boc=msg_opt)
+            parsed = self.client.boc.parse_message(params=params_parse)
+            body = parsed.parsed['body']
+            dest_address = parsed.parsed['dst']
+            src_address = parsed.parsed['src']
+            wc, interface_id = dest_address.split(':')
+
+            if wc == str(DEBOT_WC):
+                if interface_id == INTERFACES[0]:
+                    abi = Abi.Json(value=json.dumps(ECHO_ABI))
+                elif interface_id == INTERFACES[1]:
+                    abi = Abi.Json(value=json.dumps(TERMINAL_ABI))
+                else:
+                    raise ValueError('Unsupported interface')
+
+                params_decode = ParamsOfDecodeMessageBody(
+                    abi=abi, body=body, is_internal=True)
+                decoded = async_custom_client.abi.decode_message_body(
+                    params=params_decode)
+                logging.debug(f'Request: `{decoded.name}` ({decoded.value})')
+
+                if interface_id == INTERFACES[0]:
+                    method = self.echo.methods[decoded.name]
+                elif interface_id == INTERFACES[1]:
+                    method = self.terminal.methods[decoded.name]
+                else:
+                    raise ValueError('Unsupported interface')
+
+                func_id, kwargs = method(decoded.value)
+                logging.debug(f'Response: `{func_id}` ({kwargs})')
+                call_set = CallSet(function_name=hex(func_id), input=kwargs) \
+                    if func_id > 0 else None
+                internal = self.client.abi.encode_internal_message(
+                    params=ParamsOfEncodeInternalMessage(
+                        value='1000000000000000',
+                        abi=Abi.Json(value=self.debot.debot_abi),
+                        address=src_address, call_set=call_set))
+
+                params_send = ParamsOfSend(
+                    debot_handle=self.debot.debot_handle,
+                    message=internal.message)
+                self.client.debot.send(params=params_send)
+            else:
+                debot_fetched = self.debots.get(dest_address)
+                if not debot_fetched:
+                    _browser = DebotBrowser(
+                        client=self.client, address=dest_address,
+                        keypair=self.keypair)
+                    _browser.init_debot()
+
+                debot_fetched = self.debots[dest_address].debot_handle
+
+                params_send = ParamsOfSend(
+                    debot_handle=debot_fetched, message=msg_opt)
+                self.client.debot.send(params=params_send)
+
+
+class DebotBrowserAsync(object):
+    debot: RegisteredDebot = None
+    debots: Dict[str, RegisteredDebot] = {}
+    switched: bool = False
+    finished: bool = False
+    logs: List[str] = []
+    actions: List[DebotAction] = []
+    messages: List[str] = []
+
+    class AppDebot(AppDebotBrowser):
+        def __init__(self, client: TonClient, browser: 'DebotBrowserAsync'):
+            super(DebotBrowserAsync.AppDebot, self).__init__(client=client)
+            self.browser = browser
+
+        async def perform_log(self, params: ParamsOfAppDebotBrowser.Log):
+            logging.info(f'[LOG]\t{params.msg}')
+            self.browser.logs.append(params.msg)
+
+        async def perform_switch(self, params: ParamsOfAppDebotBrowser.Switch):
+            logging.info(f'[SWITCHED]\tFalse')
+            self.browser.switched = False
+            if params.context_id == DebotState.EXIT:
+                self.browser.finished = True
+            self.browser.actions.clear()
+
+        async def perform_switch_completed(self):
+            logging.info(f'[SWITCHED]\tTrue')
+            self.browser.switched = True
+
+        async def perform_show_action(
+                self, params: ParamsOfAppDebotBrowser.ShowAction):
+            logging.info(
+                f'[ACTION]\t{len(self.browser.actions)}: '
+                f'{params.action.__str__()}')
+            self.browser.actions.append(params.action)
+
+        async def perform_input(
+                self, params: ParamsOfAppDebotBrowser.Input) -> str:
+            logging.info(f"[INPUT]\t{self.browser.step['inputs'][0]}")
+            return self.browser.step['inputs'][0]
+
+        async def perform_get_signing_box(self) -> int:
+            logging.info('[SIGNING BOX]')
+            result = await self.client.crypto.get_signing_box(
+                params=self.browser.keypair)
+            return result.handle
+
+        async def perform_invoke_debot(
+                self, params: ParamsOfAppDebotBrowser.InvokeDebot):
+            logging.info(f'[INVOKE]\t{params.debot_addr}')
+            steps = self.browser.step['invokes']
+            _browser = DebotBrowserAsync(
+                client=self.client, address=params.debot_addr, steps=steps,
+                keypair=self.browser.keypair)
+            _browser.actions = [params.action]
+            await _browser.init_debot()
+            await _browser.execute_from_state()
+
+        async def perform_send(self, params: ParamsOfAppDebotBrowser.Send):
+            logging.info(f'[SEND]\t{params.message}')
+            self.browser.messages.append(params.message)
+
+        async def perform_approve(
+                self, params: ParamsOfAppDebotBrowser.Approve) -> bool:
+            logging.info('[APPROVE]')
+            return True
+
+    def __init__(
+            self, client: TonClient, address: str,
+            steps: List[Dict[str, Any]] = None, keypair: KeyPair = None,
+            terminal_outputs: List[str] = None):
+        """
+        :param client: Ton client instance to use
+        :param address: DeBot address
+        """
+        self.client = client
+        self.address = address
+        self.steps = steps
+        self.step = None
+        self.keypair = keypair
+        self.echo = Echo()
+        self.terminal = Terminal(messages=terminal_outputs)
+
+    async def init_debot(self):
+        app_debot_browser = DebotBrowserAsync.AppDebot(
+            client=self.client, browser=self)
+
+        params = ParamsOfInit(address=self.address)
+        self.debot = await self.client.debot.init(
+            params=params, callback=app_debot_browser.dispatcher)
+
+        self.debots[self.address] = self.debot
+
+    async def execute(self):
+        params = ParamsOfStart(debot_handle=self.debot.debot_handle)
+        await self.client.debot.start(params=params)
+        await self.execute_from_state()
+
+    async def execute_from_state(self):
+        while not self.finished:
+            await self.handle_message_queue()
+
+            if not self.steps or not len(self.steps):
+                break
+
+            # Execute test step
+            self.step = self.steps.pop(0)
+            action = self.actions[self.step['choice']]
+            logging.info(f'[ACTION SELECTED]\t{action}')
+            self.logs.clear()
+
+            exec_params = ParamsOfExecute(
+                debot_handle=self.debot.debot_handle, action=action)
+            await self.client.debot.execute(params=exec_params)
+
+        for bot in self.debots.values():
+            await self.client.debot.remove(
+                params=ParamsOfRemove(debot_handle=bot.debot_handle))
+
+    async def handle_message_queue(self):
+        while len(self.messages):
+            msg_opt = self.messages.pop(0)
+
+            params_parse = ParamsOfParse(boc=msg_opt)
+            parsed = await self.client.boc.parse_message(params=params_parse)
+            body = parsed.parsed['body']
+            dest_address = parsed.parsed['dst']
+            src_address = parsed.parsed['src']
+            wc, interface_id = dest_address.split(':')
+
+            if wc == str(DEBOT_WC):
+                if interface_id == INTERFACES[0]:
+                    abi = Abi.Json(value=json.dumps(ECHO_ABI))
+                elif interface_id == INTERFACES[1]:
+                    abi = Abi.Json(value=json.dumps(TERMINAL_ABI))
+                else:
+                    raise ValueError('Unsupported interface')
+
+                params_decode = ParamsOfDecodeMessageBody(
+                    abi=abi, body=body, is_internal=True)
+                decoded = await self.client.abi.decode_message_body(
+                    params=params_decode)
+                logging.debug(f'Request: `{decoded.name}` ({decoded.value})')
+
+                if interface_id == INTERFACES[0]:
+                    method = self.echo.methods[decoded.name]
+                elif interface_id == INTERFACES[1]:
+                    method = self.terminal.methods[decoded.name]
+                else:
+                    raise ValueError('Unsupported interface')
+
+                func_id, kwargs = method(decoded.value)
+                logging.debug(f'Response: `{func_id}` ({kwargs})')
+                call_set = CallSet(function_name=hex(func_id), input=kwargs) \
+                    if func_id > 0 else None
+                internal = await self.client.abi.encode_internal_message(
+                    params=ParamsOfEncodeInternalMessage(
+                        value='1000000000000000',
+                        abi=Abi.Json(value=self.debot.debot_abi),
+                        address=src_address, call_set=call_set))
+
+                params_send = ParamsOfSend(
+                    debot_handle=self.debot.debot_handle,
+                    message=internal.message)
+                await self.client.debot.send(params=params_send)
+            else:
+                debot_fetched = self.debots.get(dest_address)
+                if not debot_fetched:
+                    _browser = DebotBrowserAsync(
+                        client=self.client, address=dest_address,
+                        keypair=self.keypair)
+                    await _browser.init_debot()
+
+                debot_fetched = self.debots[dest_address].debot_handle
+
+                params_send = ParamsOfSend(
+                    debot_handle=debot_fetched, message=msg_opt)
+                await self.client.debot.send(params=params_send)
 
 
 class TestTonDebotAsyncCore(unittest.TestCase):
@@ -132,37 +493,73 @@ class TestTonDebotAsyncCore(unittest.TestCase):
             {'choice': 0, 'inputs': [], 'outputs': ['Debot Tests']},
             {'choice': 8, 'inputs': [], 'outputs': []}
         ]
-        params = ParamsOfInit(address=debot_address)
-        debot_browser(
-            steps=steps, params=params, start=True, keypair=self.keypair)
+
+        browser = DebotBrowser(
+            client=async_custom_client, address=debot_address, steps=steps)
+        browser.init_debot()
+        browser.execute()
 
     def test_print(self):
         debot_address, target_address = self.__init_debot(keypair=self.keypair)
         steps = [
-            {'choice': 1, 'inputs': [], 'outputs': ['Test Print Action', 'test2: instant print', 'test instant print']},
+            {
+                'choice': 1,
+                'inputs': [],
+                'outputs': [
+                    'Test Print Action',
+                    'test2: instant print',
+                    'test instant print'
+                ]
+            },
             {'choice': 0, 'inputs': [], 'outputs': ['test simple print']},
-            {'choice': 1, 'inputs': [], 'outputs': [f'integer=1,addr={target_address},string=test_string_1']},
+            {
+                'choice': 1,
+                'inputs': [],
+                'outputs': [
+                    f'integer=1,addr={target_address},string=test_string_1'
+                ]
+            },
             {'choice': 2, 'inputs': [], 'outputs': ['Debot Tests']},
             {'choice': 8, 'inputs': [], 'outputs': []}
         ]
-        params = ParamsOfInit(address=debot_address)
-        debot_browser(
-            steps=steps, params=params, start=True, keypair=self.keypair)
+
+        browser = DebotBrowser(
+            client=async_custom_client, address=debot_address, steps=steps)
+        browser.init_debot()
+        browser.execute()
 
     def test_run_action(self):
         debot_address, _ = self.__init_debot(keypair=self.keypair)
         steps = [
             {'choice': 2, 'inputs': [], 'outputs': ['Test Run Action']},
-            {'choice': 0, 'inputs': ['-1:1111111111111111111111111111111111111111111111111111111111111111'], 'outputs': ['Test Instant Run', 'test1: instant run 1', 'test2: instant run 2']},
+            {
+                'choice': 0,
+                'inputs': [
+                    '-1:1111111111111111111111111111111111111111111111111111111111111111'
+                ],
+                'outputs': [
+                    'Test Instant Run',
+                    'test1: instant run 1',
+                    'test2: instant run 2'
+                ]
+            },
             {'choice': 0, 'inputs': [], 'outputs': ['Test Run Action']},
             {'choice': 1, 'inputs': ['hello'], 'outputs': []},
-            {'choice': 2, 'inputs': [], 'outputs': ['integer=2,addr=-1:1111111111111111111111111111111111111111111111111111111111111111,string=hello']},
+            {
+                'choice': 2,
+                'inputs': [],
+                'outputs': [
+                    'integer=2,addr=-1:1111111111111111111111111111111111111111111111111111111111111111,string=hello'
+                ]
+            },
             {'choice': 3, 'inputs': [], 'outputs': ['Debot Tests']},
             {'choice': 8, 'inputs': [], 'outputs': []}
         ]
-        params = ParamsOfInit(address=debot_address)
-        debot_browser(
-            steps=steps, params=params, start=True, keypair=self.keypair)
+
+        browser = DebotBrowser(
+            client=async_custom_client, address=debot_address, steps=steps)
+        browser.init_debot()
+        browser.execute()
 
     def test_run_method(self):
         keypair = async_custom_client.crypto.generate_random_sign_keys()
@@ -175,38 +572,73 @@ class TestTonDebotAsyncCore(unittest.TestCase):
             {'choice': 2, 'inputs': [], 'outputs': ['Debot Tests']},
             {'choice': 8, 'inputs': [], 'outputs': []}
         ]
-        params = ParamsOfInit(address=debot_address)
-        debot_browser(
-            steps=steps, params=params, start=True, keypair=keypair)
+
+        browser = DebotBrowser(
+            client=async_custom_client, address=debot_address, steps=steps)
+        browser.init_debot()
+        browser.execute()
 
     def test_send_message(self):
         debot_address, _ = self.__init_debot(keypair=self.keypair)
         steps = [
             {'choice': 4, 'inputs': [], 'outputs': ['Test Send Msg Action']},
-            {'choice': 0, 'inputs': [], 'outputs': ['Sending message {}', 'Transaction succeeded.']},
+            {
+                'choice': 0,
+                'inputs': [],
+                'outputs': ['Sending message {}', 'Transaction succeeded.']
+            },
             {'choice': 1, 'inputs': [], 'outputs': []},
             {'choice': 2, 'inputs': [], 'outputs': ['data=100']},
             {'choice': 3, 'inputs': [], 'outputs': ['Debot Tests']},
             {'choice': 8, 'inputs': [], 'outputs': []}
         ]
-        params = ParamsOfInit(address=debot_address)
-        debot_browser(
-            steps=steps, params=params, start=True, keypair=self.keypair)
+
+        browser = DebotBrowser(
+            client=async_custom_client, address=debot_address, steps=steps,
+            keypair=self.keypair)
+        browser.init_debot()
+        browser.execute()
 
     def test_invoke(self):
         debot_address, _ = self.__init_debot(keypair=self.keypair)
         steps = [
-            {'choice': 5, 'inputs': [debot_address], 'outputs': ['Test Invoke Debot Action', 'enter debot address:']},
-            {'choice': 0, 'inputs': [debot_address], 'outputs': ['Test Invoke Debot Action', 'enter debot address:'], 'invokes': [
-                {'choice': 0, 'inputs': [], 'outputs': ['Print test string', 'Debot is invoked']},
-                {'choice': 0, 'inputs': [], 'outputs': ['Sending message {}', 'Transaction succeeded.']}
-            ]},
+            {
+                'choice': 5,
+                'inputs': [debot_address],
+                'outputs': ['Test Invoke Debot Action', 'enter debot address:']
+            },
+            {
+                'choice': 0,
+                'inputs': [debot_address],
+                'outputs': [
+                    'Test Invoke Debot Action',
+                    'enter debot address:'
+                ],
+                'invokes': [
+                    {
+                        'choice': 0,
+                        'inputs': [],
+                        'outputs': ['Print test string', 'Debot is invoked']
+                    },
+                    {
+                        'choice': 0,
+                        'inputs': [],
+                        'outputs': [
+                            'Sending message {}',
+                            'Transaction succeeded.'
+                        ]
+                    }
+                ]
+            },
             {'choice': 1, 'inputs': [], 'outputs': ['Debot Tests']},
             {'choice': 8, 'inputs': [], 'outputs': []}
         ]
-        params = ParamsOfInit(address=debot_address)
-        debot_browser(
-            steps=steps, params=params, start=True, keypair=self.keypair)
+
+        browser = DebotBrowser(
+            client=async_custom_client, address=debot_address, steps=steps,
+            keypair=self.keypair)
+        browser.init_debot()
+        browser.execute()
 
     def test_engine_calls(self):
         debot_address, _ = self.__init_debot(keypair=self.keypair)
@@ -220,38 +652,47 @@ class TestTonDebotAsyncCore(unittest.TestCase):
             {'choice': 5, 'inputs': [], 'outputs': ['Debot Tests']},
             {'choice': 8, 'inputs': [], 'outputs': []}
         ]
-        params = ParamsOfInit(address=debot_address)
-        debot_browser(
-            steps=steps, params=params, start=True, keypair=self.keypair)
+
+        browser = DebotBrowser(
+            client=async_custom_client, address=debot_address, steps=steps)
+        browser.init_debot()
+        browser.execute()
 
     def test_interface_calls(self):
         debot_address, _ = self.__init_debot(keypair=self.keypair)
         steps = [
-            {'choice': 7, 'inputs': [], 'outputs': ['', 'test1 - call interface']},
+            {
+                'choice': 7,
+                'inputs': [],
+                'outputs': ['', 'test1 - call interface']
+            },
             {'choice': 0, 'inputs': [], 'outputs': ['Debot Tests']},
             {'choice': 8, 'inputs': [], 'outputs': []},
         ]
-        params = ParamsOfInit(address=debot_address)
-        debot_browser(
-            steps=steps, params=params, start=True, keypair=self.keypair)
+
+        browser = DebotBrowser(
+            client=async_custom_client, address=debot_address, steps=steps)
+        browser.init_debot()
+        browser.execute()
 
     def test_debot_msg_interface(self):
         keypair = async_custom_client.crypto.generate_random_sign_keys()
         debot_address = self.__init_debot2(keypair=keypair)
-        params = ParamsOfInit(address=debot_address)
         terminal_outputs = [
             'counter=10',
             'Increment succeeded',
             'counter=15'
         ]
-        debot_browser(
-            steps=[], params=params, start=True, keypair=keypair,
+
+        browser = DebotBrowser(
+            client=async_custom_client, address=debot_address,
             terminal_outputs=terminal_outputs)
+        browser.init_debot()
+        browser.execute()
 
     def test_debot_sdk_interface(self):
         keypair = async_custom_client.crypto.generate_random_sign_keys()
         debot_address = self.__init_debot3(keypair=keypair)
-        params = ParamsOfInit(address=debot_address)
         terminal_outputs = [
             'test substring1 passed',
             'test substring2 passed',
@@ -268,9 +709,12 @@ class TestTonDebotAsyncCore(unittest.TestCase):
             'test hex decode passed',
             'test base64 decode passed'
         ]
-        debot_browser(
-            steps=[], params=params, start=True, keypair=keypair,
+
+        browser = DebotBrowser(
+            client=async_custom_client, address=debot_address,
             terminal_outputs=terminal_outputs)
+        browser.init_debot()
+        browser.execute()
 
     def test_debot4(self):
         keypair = async_custom_client.crypto.generate_random_sign_keys()
@@ -284,7 +728,6 @@ class TestTonDebotAsyncCore(unittest.TestCase):
         self.assertEqual(0, account.parsed['acc_type'])
 
         # Run debot
-        params = ParamsOfInit(address=debot_address)
         terminal_outputs = [
             'Target contract deployed.',
             'Enter 1',
@@ -294,9 +737,12 @@ class TestTonDebotAsyncCore(unittest.TestCase):
             'Transaction succeeded',
             'setData2(129)'
         ]
-        debot_browser(
-            steps=[], params=params, start=True, keypair=keypair,
-            terminal_outputs=terminal_outputs)
+
+        browser = DebotBrowser(
+            client=async_custom_client, address=debot_address,
+            terminal_outputs=terminal_outputs, keypair=keypair)
+        browser.init_debot()
+        browser.execute()
 
         # Check address type again
         target_boc = self.download_account(address=target_address)
@@ -310,19 +756,20 @@ class TestTonDebotAsyncCore(unittest.TestCase):
         debot_a, _ = self.__init_debot_pair(keypair=keypair)
 
         # Run debot
-        params = ParamsOfInit(address=debot_a)
         terminal_outputs = [
             'Invoking Debot B',
             'DebotB receives question: What is your name?',
             'DebotA receives answer: My name is DebotB'
         ]
-        debot_browser(
-            steps=[], params=params, start=True, keypair=keypair,
+
+        browser = DebotBrowser(
+            client=async_custom_client, address=debot_a,
             terminal_outputs=terminal_outputs)
+        browser.init_debot()
+        browser.execute()
 
     def test_debot_sdk_get_accounts_by_hash(self):
         count = 2
-        keypair = async_custom_client.crypto.generate_random_sign_keys()
         addresses, contract_hash = self.__init_debot5(count=count)
 
         # Get contracts with hash count
@@ -333,31 +780,69 @@ class TestTonDebotAsyncCore(unittest.TestCase):
         exists = int(result.values[0])
 
         # Run debot
-        params = ParamsOfInit(address=addresses[0])
-        terminal_outputs = [
-            f'{exists} contracts.'
-        ]
-        debot_browser(
-            steps=[], params=params, start=True, keypair=keypair,
+        terminal_outputs = [f'{exists} contracts.']
+        browser = DebotBrowser(
+            client=async_custom_client, address=addresses[0],
             terminal_outputs=terminal_outputs)
+        browser.init_debot()
+        browser.execute()
 
     def test_debot_json_interface(self):
         keypair = async_custom_client.crypto.generate_random_sign_keys()
         debot_address = self.__init_debot7(keypair=keypair)
-        params = ParamsOfInit(address=debot_address)
-        terminal_outputs = []
-        debot_browser(
-            steps=[], params=params, start=True, keypair=keypair,
-            terminal_outputs=terminal_outputs)
 
-    @staticmethod
-    def debot_print_state(state: Dict[str, Any]):
-        # Print messages
-        for message in state['messages']:
-            logging.info(f'[LOG]\t{message}')
-        # Print available actions
-        for action in state['actions']:
-            logging.info(f'[ACTION]\t{action}')
+        browser = DebotBrowser(
+            client=async_custom_client, address=debot_address)
+        browser.init_debot()
+        browser.execute()
+
+    def test_invoke_async(self):
+        client_config = ClientConfig()
+        client_config.network.server_address = CUSTOM_BASE_URL
+        client = TonClient(config=client_config, is_async=True)
+
+        debot_address, _ = self.__init_debot(keypair=self.keypair)
+        steps = [
+            {
+                'choice': 5,
+                'inputs': [debot_address],
+                'outputs': ['Test Invoke Debot Action', 'enter debot address:']
+            },
+            {
+                'choice': 0,
+                'inputs': [debot_address],
+                'outputs': [
+                    'Test Invoke Debot Action',
+                    'enter debot address:'
+                ],
+                'invokes': [
+                    {
+                        'choice': 0,
+                        'inputs': [],
+                        'outputs': ['Print test string', 'Debot is invoked']
+                    },
+                    {
+                        'choice': 0,
+                        'inputs': [],
+                        'outputs': [
+                            'Sending message {}',
+                            'Transaction succeeded.'
+                        ]
+                    }
+                ]
+            },
+            {'choice': 1, 'inputs': [], 'outputs': ['Debot Tests']},
+            {'choice': 8, 'inputs': [], 'outputs': []}
+        ]
+
+        async def __main():
+            browser = DebotBrowserAsync(
+                client=client, address=debot_address, steps=steps,
+                keypair=self.keypair)
+            await browser.init_debot()
+            await browser.execute()
+
+        asyncio.get_event_loop().run_until_complete(__main())
 
     def __init_debot(self, keypair: KeyPair) -> Tuple[str, str]:
         """ Deploy debot and target """
@@ -715,185 +1200,3 @@ class TestTonDebotAsyncCore(unittest.TestCase):
             return accounts.result[0]['boc']
 
         return None
-
-
-def debot_browser(
-        steps: List[Dict[str, Any]], start: bool, keypair: KeyPair,
-        params: ParamsOfInit, state: Dict[str, Any] = None,
-        actions: List[DebotAction] = None, terminal_outputs: List[str] = None):
-
-    def __callback(response_data, response_type, *args):
-        # Process notifications
-        if response_type == TCResponseType.AppNotify:
-            notify = ParamsOfAppDebotBrowser.from_dict(data=response_data)
-
-            # Process notification types
-            if isinstance(notify, ParamsOfAppDebotBrowser.Log):
-                state['messages'].append(notify.msg)
-            if isinstance(notify, ParamsOfAppDebotBrowser.Switch):
-                state['switch_started'] = True
-                if notify.context_id == DebotState.EXIT:
-                    state['finished'] = True
-                state['actions'].clear()
-            if isinstance(
-                    notify, ParamsOfAppDebotBrowser.SwitchCompleted):
-                state['switch_started'] = False
-            if isinstance(notify, ParamsOfAppDebotBrowser.ShowAction):
-                state['actions'].append(notify.action)
-            if isinstance(notify, ParamsOfAppDebotBrowser.Send):
-                state['msg_queue'].append(notify.message)
-
-        # Process requests
-        if response_type == TCResponseType.AppRequest:
-            request = ParamsOfAppRequest(**response_data)
-            request_data = ParamsOfAppDebotBrowser.from_dict(
-                data=request.request_data)
-            result = None
-
-            # Process request types
-            if isinstance(request_data, ParamsOfAppDebotBrowser.Input):
-                result = ResultOfAppDebotBrowser.Input(
-                    value=state['step']['inputs'][0])
-            if isinstance(
-                    request_data, ParamsOfAppDebotBrowser.GetSigningBox):
-                with ThreadPoolExecutor() as executor:
-                    future = executor.submit(
-                        async_custom_client.crypto.get_signing_box,
-                        params=keypair)
-                    signing_box = future.result()
-                result = ResultOfAppDebotBrowser.GetSigningBox(
-                    signing_box=signing_box.handle)
-            if isinstance(
-                    request_data, ParamsOfAppDebotBrowser.InvokeDebot):
-                invoke_steps = state['step']['invokes']
-                _params = ParamsOfInit(address=request_data.debot_addr)
-
-                # Here we should call `debot_browser` in `spawn` mode
-                # subprocess for compatibility with `Unix` systems.
-                # MacOS, Windows use `spawn` by default
-                with get_context('spawn').Pool() as pool:
-                    pool.apply(debot_browser, kwds={
-                        'steps': invoke_steps,
-                        'params': _params,
-                        'start': False,
-                        'actions': [request_data.action],
-                        'keypair': keypair
-                    })
-                result = ResultOfAppDebotBrowser.InvokeDebot()
-            if isinstance(request_data, ParamsOfAppDebotBrowser.Approve):
-                result = ResultOfAppDebotBrowser.Approve(approved=True)
-
-            # Resolve app request
-            result = AppRequestResult.Ok(result=result.dict)
-            resolve_params = ParamsOfResolveAppRequest(
-                app_request_id=request.app_request_id, result=result)
-            with ThreadPoolExecutor() as executor:
-                future = executor.submit(
-                    async_custom_client.resolve_app_request,
-                    params=resolve_params)
-                future.result()
-
-    def __handle_message_queue():
-        while len(state['msg_queue']):
-            msg_opt = state['msg_queue'].pop(0)
-
-            parsed = async_custom_client.boc.parse_message(
-                params=ParamsOfParse(boc=msg_opt))
-            body = parsed.parsed['body']
-            dest_address = parsed.parsed['dst']
-            src_address = parsed.parsed['src']
-            wc, interface_id = dest_address.split(':')
-
-            if wc == str(DEBOT_WC):
-                if interface_id == INTERFACES[0]:
-                    abi = Abi.Json(value=json.dumps(ECHO_ABI))
-                elif interface_id == INTERFACES[1]:
-                    abi = Abi.Json(value=json.dumps(TERMINAL_ABI))
-                else:
-                    raise ValueError('Unsupported interface')
-
-                decoded = async_custom_client.abi.decode_message_body(
-                    params=ParamsOfDecodeMessageBody(
-                        abi=abi, body=body, is_internal=True))
-                logging.info(f'Request: `{decoded.name}` ({decoded.value})')
-
-                if interface_id == INTERFACES[0]:
-                    method = state['echo'].methods[decoded.name]
-                elif interface_id == INTERFACES[1]:
-                    method = state['terminal'].methods[decoded.name]
-                else:
-                    raise ValueError('Unsupported interface')
-
-                func_id, kwargs = method(decoded.value)
-                logging.info(f'Response: `{func_id}` ({kwargs})')
-                call_set = CallSet(function_name=hex(func_id), input=kwargs) \
-                    if func_id > 0 else None
-                internal = async_custom_client.abi.encode_internal_message(
-                    params=ParamsOfEncodeInternalMessage(
-                        value='1000000000000000',
-                        abi=Abi.Json(value=debot.debot_abi),
-                        address=src_address, call_set=call_set))
-                async_custom_client.debot.send(
-                    params=ParamsOfSend(
-                        debot_handle=debot.debot_handle,
-                        message=internal.message))
-            else:
-                debot_fetched = state['bots'].get(dest_address)
-                if not debot_fetched:
-                    _params = ParamsOfInit(address=dest_address)
-                    debot_browser(
-                        steps=[], start=False, keypair=keypair,
-                        params=_params, state=state)
-
-                debot_fetched = state['bots'][dest_address].debot_handle
-                async_custom_client.debot.send(
-                    params=ParamsOfSend(
-                        debot_handle=debot_fetched, message=msg_opt))
-
-    # Create initial state
-    test_case = unittest.TestCase()  # For unit tests only
-    if not state:
-        state: Dict[str, Any] = {
-            'messages': [],
-            'actions': actions or [],
-            'steps': steps,
-            'step': None,
-            'switch_started': False,
-            'finished': False,
-            'msg_queue': [],
-            'terminal': Terminal(messages=terminal_outputs),
-            'echo': Echo(),
-            'bots': {}
-        }
-
-    # Start debot browser and get handle
-    debot = async_custom_client.debot.init(params=params, callback=__callback)
-    state['bots'][params.address] = debot
-    if start:
-        async_custom_client.debot.start(
-            params=ParamsOfStart(debot_handle=debot.debot_handle))
-    TestTonDebotAsyncCore.debot_print_state(state=state)
-
-    while not state['finished']:
-        __handle_message_queue()
-
-        if not len(state['steps']):
-            break
-        step: Dict[str, Any] = state['steps'].pop(0)
-        action = state['actions'][step['choice']]
-        logging.info(f'[ACTION SELECTED]\t{action}')
-        state['messages'].clear()
-        state['step'] = step
-
-        exec_params = ParamsOfExecute(
-            debot_handle=debot.debot_handle, action=action)
-        async_custom_client.debot.execute(params=exec_params)
-        TestTonDebotAsyncCore.debot_print_state(state=state)
-
-        test_case.assertEqual(
-            len(state['step']['outputs']), len(state['messages']))
-
-    if start:
-        for bot in state['bots'].values():
-            async_custom_client.debot.remove(
-                params=ParamsOfRemove(debot_handle=bot.debot_handle))

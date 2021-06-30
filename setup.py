@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="ton-client-py",
-    version="1.17.0.0",
+    version="1.17.0.1",
     author="MoveTON",
     author_email="",
     description=u"Python SDK for Free TON",

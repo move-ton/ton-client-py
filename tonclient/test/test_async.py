@@ -6,13 +6,16 @@ from datetime import datetime
 
 from tonclient.client import TonClient, DEVNET_BASE_URL
 from tonclient.errors import TonException
+from tonclient.objects import AppSigningBox, AppEncryptionBox
 from tonclient.types import ClientConfig, ParamsOfMnemonicFromRandom, \
     ParamsOfAppRequest, ParamsOfAppSigningBox, ResultOfAppSigningBox, \
     ParamsOfSigningBoxSign, AppRequestResult, ParamsOfResolveAppRequest, \
     ParamsOfSign, ParamsOfParse, SubscriptionResponseType, \
     ResultOfSubscription, ClientError, ParamsOfSubscribeCollection, \
     ParamsOfConvertAddress, AddressStringFormat, ParamsOfRunExecutor, \
-    AccountForExecutor
+    AccountForExecutor, ParamsOfEncryptionBoxGetInfo, \
+    ParamsOfEncryptionBoxEncrypt, ParamsOfEncryptionBoxDecrypt, \
+    EncryptionBoxInfo, ParamsOfAppEncryptionBox
 
 from tonclient.test.test_client import LIB_VERSION
 
@@ -132,6 +135,66 @@ class TestTonClientAsync(unittest.TestCase):
 
         asyncio.get_event_loop().run_until_complete(__main())
 
+    def test_register_signing_box_app_object(self):  # Crypto
+        class TestAppSigningBox(AppSigningBox):
+            """
+            AppSigningBox implementation class.
+            Here we passed `box_handle` as init argument only for testing
+            purposes, in real world it should use its own keys
+            """
+
+            def __init__(self, client, box_handle):
+                super(TestAppSigningBox, self).__init__(client=client)
+                self.box_handle = box_handle
+
+            async def perform_get_public_key(self) -> str:
+                result = await self.client.crypto.signing_box_get_public_key(
+                    params=self.box_handle)
+                return result.pubkey
+
+            async def perform_sign(
+                    self, params: ParamsOfAppSigningBox.Sign) -> str:
+                params = ParamsOfSigningBoxSign(
+                    signing_box=self.box_handle.handle,
+                    unsigned=params.unsigned)
+                result = await self.client.crypto.signing_box_sign(
+                    params=params)
+
+                return result.signature
+
+        async def __main():
+            keys = await self.client.crypto.generate_random_sign_keys()
+            keys_box_handle = await self.client.crypto.get_signing_box(
+                params=keys)
+
+            app_signin_box = TestAppSigningBox(
+                client=self.client, box_handle=keys_box_handle)
+
+            # Get external signing box
+            external_box = await self.client.crypto.register_signing_box(
+                callback=app_signin_box.dispatcher)
+
+            # Request box public key
+            box_pubkey = await self.client.crypto.signing_box_get_public_key(
+                params=external_box)
+            self.assertEqual(keys.public, box_pubkey.pubkey)
+
+            # Get signature from signing box
+            unsigned = base64.b64encode(b'Test Message').decode()
+            sign_params = ParamsOfSigningBoxSign(
+                signing_box=external_box.handle, unsigned=unsigned)
+            box_sign = await self.client.crypto.signing_box_sign(
+                params=sign_params)
+
+            # Get signature by keys
+            sign_params = ParamsOfSign(unsigned=unsigned, keys=keys)
+            keys_sign = await self.client.crypto.sign(params=sign_params)
+
+            self.assertEqual(keys_sign.signature, box_sign.signature)
+
+            await self.client.crypto.remove_signing_box(params=external_box)
+        asyncio.get_event_loop().run_until_complete(__main())
+
     def test_parse_message(self):  # Boc
         async def __main():
             message = 'te6ccgEBAQEAWAAAq2n+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE/zMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzSsG8DgAAAAAjuOu9NAL7BxYpA'
@@ -249,4 +312,48 @@ class TestTonClientAsync(unittest.TestCase):
                     output_format=AddressStringFormat.Hex())
                 await self.client.utils.convert_address(params=convert_params)
 
+        asyncio.get_event_loop().run_until_complete(__main())
+
+    def test_encryption_box_app_object(self):
+        class TestAppEncryptionBox(AppEncryptionBox):
+            async def perform_get_info(self) -> EncryptionBoxInfo:
+                return EncryptionBoxInfo(algorithm='duplicator')
+
+            async def perform_encrypt(
+                    self, params: ParamsOfAppEncryptionBox.Encrypt) -> str:
+                return params.data * 2
+
+            async def perform_decrypt(
+                    self, params: ParamsOfAppEncryptionBox.Decrypt) -> str:
+                end = int(len(params.data) / 2)
+                return params.data[:end]
+
+        async def __main():
+            # Register box
+            app_encryption_box = TestAppEncryptionBox(client=self.client)
+            box = await self.client.crypto.register_encryption_box(
+                callback=app_encryption_box.dispatcher)
+
+            # Get info
+            info_result = await self.client.crypto.encryption_box_get_info(
+                params=ParamsOfEncryptionBoxGetInfo(encryption_box=box.handle))
+            self.assertEqual(info_result.info.algorithm, 'duplicator')
+
+            # Encrypt
+            enc_data = '12345'
+            params = ParamsOfEncryptionBoxEncrypt(
+                encryption_box=box.handle, data=enc_data)
+            enc_result = await self.client.crypto.encryption_box_encrypt(
+                params=params)
+            self.assertEqual(enc_data * 2, enc_result.data)
+
+            # Decrypt
+            params = ParamsOfEncryptionBoxDecrypt(
+                encryption_box=box.handle, data=enc_result.data)
+            dec_result = await self.client.crypto.encryption_box_decrypt(
+                params=params)
+            self.assertEqual(enc_data, dec_result.data)
+
+            # Remove box
+            await self.client.crypto.remove_encryption_box(params=box)
         asyncio.get_event_loop().run_until_complete(__main())
