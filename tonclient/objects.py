@@ -2,11 +2,13 @@ import asyncio
 import inspect
 import re
 from asyncio.selector_events import BaseSelectorEventLoop
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
+from multiprocessing import get_context
 from typing import Dict, Any, Union, Coroutine
 
 from tonclient.bindings.types import TCResponseType
 from tonclient.client import TonClient
+from tonclient.errors import TonException
 from tonclient.types import ParamsOfAppRequest, AppRequestResult, \
     ParamsOfResolveAppRequest, AppRequestResultType, ResultOfAppSigningBox, \
     ParamsOfAppSigningBox, ResultOfAppEncryptionBox, EncryptionBoxInfo, \
@@ -65,22 +67,23 @@ class AppObject(object):
             with ThreadPoolExecutor() as executor:
                 future = executor.submit(getattr(self, method), params)
                 exception = future.exception()
+                if exception:
+                    raise exception.__class__(exception)
                 result = future.result()
-
-            if exception:
-                raise Exception(exception)
 
             if app_request_id:
                 result = AppRequestResult.Ok(result=result.dict)
                 self._resolve_app_request(
                     result=result, app_request_id=app_request_id)
-        except Exception as e:
+        except TonException as e:
             if not app_request_id:
-                raise Exception(e.__str__())
+                raise
 
             result = AppRequestResult.Error(text=e.__str__())
             self._resolve_app_request(
                 result=result, app_request_id=app_request_id)
+        except Exception:
+            raise
 
     def camel_to_snake(self, string: str) -> str:
         return self.c2s_pattern.sub('_', string).lower()
@@ -100,21 +103,23 @@ class AppObject(object):
             app_request_id=app_request_id, result=result)
 
         if self._loop:
-            coro = self.client.resolve_app_request(params=resolve_params)
-            self._resolve_sync_async(target=coro)
+            self._resolve_sync_async(
+                method=self.client.resolve_app_request, params=resolve_params)
         else:
             with ThreadPoolExecutor() as executor:
                 future = executor.submit(
                     self.client.resolve_app_request, params=resolve_params)
                 future.result()
 
-    def _resolve_sync_async(self, target: Any) -> Any:
-        if self._loop and inspect.isawaitable(target):
-            future = asyncio.run_coroutine_threadsafe(
-                coro=target, loop=self._loop)
-            return future.result()
+    def _resolve_sync_async(self, method: Any, *args, **kwargs) -> Any:
+        result = method(*args, **kwargs)
 
-        return target
+        if inspect.isawaitable(result):
+            future = asyncio.run_coroutine_threadsafe(
+                coro=result, loop=self._loop)
+            result = future.result()
+
+        return result
 
 
 class AppSigningBox(AppObject):
@@ -122,9 +127,8 @@ class AppSigningBox(AppObject):
 
     def get_public_key(self, _) -> ResultOfAppSigningBox.GetPublicKey:
         """ Method is called by `dispatch` """
-        target = self.perform_get_public_key()
-        public_key = self._resolve_sync_async(target=target)
-
+        public_key = self._resolve_sync_async(
+            method=self.perform_get_public_key)
         return ResultOfAppSigningBox.GetPublicKey(public_key=public_key)
 
     def perform_get_public_key(self) -> Union[str, Coroutine]:
@@ -138,9 +142,8 @@ class AppSigningBox(AppObject):
             self, params: ParamsOfAppSigningBox.Sign
     ) -> ResultOfAppSigningBox.Sign:
         """ Method is called by `dispatch` """
-        target = self.perform_sign(params=params)
-        signature = self._resolve_sync_async(target=target)
-
+        signature = self._resolve_sync_async(
+            method=self.perform_sign, params=params)
         return ResultOfAppSigningBox.Sign(signature=signature)
 
     def perform_sign(
@@ -162,9 +165,7 @@ class AppEncryptionBox(AppObject):
 
     def get_info(self, _) -> ResultOfAppEncryptionBox.GetInfo:
         """ Method is called by `dispatch` """
-        target = self.perform_get_info()
-        info = self._resolve_sync_async(target=target)
-
+        info = self._resolve_sync_async(method=self.perform_get_info)
         return ResultOfAppEncryptionBox.GetInfo(info=info)
 
     def perform_get_info(self) -> Union[EncryptionBoxInfo, Coroutine]:
@@ -175,9 +176,8 @@ class AppEncryptionBox(AppObject):
             self, params: ParamsOfAppEncryptionBox.Encrypt
     ) -> ResultOfAppEncryptionBox.Encrypt:
         """ Method is called by `dispatch` """
-        target = self.perform_encrypt(params=params)
-        data = self._resolve_sync_async(target=target)
-
+        data = self._resolve_sync_async(
+            method=self.perform_encrypt, params=params)
         return ResultOfAppEncryptionBox.Encrypt(data=data)
 
     def perform_encrypt(
@@ -194,9 +194,8 @@ class AppEncryptionBox(AppObject):
             self, params: ParamsOfAppEncryptionBox.Decrypt
     ) -> ResultOfAppEncryptionBox.Decrypt:
         """ Method is called by `dispatch` """
-        target = self.perform_decrypt(params=params)
-        data = self._resolve_sync_async(target=target)
-
+        data = self._resolve_sync_async(
+            method=self.perform_decrypt, params=params)
         return ResultOfAppEncryptionBox.Decrypt(data=data)
 
     def perform_decrypt(
@@ -219,8 +218,7 @@ class AppDebotBrowser(AppObject):
 
     def log(self, params: ParamsOfAppDebotBrowser.Log):
         """ Method is called by `dispatch` """
-        target = self.perform_log(params=params)
-        self._resolve_sync_async(target=target)
+        self._resolve_sync_async(method=self.perform_log, params=params)
 
     def perform_log(self, params: ParamsOfAppDebotBrowser.Log):
         raise NotImplementedError(
@@ -228,8 +226,7 @@ class AppDebotBrowser(AppObject):
 
     def switch(self, params: ParamsOfAppDebotBrowser.Switch):
         """ Method is called by `dispatch` """
-        target = self.perform_switch(params=params)
-        self._resolve_sync_async(target=target)
+        self._resolve_sync_async(method=self.perform_switch, params=params)
 
     def perform_switch(self, params: ParamsOfAppDebotBrowser.Switch):
         raise NotImplementedError(
@@ -237,16 +234,15 @@ class AppDebotBrowser(AppObject):
 
     def switch_completed(self, _):
         """ Method is called by `dispatch` """
-        target = self.perform_switch_completed()
-        self._resolve_sync_async(target=target)
+        self._resolve_sync_async(method=self.perform_switch_completed)
 
     def perform_switch_completed(self):
         raise NotImplementedError(
             'AppDebotBrowser `perform_switch_completed` must be implemented')
 
     def show_action(self, params: ParamsOfAppDebotBrowser.ShowAction):
-        target = self.perform_show_action(params=params)
-        self._resolve_sync_async(target=target)
+        self._resolve_sync_async(
+            method=self.perform_show_action, params=params)
 
     def perform_show_action(self, params: ParamsOfAppDebotBrowser.ShowAction):
         raise NotImplementedError(
@@ -256,8 +252,8 @@ class AppDebotBrowser(AppObject):
             self, params: ParamsOfAppDebotBrowser.Input
     ) -> ResultOfAppDebotBrowser.Input:
         """ Method is called by `dispatch` """
-        target = self.perform_input(params=params)
-        value = self._resolve_sync_async(target=target)
+        value = self._resolve_sync_async(
+            method=self.perform_input, params=params)
 
         return ResultOfAppDebotBrowser.Input(value=value)
 
@@ -273,8 +269,8 @@ class AppDebotBrowser(AppObject):
 
     def get_signing_box(self, _) -> ResultOfAppDebotBrowser.GetSigningBox:
         """ Method is called by `dispatch` """
-        target = self.perform_get_signing_box()
-        signing_box = self._resolve_sync_async(target=target)
+        signing_box = self._resolve_sync_async(
+            method=self.perform_get_signing_box)
 
         return ResultOfAppDebotBrowser.GetSigningBox(signing_box=signing_box)
 
@@ -285,22 +281,30 @@ class AppDebotBrowser(AppObject):
         raise NotImplementedError(
             'AppDebotBrowser `perform_get_signing_box` must be implemented')
 
-    def invoke_debot(self, params: ParamsOfAppDebotBrowser.InvokeDebot):
+    def invoke_debot(
+            self, params: ParamsOfAppDebotBrowser.InvokeDebot
+    ) -> ResultOfAppDebotBrowser.InvokeDebot:
         """ Method is called by `dispatch` """
-        target = self.perform_invoke_debot(params=params)
-        self._resolve_sync_async(target=target)
+        # We should call `perform_invoke_debot` in `spawn` mode subprocess
+        # for compatibility with `Unix` systems.
+        # MacOS, Windows use `spawn` by default
+        with ProcessPoolExecutor(mp_context=get_context('spawn')) as pool:
+            future = pool.apply(
+                self.perform_invoke_debot, (self.client, params))
+            future.result()
 
         return ResultOfAppDebotBrowser.InvokeDebot()
 
+    @staticmethod
     def perform_invoke_debot(
-            self, params: ParamsOfAppDebotBrowser.InvokeDebot):
+            client: TonClient, params: ParamsOfAppDebotBrowser.InvokeDebot,
+            *args, **kwargs):
         raise NotImplementedError(
             'AppDebotBrowser `perform_invoke_debot` must be implemented')
 
     def send(self, params: ParamsOfAppDebotBrowser.Send):
         """ Method is called by `dispatch` """
-        target = self.perform_send(params=params)
-        self._resolve_sync_async(target=target)
+        self._resolve_sync_async(method=self.perform_send, params=params)
 
     def perform_send(self, params: ParamsOfAppDebotBrowser.Send):
         raise NotImplementedError(
@@ -310,8 +314,8 @@ class AppDebotBrowser(AppObject):
             self, params: ParamsOfAppDebotBrowser.Approve
     ) -> ResultOfAppDebotBrowser.Approve:
         """ Method is called by `dispatch` """
-        target = self.perform_approve(params=params)
-        approved = self._resolve_sync_async(target=target)
+        approved = self._resolve_sync_async(
+            method=self.perform_approve, params=params)
 
         return ResultOfAppDebotBrowser.Approve(approved=approved)
 

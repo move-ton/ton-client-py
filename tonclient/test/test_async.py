@@ -31,7 +31,7 @@ class TestTonClientAsync(unittest.TestCase):
             result = await self.client.version()
             self.assertEqual(LIB_VERSION, result.version)
 
-        asyncio.get_event_loop().run_until_complete(__main())
+        asyncio.run(__main())
 
     def test_gathering(self):  # Some modules
         async def __main():
@@ -58,7 +58,7 @@ class TestTonClientAsync(unittest.TestCase):
                 logging.info(f'[Keypair coro] {keypair.public}')
             return keypairs
 
-        asyncio.get_event_loop().run_until_complete(__main())
+        asyncio.run(__main())
 
     def test_register_signing_box(self):  # Crypto
         async def __main():
@@ -133,7 +133,7 @@ class TestTonClientAsync(unittest.TestCase):
 
             await self.client.crypto.remove_signing_box(params=external_box)
 
-        asyncio.get_event_loop().run_until_complete(__main())
+        asyncio.run(__main())
 
     def test_register_signing_box_app_object(self):  # Crypto
         class TestAppSigningBox(AppSigningBox):
@@ -193,7 +193,7 @@ class TestTonClientAsync(unittest.TestCase):
             self.assertEqual(keys_sign.signature, box_sign.signature)
 
             await self.client.crypto.remove_signing_box(params=external_box)
-        asyncio.get_event_loop().run_until_complete(__main())
+        asyncio.run(__main())
 
     def test_parse_message(self):  # Boc
         async def __main():
@@ -214,7 +214,7 @@ class TestTonClientAsync(unittest.TestCase):
                 params = ParamsOfParse(boc='Wrong==')
                 await self.client.boc.parse_message(params=params)
 
-        asyncio.get_event_loop().run_until_complete(__main())
+        asyncio.run(__main())
 
     def test_subscribe_collection(self):  # Net
         async def __main():
@@ -243,7 +243,7 @@ class TestTonClientAsync(unittest.TestCase):
 
             self.assertGreater(len(results), 0)
 
-        asyncio.get_event_loop().run_until_complete(__main())
+        asyncio.run(__main())
 
     def test_run_executor_acc_none(self):  # Tvm
         async def __main():
@@ -260,7 +260,7 @@ class TestTonClientAsync(unittest.TestCase):
                 parsed.parsed['id'])
             self.assertEqual('Uninit', parsed.parsed['acc_type_name'])
 
-        asyncio.get_event_loop().run_until_complete(__main())
+        asyncio.run(__main())
 
     def test_convert_address(self):  # Utils
         async def __main():
@@ -312,7 +312,7 @@ class TestTonClientAsync(unittest.TestCase):
                     output_format=AddressStringFormat.Hex())
                 await self.client.utils.convert_address(params=convert_params)
 
-        asyncio.get_event_loop().run_until_complete(__main())
+        asyncio.run(__main())
 
     def test_encryption_box_app_object(self):
         class TestAppEncryptionBox(AppEncryptionBox):
@@ -356,4 +356,4 @@ class TestTonClientAsync(unittest.TestCase):
 
             # Remove box
             await self.client.crypto.remove_encryption_box(params=box)
-        asyncio.get_event_loop().run_until_complete(__main())
+        asyncio.run(__main())

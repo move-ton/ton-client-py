@@ -1,4 +1,5 @@
 ## Version 1.17.0.1
+  * Minimum `Python` version increased to `3.7`;
   * `AppObject`, `AppSigningBox`, `AppEncryptionBox`, `AppDebotBrowser` interfaces implementation.  
     Can be found in `tonclient.objects`.  
     Now you can create child class from any of `AppObject` classes, implement required methods, 

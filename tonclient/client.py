@@ -53,7 +53,8 @@ class TonClient(object):
         """
         super(TonClient, self).__init__()
 
-        self._ctx = self.create_context(config=config)
+        self._config = config
+        self._ctx = self.create_context(config=self._config)
         self._is_core_async = is_core_async
         self._is_async = is_async
 
@@ -66,6 +67,10 @@ class TonClient(object):
         self.utils = TonUtils(client=self)
         self.tvm = TonTvm(client=self)
         self.debot = TonDebot(client=self)
+
+    @property
+    def config(self):
+        return self._config
 
     @property
     def ctx(self):

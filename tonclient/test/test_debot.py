@@ -4,6 +4,8 @@ import json
 import os
 import unittest
 import logging
+from concurrent.futures import ProcessPoolExecutor
+from multiprocessing import get_context
 from typing import List, Dict, Tuple, Any, Union
 
 from tonclient.client import TonClient
@@ -17,7 +19,10 @@ from tonclient.types import Abi, Signer, CallSet, DeploySet, DebotAction, \
     ParamsOfDecodeMessageBody, ParamsOfSend, ParamsOfEncodeInternalMessage, \
     ParamsOfGetCodeFromTvc, ParamsOfGetBocHash, ParamsOfAggregateCollection, \
     FieldAggregation, AggregationFn, ParamsOfInit, ParamsOfRemove, \
-    RegisteredDebot, ClientConfig
+    RegisteredDebot, ClientConfig, ResultOfAppDebotBrowser
+
+
+logging.basicConfig(level=logging.INFO)
 
 
 DEBOT_WC = -31
@@ -138,6 +143,7 @@ class DebotBrowser(object):
 
         def perform_switch(self, params: ParamsOfAppDebotBrowser.Switch):
             logging.info(f'[SWITCHED]\tFalse')
+
             self.browser.switched = False
             if params.context_id == DebotState.EXIT:
                 self.browser.finished = True
@@ -152,6 +158,7 @@ class DebotBrowser(object):
             logging.info(
                 f'[ACTION]\t{len(self.browser.actions)}: '
                 f'{params.action.__str__()}')
+
             self.browser.actions.append(params.action)
 
         def perform_input(self, params: ParamsOfAppDebotBrowser.Input) -> str:
@@ -160,17 +167,36 @@ class DebotBrowser(object):
 
         def perform_get_signing_box(self) -> int:
             logging.info('[SIGNING BOX]')
+
             result = self.client.crypto.get_signing_box(
                 params=self.browser.keypair)
             return result.handle
 
+        def invoke_debot(
+                self, params: ParamsOfAppDebotBrowser.InvokeDebot
+        ) -> ResultOfAppDebotBrowser.InvokeDebot:
+            """ Method is called by `dispatch` """
+            with ProcessPoolExecutor(mp_context=get_context('spawn')) as pool:
+                future = pool.submit(
+                    self.perform_invoke_debot, client=self.client,
+                    params=params, browser=self.browser)
+                future.result()
+
+            return ResultOfAppDebotBrowser.InvokeDebot()
+
+        @staticmethod
         def perform_invoke_debot(
-                self, params: ParamsOfAppDebotBrowser.InvokeDebot):
+                client: TonClient, params: ParamsOfAppDebotBrowser.InvokeDebot,
+                *args, **kwargs):
             logging.info(f'[INVOKE]\t{params.debot_addr}')
-            steps = self.browser.step['invokes']
+
+            browser = kwargs['browser']
+            steps = browser.step['invokes']
+            client.create_context(config=client.config)
+
             _browser = DebotBrowser(
-                client=self.client, address=params.debot_addr, steps=steps,
-                keypair=self.browser.keypair)
+                client=client, address=params.debot_addr, steps=steps,
+                keypair=browser.keypair)
             _browser.actions = [params.action]
             _browser.init_debot()
             _browser.execute_from_state()
@@ -317,6 +343,7 @@ class DebotBrowserAsync(object):
 
         async def perform_switch(self, params: ParamsOfAppDebotBrowser.Switch):
             logging.info(f'[SWITCHED]\tFalse')
+
             self.browser.switched = False
             if params.context_id == DebotState.EXIT:
                 self.browser.finished = True
@@ -344,16 +371,39 @@ class DebotBrowserAsync(object):
                 params=self.browser.keypair)
             return result.handle
 
-        async def perform_invoke_debot(
-                self, params: ParamsOfAppDebotBrowser.InvokeDebot):
+        def invoke_debot(
+                self, params: ParamsOfAppDebotBrowser.InvokeDebot
+        ) -> ResultOfAppDebotBrowser.InvokeDebot:
+            """ Method is called by `dispatch` """
+            with ProcessPoolExecutor(mp_context=get_context('spawn')) as pool:
+                loop = asyncio.new_event_loop()
+                future = loop.run_in_executor(
+                    pool, self.perform_invoke_debot, self.client, params,
+                    self.browser)
+                loop.run_until_complete(future)
+                loop.close()
+
+            return ResultOfAppDebotBrowser.InvokeDebot()
+
+        @staticmethod
+        def perform_invoke_debot(
+                client: TonClient, params: ParamsOfAppDebotBrowser.InvokeDebot,
+                *args, **kwargs):
             logging.info(f'[INVOKE]\t{params.debot_addr}')
-            steps = self.browser.step['invokes']
-            _browser = DebotBrowserAsync(
-                client=self.client, address=params.debot_addr, steps=steps,
-                keypair=self.browser.keypair)
-            _browser.actions = [params.action]
-            await _browser.init_debot()
-            await _browser.execute_from_state()
+
+            async def async_wrapper():
+                _browser = DebotBrowserAsync(
+                    client=client, address=params.debot_addr, steps=steps,
+                    keypair=browser.keypair)
+                _browser.actions = [params.action]
+                await _browser.init_debot()
+                await _browser.execute_from_state()
+
+            browser, = args
+            steps = browser.step['invokes']
+            client.create_context(config=client.config)
+
+            asyncio.run(async_wrapper())
 
         async def perform_send(self, params: ParamsOfAppDebotBrowser.Send):
             logging.info(f'[SEND]\t{params.message}')
@@ -469,18 +519,17 @@ class DebotBrowserAsync(object):
                         client=self.client, address=dest_address,
                         keypair=self.keypair)
                     await _browser.init_debot()
-
-                debot_fetched = self.debots[dest_address].debot_handle
+                    debot_fetched = _browser.debot
+                    self.debots[dest_address] = debot_fetched
 
                 params_send = ParamsOfSend(
-                    debot_handle=debot_fetched, message=msg_opt)
+                    debot_handle=debot_fetched.debot_handle, message=msg_opt)
                 await self.client.debot.send(params=params_send)
 
 
 class TestTonDebotAsyncCore(unittest.TestCase):
     def setUp(self) -> None:
-        self.keypair = KeyPair.load(
-            path=os.path.join(SAMPLES_DIR, 'keys_raw.json'), is_binary=False)
+        self.keypair = async_custom_client.crypto.generate_random_sign_keys()
         self.target_abi = Abi.from_path(
             path=os.path.join(SAMPLES_DIR, 'DebotTarget.abi.json'))
         with open(os.path.join(SAMPLES_DIR, 'DebotTarget.tvc'), 'rb') as fp:
@@ -842,7 +891,7 @@ class TestTonDebotAsyncCore(unittest.TestCase):
             await browser.init_debot()
             await browser.execute()
 
-        asyncio.get_event_loop().run_until_complete(__main())
+        asyncio.run(__main())
 
     def __init_debot(self, keypair: KeyPair) -> Tuple[str, str]:
         """ Deploy debot and target """
