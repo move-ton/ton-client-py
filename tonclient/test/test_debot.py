@@ -22,9 +22,6 @@ from tonclient.types import Abi, Signer, CallSet, DeploySet, DebotAction, \
     RegisteredDebot, ClientConfig, ResultOfAppDebotBrowser
 
 
-logging.basicConfig(level=logging.INFO)
-
-
 DEBOT_WC = -31
 
 INTERFACES = [
