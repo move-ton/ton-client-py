@@ -189,7 +189,6 @@ class DebotBrowser(object):
 
             browser = kwargs['browser']
             steps = browser.step['invokes']
-            client.create_context(config=client.config)
 
             _browser = DebotBrowser(
                 client=client, address=params.debot_addr, steps=steps,
@@ -389,16 +388,21 @@ class DebotBrowserAsync(object):
             logging.info(f'[INVOKE]\t{params.debot_addr}')
 
             async def async_wrapper():
+                # Create new client instance for spawned process and
+                # destroy after invoke processed
+                _client = TonClient(config=client.config, is_async=True)
+
                 _browser = DebotBrowserAsync(
-                    client=client, address=params.debot_addr, steps=steps,
+                    client=_client, address=params.debot_addr, steps=steps,
                     keypair=browser.keypair)
                 _browser.actions = [params.action]
                 await _browser.init_debot()
                 await _browser.execute_from_state()
 
+                _client.destroy_context()
+
             browser, = args
             steps = browser.step['invokes']
-            client.create_context(config=client.config)
 
             asyncio.run(async_wrapper())
 
