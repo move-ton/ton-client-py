@@ -95,7 +95,7 @@ py -m unittest -v
 ## Client
 Core client library has sync and async request modes.  
 Some core methods are available only in async request mode and 
-this mode is more prefferable, so python client is created with async core requests by default.
+this mode is more prefferable, so python client created with async core requests by default.
 
 Create client
 ```python
@@ -108,7 +108,7 @@ client = TonClient(config=ClientConfig())
 client_sync_core = TonClient(config=ClientConfig(), is_core_async=False)
 ```
 
-Client is created with default config
+Client created with default config
 ```python
 from tonclient.types import NetworkConfig, CryptoConfig, AbiConfig, BocConfig, ClientConfig
 
@@ -164,10 +164,10 @@ config = ClientConfig(network=network, crypto=crypto, abi=abi, boc=boc)
 You can override initial config while creating a client
 ```python
 from tonclient.types import ClientConfig
-from tonclient.client import TonClient, DEVNET_BASE_URL
+from tonclient.client import TonClient, DEVNET_BASE_URLS
 
 config = ClientConfig()
-config.network.server_address = DEVNET_BASE_URL
+config.network.endpoints = DEVNET_BASE_URLS
 config.abi.message_expiration_timeout = 30000
 
 client = TonClient(config=config)
@@ -177,13 +177,13 @@ version = client.version()
 Client contains all core modules and its methods.  
 You can get full list of modules and methods here: 
 https://github.com/tonlabs/TON-SDK/blob/master/docs/modules.md  
-Module method is called by template `client.[module].[method]`
+Module method called by template `client.[module].[method]`
 ```python
 from tonclient.types import ClientConfig, ParamsOfParse
-from tonclient.client import TonClient, DEVNET_BASE_URL
+from tonclient.client import TonClient, DEVNET_BASE_URLS
 
 config = ClientConfig()
-config.network.server_address = DEVNET_BASE_URL
+config.network.endpoints = DEVNET_BASE_URLS
 client = TonClient(config=config)
 
 # Generate random signing keys
@@ -205,11 +205,11 @@ from datetime import datetime
 from tonclient.errors import TonException
 from tonclient.types import ClientConfig, ClientError, SubscriptionResponseType, \
     ParamsOfSubscribeCollection, ResultOfSubscription
-from tonclient.client import DEVNET_BASE_URL, TonClient
+from tonclient.client import DEVNET_BASE_URLS, TonClient
 
 
 config = ClientConfig()
-config.network.server_address = DEVNET_BASE_URL
+config.network.endpoints = DEVNET_BASE_URLS
 client = TonClient(config=config)
 
 
@@ -242,11 +242,11 @@ Please, dig in `tonclient/test/test_net.py`, `tonclient/test/test_processing.py`
 ## Client and asyncio
 ```python
 from tonclient.types import ClientConfig
-from tonclient.client import TonClient, DEVNET_BASE_URL
+from tonclient.client import TonClient, DEVNET_BASE_URLS
 
 # Create client with `is_async=True` argument.
 config = ClientConfig()
-config.network.server_address = DEVNET_BASE_URL
+config.network.endpoints = DEVNET_BASE_URLS
 client = TonClient(config=config, is_async=True)
 
 # Get version (simple method with result)
