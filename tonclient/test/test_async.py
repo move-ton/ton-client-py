@@ -4,7 +4,7 @@ import logging
 import asyncio
 from datetime import datetime
 
-from tonclient.client import TonClient, DEVNET_BASE_URL
+from tonclient.client import TonClient, DEVNET_BASE_URLS
 from tonclient.errors import TonException
 from tonclient.objects import AppSigningBox, AppEncryptionBox
 from tonclient.types import ClientConfig, ParamsOfMnemonicFromRandom, \
@@ -23,7 +23,7 @@ from tonclient.test.test_client import LIB_VERSION
 class TestTonClientAsync(unittest.TestCase):
     def setUp(self) -> None:
         client_config = ClientConfig()
-        client_config.network.server_address = DEVNET_BASE_URL
+        client_config.network.endpoints = DEVNET_BASE_URLS
         self.client = TonClient(config=client_config, is_async=True)
 
     def test_version(self):  # Client

@@ -1,6 +1,6 @@
 import os
 
-from tonclient.client import TonClient, DEVNET_BASE_URL
+from tonclient.client import TonClient, DEVNET_BASE_URLS
 from tonclient.types import Abi, CallSet, Signer, ClientConfig, \
     ParamsOfEncodeMessage, ParamsOfProcessMessage
 
@@ -10,11 +10,11 @@ GIVER_ADDRESS = '0:f5c2510bfe407363cb1db6b9d7bc1184a05f8b343aeaa828189c580e8569e
 CUSTOM_BASE_URL = 'https://tonos.freeton.surf'
 
 client_config = ClientConfig()
-client_config.network.server_address = DEVNET_BASE_URL
+client_config.network.endpoints = DEVNET_BASE_URLS
 async_core_client = TonClient(config=client_config)
 sync_core_client = TonClient(config=client_config, is_core_async=False)
 
-client_config.network.server_address = CUSTOM_BASE_URL
+client_config.network.endpoints = [CUSTOM_BASE_URL]
 async_custom_client = TonClient(config=client_config)
 
 

@@ -289,8 +289,8 @@ class AppDebotBrowser(AppObject):
         # for compatibility with `Unix` systems.
         # MacOS, Windows use `spawn` by default
         with ProcessPoolExecutor(mp_context=get_context('spawn')) as pool:
-            future = pool.apply(
-                self.perform_invoke_debot, (self.client, params))
+            future = pool.submit(
+                self.perform_invoke_debot, client=self.client, params=params)
             future.result()
 
         return ResultOfAppDebotBrowser.InvokeDebot()

@@ -15,8 +15,16 @@ from tonclient.types import ClientError, ClientConfig, ResultOfVersion, \
     ResultOfGetApiReference, ResultOfBuildInfo, ParamsOfResolveAppRequest
 from tonclient.utils import TonUtils
 
-DEVNET_BASE_URL = 'net.ton.dev'
-MAINNET_BASE_URL = 'main.ton.dev'
+
+DEVNET_BASE_URLS = [
+    'https://net1.ton.dev/',
+    'https://net5.ton.dev/'
+]
+MAINNET_BASE_URLS = [
+    'https://main2.ton.dev/',
+    'https://main3.ton.dev/',
+    'https://main4.ton.dev/'
+]
 
 
 class TonClientBase(TonModule):

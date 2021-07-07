@@ -1,16 +1,16 @@
 import unittest
 
-from tonclient.client import TonClient, DEVNET_BASE_URL
+from tonclient.client import TonClient, DEVNET_BASE_URLS
 from tonclient.types import ClientConfig
 
 
-LIB_VERSION = '1.17.0'
+LIB_VERSION = '1.18.0'
 
 
 class TestTonClientAsyncCore(unittest.TestCase):
     def setUp(self) -> None:
         config = ClientConfig()
-        config.network.server_address = DEVNET_BASE_URL
+        config.network.endpoints = DEVNET_BASE_URLS
         self.client = TonClient(config=config)
 
     def test_version(self):
@@ -34,7 +34,7 @@ class TestTonClientSyncCore(unittest.TestCase):
     """ Sync core is not recommended to use """
     def setUp(self) -> None:
         config = ClientConfig()
-        config.network.server_address = DEVNET_BASE_URL
+        config.network.endpoints = DEVNET_BASE_URLS
         self.client = TonClient(config=config, is_core_async=False)
 
     def test_version(self):

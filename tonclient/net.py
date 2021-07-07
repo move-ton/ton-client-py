@@ -8,7 +8,11 @@ from tonclient.types import ParamsOfQuery, ResultOfQuery, \
     ParamsOfAggregateCollection, ResultOfAggregateCollection, \
     ParamsOfBatchQuery, ResultOfBatchQuery, ResponseHandler, \
     ParamsOfQueryCounterparties, ResultOfGetEndpoints, \
-    ParamsOfQueryTransactionTree, ResultOfQueryTransactionTree
+    ParamsOfQueryTransactionTree, ResultOfQueryTransactionTree, \
+    ParamsOfCreateBlockIterator, RegisteredIterator, \
+    ParamsOfResumeBlockIterator, ParamsOfCreateTransactionIterator, \
+    ParamsOfResumeTransactionIterator, ParamsOfIteratorNext, \
+    ResultOfIteratorNext
 
 
 class TonNet(TonModule):
@@ -194,3 +198,137 @@ class TonNet(TonModule):
         :return: See `types.ResultOfQueryTransactionTree`
         """
         return self.request(method='net.query_transaction_tree', **params.dict)
+
+    @result_as(classname=RegisteredIterator)
+    def create_block_iterator(
+            self, params: ParamsOfCreateBlockIterator) -> RegisteredIterator:
+        """
+        Creates block iterator.
+        Block iterator uses robust iteration methods that guaranties that
+        every block in the specified range isn't missed or iterated twice.
+
+        Items iterated is a JSON objects with block data.
+        The minimal set of returned fields is:
+        ```
+            id
+            gen_utime
+            workchain_id
+            shard
+            after_split
+            after_merge
+            prev_ref {
+                root_hash
+            }
+            prev_alt_ref {
+                root_hash
+            }
+        ```
+
+        Application should call the `remove_iterator` when iterator is no
+        longer required
+
+        :param params: See `types.ParamsOfCreateBlockIterator`
+        :return: See `types.RegisteredIterator`
+        """
+        return self.request(method='net.create_block_iterator', **params.dict)
+
+    @result_as(classname=RegisteredIterator)
+    def resume_block_iterator(
+            self, params: ParamsOfResumeBlockIterator) -> RegisteredIterator:
+        """
+        Resumes block iterator.
+        The iterator stays exactly at the same position where the
+        `resume_state` was caught.
+        Application should call the `remove_iterator` when iterator is no
+        longer required
+
+        :param params: See `types.ParamsOfResumeBlockIterator`
+        :return: See `types.RegisteredIterator`
+        """
+        return self.request(method='net.resume_block_iterator', **params.dict)
+
+    @result_as(classname=RegisteredIterator)
+    def create_transaction_iterator(
+            self, params: ParamsOfCreateTransactionIterator
+    ) -> RegisteredIterator:
+        """
+        Creates transaction iterator.
+        Transaction iterator uses robust iteration methods that guaranty
+        that every transaction in the specified range isn't missed or
+        iterated twice.
+
+        Iterated item is a JSON objects with transaction data.
+        The minimal set of returned fields is:
+        ```
+            id
+            account_addr
+            now
+            balance_delta(format:DEC)
+            bounce { bounce_type }
+            in_message {
+                id
+                value(format:DEC)
+                msg_type
+                src
+            }
+            out_messages {
+                id
+                value(format:DEC)
+                msg_type
+                dst
+            }
+        ```
+
+        Application should call the `remove_iterator` when iterator is no
+        longer required
+
+        :param params: See `types.ParamsOfCreateTransactionIterator`
+        :return: See `types.RegisteredIterator`
+        """
+        return self.request(
+            method='net.create_transaction_iterator', **params.dict)
+
+    @result_as(classname=RegisteredIterator)
+    def resume_transaction_iterator(
+            self, params: ParamsOfResumeTransactionIterator
+    ) -> RegisteredIterator:
+        """
+        Resumes transaction iterator.
+        The iterator stays exactly at the same position where the
+        `resume_state` was caught.
+
+        Note that `resume_state` doesn't store the account filter.
+        If the application requires to use the same account filter as it was
+        when the iterator was created then the application must pass the
+        account filter again in `accounts_filter` parameter.
+
+        Application should call the `remove_iterator` when iterator is no
+        longer required
+
+        :param params: See `types.ParamsOfResumeTransactionIterator`
+        :return: See `types.RegisteredIterator`
+        """
+        return self.request(
+            method='net.resume_transaction_iterator', **params.dict)
+
+    @result_as(classname=ResultOfIteratorNext)
+    def iterator_next(
+            self, params: ParamsOfIteratorNext) -> ResultOfIteratorNext:
+        """
+        Returns next available items
+
+        :param params: See `types.ParamsOfIteratorNext`
+        :return: See `types.ResultOfIteratorNext`
+        """
+        return self.request(method='net.iterator_next', **params.dict)
+
+    def remove_iterator(self, params: RegisteredIterator):
+        """
+        Removes an iterator.
+        Frees all resources allocated in library to serve iterator.
+        Application always should call the `remove_iterator` when iterator is
+        no longer required
+
+        :param params: See `types.RegisteredIterator`
+        """
+        return self.request(method='net.remove_iterator', **params.dict)

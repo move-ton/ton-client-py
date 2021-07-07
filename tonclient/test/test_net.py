@@ -18,7 +18,9 @@ from tonclient.types import ParamsOfQueryCollection, OrderBy, SortDirection, \
     ClientConfig, ParamsOfFindLastShardBlock, ParamsOfAggregateCollection, \
     FieldAggregation, AggregationFn, ParamsOfBatchQuery, \
     ParamsOfQueryOperation, ParamsOfQueryCounterparties, \
-    ParamsOfQueryTransactionTree, MessageNode, TransactionNode
+    ParamsOfQueryTransactionTree, MessageNode, TransactionNode, \
+    ParamsOfCreateBlockIterator, ParamsOfIteratorNext, \
+    ParamsOfResumeBlockIterator
 
 
 class TestTonNetAsyncCore(unittest.TestCase):
@@ -189,7 +191,7 @@ class TestTonNetAsyncCore(unittest.TestCase):
 
     def test_get_endpoints(self):
         result = async_core_client.net.get_endpoints()
-        self.assertGreaterEqual(1, len(result.endpoints))
+        self.assertGreaterEqual(len(result.endpoints), 1)
 
     def test_aggregate_collection(self):
         fields = [
@@ -261,6 +263,30 @@ class TestTonNetAsyncCore(unittest.TestCase):
             self.assertIsInstance(tree_result.messages[0], MessageNode)
             self.assertIsInstance(tree_result.transactions, list)
             self.assertIsInstance(tree_result.transactions[0], TransactionNode)
+
+    def test_block_iterator(self):
+        params = ParamsOfCreateBlockIterator()
+        iterator = async_core_client.net.create_block_iterator(params=params)
+
+        items = []
+        state = None
+        params_next = ParamsOfIteratorNext(
+            iterator=iterator.handle, return_resume_state=True)
+        for i in range(10):
+            result = async_core_client.net.iterator_next(params=params_next)
+            items += result.items
+            state = result.resume_state
+        self.assertEqual(10, len(items))
+        async_core_client.net.remove_iterator(params=iterator)
+
+        params_resume = ParamsOfResumeBlockIterator(resume_state=state)
+        resumed = async_core_client.net.resume_block_iterator(params=params_resume)
+        params_next.iterator = resumed.handle
+        params_next.return_resume_state = False
+        result = async_core_client.net.iterator_next(params=params_next)
+        items += result.items
+        self.assertEqual(11, len(items))
+        async_core_client.net.remove_iterator(params=resumed)
 
 
 class TestTonNetSyncCore(unittest.TestCase):

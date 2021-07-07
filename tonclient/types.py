@@ -3117,6 +3117,236 @@ class ResultOfQueryTransactionTree(object):
         return ResultOfQueryTransactionTree(**data)
 
 
+class RegisteredIterator(object):
+    def __init__(self, handle: int):
+        """
+        :param handle: Iterator handle. Must be removed using remove_iterator
+                when it is no more needed for the application
+        """
+        self.handle = handle
+
+    @property
+    def dict(self):
+        return {'handle': self.handle}
+
+
+class ParamsOfCreateBlockIterator(object):
+    def __init__(
+            self, start_time: int = None, end_time: int = None,
+            shard_filter: List[str] = None, result: str = None):
+        """
+        :param start_time: Starting time to iterate from.
+                If the application specifies this parameter then the iteration
+                includes blocks with `gen_utime` >= `start_time`.
+                Otherwise the iteration starts from zero state.
+                Must be specified in seconds
+        :param end_time: Optional end time to iterate for.
+                If the application specifies this parameter then the iteration
+                includes blocks with `gen_utime` < `end_time`.
+                Otherwise the iteration never stops.
+                Must be specified in seconds.
+        :param shard_filter: Shard prefix filter.
+                If the application specifies this parameter and it is not
+                the empty array then the iteration will include items related
+                to accounts that belongs to the specified shard prefixes.
+                Shard prefix must be represented as a string
+                "workchain:prefix". Where `workchain` is a signed integer and
+                the `prefix` is a hexadecimal representation if the 64-bit
+                unsigned integer with tagged shard prefix.
+                For example: "0:3800000000000000"
+        :param result: Projection (result) string.
+                List of the fields that must be returned for iterated items.
+                This field is the same as the `result` parameter of the
+                `query_collection` function. Note that iterated items can
+                contains additional fields that are not requested in the result
+        """
+        self.start_time = start_time
+        self.end_time = end_time
+        self.shard_filter = shard_filter
+        self.result = result
+
+    @property
+    def dict(self):
+        return {
+            'start_time': self.start_time,
+            'end_time': self.end_time,
+            'shard_filter': self.shard_filter,
+            'result': self.result
+        }
+
+
+class ParamsOfResumeBlockIterator(object):
+    def __init__(self, resume_state: Any):
+        """
+        :param resume_state: Iterator state from which to resume.
+                Same as value returned from `iterator_next`
+        """
+        self.resume_state = resume_state
+
+    @property
+    def dict(self):
+        return {'resume_state': self.resume_state}
+
+
+class ParamsOfCreateTransactionIterator(object):
+    def __init__(
+            self, start_time: int = None, end_time: int = None,
+            shard_filter: List[str] = None, accounts_filter: List[str] = None,
+            result: str = None, include_transfers: bool = None):
+        """
+        :param start_time: Starting time to iterate from.
+                If the application specifies this parameter then the iteration
+                includes blocks with `gen_utime` >= `start_time`.
+                Otherwise the iteration starts from zero state.
+                Must be specified in seconds
+        :param end_time: Optional end time to iterate for.
+                If the application specifies this parameter then the iteration
+                includes blocks with `gen_utime` < `end_time`.
+                Otherwise the iteration never stops.
+                Must be specified in seconds
+        :param shard_filter: Shard prefix filters.
+                If the application specifies this parameter and it is not an
+                empty array then the iteration will include items related to
+                accounts that belongs to the specified shard prefixes.
+                Shard prefix must be represented as a string
+                "workchain:prefix". Where `workchain` is a signed integer
+                and the `prefix` if a hexadecimal representation if the 64-bit
+                unsigned integer with tagged shard prefix.
+                For example: "0:3800000000000000".
+                Account address conforms to the shard filter if it belongs to
+                the filter workchain and the first bits of address match to
+                the shard prefix. Only transactions with suitable account
+                addresses are iterated
+        :param accounts_filter: Account address filter.
+                Application can specify the list of accounts for which it
+                wants to iterate transactions.
+                If this parameter is missing or an empty list then the library
+                iterates transactions for all accounts that pass the shard
+                filter.
+                Note that the library doesn't detect conflicts between the
+                account filter and the shard filter if both are specified.
+                So it is an application responsibility to specify the correct
+                filter combination
+        :param result: Projection (result) string.
+                List of the fields that must be returned for iterated items.
+                This field is the same as the `result` parameter of the
+                `query_collection` function.
+                Note that iterated items can contain additional fields that
+                are not requested in the `result`
+        :param include_transfers: Include `transfers` field in iterated
+                transactions. If this parameter is `true` then each
+                transaction contains field `transfers` with list of transfer.
+
+                Each transfer is calculated from the particular message
+                related to the transaction and has the following structure:
+                    * message – source message identifier;
+                    * isBounced – indicates that the transaction is bounced,
+                            which means the value will be returned back to the
+                            sender;
+                    * isDeposit – indicates that this transfer is the
+                            deposit (true) or withdraw (false);
+                    * counterparty – account address of the transfer source or
+                            destination depending on isDeposit;
+                    * value – amount of nano tokens transferred.
+                            The value is represented as a decimal string
+                            because the actual value can be more precise than
+                            the JSON number can represent. Application must
+                            use this string carefully – conversion to number
+                            can follow to loose of precision.
+        """
+        self.start_time = start_time
+        self.end_time = end_time
+        self.shard_filter = shard_filter
+        self.accounts_filter = accounts_filter
+        self.result = result
+        self.include_transfers = include_transfers
+
+    @property
+    def dict(self):
+        return {
+            'start_time': self.start_time,
+            'end_time': self.end_time,
+            'shard_filter': self.shard_filter,
+            'accounts_filter': self.accounts_filter,
+            'result': self.result,
+            'include_transfers': self.include_transfers
+        }
+
+
+class ParamsOfResumeTransactionIterator(object):
+    def __init__(self, resume_state: Any, accounts_filter: List[str] = None):
+        """
+        :param resume_state:  Iterator state from which to resume.
+                Same as value returned from `iterator_next`
+        :param accounts_filter: Account address filter.
+                Application can specify the list of accounts for which
+                it wants to iterate transactions.
+                If this parameter is missing or an empty list then the
+                library iterates transactions for all accounts that passes
+                the shard filter.
+                Note that the library doesn't detect conflicts between the
+                account filter and the shard filter if both are specified.
+                So it is the application's responsibility to specify the
+                correct filter combination.
+        """
+        self.resume_state = resume_state
+        self.accounts_filter = accounts_filter
+
+    @property
+    def dict(self):
+        return {
+            'resume_state': self.resume_state,
+            'accounts_filter': self.accounts_filter
+        }
+
+
+class ParamsOfIteratorNext(object):
+    def __init__(
+            self, iterator: int, limit: int = None,
+            return_resume_state: bool = None):
+        """
+        :param iterator: Iterator handle
+        :param limit: Maximum count of the returned items.
+                If value is missing or is less than 1 the library uses 1
+        :param return_resume_state: Indicates that function must return the
+                iterator state that can be used for resuming iteration
+        """
+        self.iterator = iterator
+        self.limit = limit
+        self.return_resume_state = return_resume_state
+
+    @property
+    def dict(self):
+        return {
+            'iterator': self.iterator,
+            'limit': self.limit,
+            'return_resume_state': self.return_resume_state
+        }
+
+
+class ResultOfIteratorNext(object):
+    def __init__(
+            self, items: List[Any], has_more: bool, resume_state: Any = None):
+        """
+        :param items: Next available items.
+                Note that `iterator_next` can return an empty items and
+                `has_more` equals to `true`.
+                In this case the application have to continue iteration.
+                Such situation can take place when there is no data yet but
+                the requested `end_time` is not reached
+        :param has_more: Indicates that there are more available items in
+                iterated range
+        :param resume_state: Optional iterator state that can be used for
+                resuming iteration. This field is returned only if the
+                `return_resume_state` parameter is specified.
+                Note that `resume_state` corresponds to the iteration position
+                after the returned items
+        """
+        self.items = items
+        self.has_more = has_more
+        self.resume_state = resume_state
+
+
 # PROCESSING module
 class ProcessingErrorCode(int, Enum):
     MESSAGE_ALREADY_EXPIRED = 501

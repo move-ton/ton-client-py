@@ -1,3 +1,27 @@
+## Version 1.18.0.0
+  * Binaries updated to `1.18.0`;
+  * Changes `1.18.0` (https://github.com/tonlabs/TON-SDK/blob/master/CHANGELOG.md#1180--2021-06-26);
+  * **Note: Possible breaking**
+    ```python
+    # tonclient/client.py
+    
+    # DEVNET_BASE_URL = 'net.ton.dev' changed to
+    DEVNET_BASE_URLS = [
+        'https://net1.ton.dev/',
+        'https://net5.ton.dev/'
+    ]
+    
+    # MAINNET_BASE_URL = 'main.ton.dev' changed to
+    MAINNET_BASE_URLS = [
+        'https://main2.ton.dev/',
+        'https://main3.ton.dev/',
+        'https://main4.ton.dev/'
+    ]
+    ```
+    
+    If you are using `DEVNET_BASE_URL` or `MAINNET_BASE_URL` somewhere, please set/update 
+    your client `NetworkConfig.endpoints` with new set of urls.
+
 ## Version 1.17.0.1
   * Minimum `Python` version increased to `3.7`;
   * `AppObject`, `AppSigningBox`, `AppEncryptionBox`, `AppDebotBrowser` interfaces implementation.  
