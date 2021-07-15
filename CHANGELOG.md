@@ -1,3 +1,13 @@
+## Version 1.19.0.0
+  * Binaries updated to `1.19.0`;
+  * Changes `1.19.0` (https://github.com/tonlabs/TON-SDK/blob/master/CHANGELOG.md#1190--2021-07-07);
+  * `TonException` object improved:  
+    - Now exception object has `client_error: ClientError` attribute. 
+      All `ClientError` attributes are available, e.g. `e.client_error.code`;
+    - `module` attribute added to error `client_error` attribute.
+      You can check error module, e.g. `e.client_error.module == ClientErrorCode`.  
+      All error modules names can be found in `tonclient.types.*ErrorCode`.
+
 ## Version 1.18.0.0
   * Binaries updated to `1.18.0`;
   * Changes `1.18.0` (https://github.com/tonlabs/TON-SDK/blob/master/CHANGELOG.md#1180--2021-06-26);

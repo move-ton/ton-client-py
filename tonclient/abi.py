@@ -6,7 +6,8 @@ from tonclient.types import ParamsOfEncodeMessageBody, DecodedMessageBody, \
     ResultOfEncodeMessage, ParamsOfAttachSignature, ResultOfAttachSignature, \
     ParamsOfDecodeMessage, ParamsOfDecodeMessageBody, ParamsOfEncodeAccount, \
     ResultOfEncodeAccount, ParamsOfEncodeInternalMessage, \
-    ResultOfEncodeInternalMessage
+    ResultOfEncodeInternalMessage, ParamsOfDecodeAccountData, \
+    ResultOfDecodeData
 
 
 class TonAbi(TonModule):
@@ -141,3 +142,15 @@ class TonAbi(TonModule):
         """
         return self.request(
             method='abi.encode_internal_message', **params.dict)
+
+    @result_as(classname=ResultOfDecodeData)
+    def decode_account_data(
+            self, params: ParamsOfDecodeAccountData) -> ResultOfDecodeData:
+        """
+        Decodes account data using provided data BOC and ABI.
+        Note: this feature requires ABI 2.1 or higher
+
+        :param params: See `types.ParamsOfDecodeAccountData`
+        :return: See `types.ResultOfDecodeData`
+        """
+        return self.request(method='abi.decode_account_data', **params.dict)

@@ -1197,6 +1197,28 @@ class ResultOfEncodeInternalMessage(object):
         self.message_id = message_id
 
 
+class ParamsOfDecodeAccountData(object):
+    def __init__(self, abi: 'AbiType', data: str):
+        """
+        :param abi: Contract ABI
+        :param data: Data BOC. Must be encoded with `base64`
+        """
+        self.abi = abi
+        self.data = data
+
+    @property
+    def dict(self):
+        return {'abi': self.abi.dict, 'data': self.data}
+
+
+class ResultOfDecodeData(object):
+    def __init__(self, data: Dict[str, Any]):
+        """
+        :param data: Decoded data as a JSON structure
+        """
+        self.data = data
+
+
 # BOC module
 class BocErrorCode(int, Enum):
     INVALID_BOC = 201
@@ -3946,15 +3968,22 @@ class ResultOfRunGet(object):
 
 
 # UTILS module
+class AccountAddressType(str, Enum):
+    ACCOUNT_ID = 'AccountId'
+    HEX = 'Hex'
+    BASE64 = 'Base64'
+
+
 class AddressStringFormat:
     class AccountId(BaseTypedType):
         def __init__(self):
             super(AddressStringFormat.AccountId, self).__init__(
-                type='AccountId')
+                type=AccountAddressType.ACCOUNT_ID)
 
     class Hex(BaseTypedType):
         def __init__(self):
-            super(AddressStringFormat.Hex, self).__init__(type='Hex')
+            super(AddressStringFormat.Hex, self).__init__(
+                type=AccountAddressType.HEX)
 
     class Base64(BaseTypedType):
         def __init__(self, url: bool, test: bool, bounce: bool):
@@ -3963,7 +3992,8 @@ class AddressStringFormat:
             :param test:
             :param bounce:
             """
-            super(AddressStringFormat.Base64, self).__init__(type='Base64')
+            super(AddressStringFormat.Base64, self).__init__(
+                type=AccountAddressType.BASE64)
             self.url = url
             self.test = test
             self.bounce = bounce
@@ -4070,6 +4100,26 @@ class ResultOfDecompressZstd(object):
         :param decompressed: Decompressed data. Encoded as `base64`
         """
         self.decompressed = decompressed
+
+
+class ParamsOfGetAddressType(object):
+    def __init__(self, address: str):
+        """
+        :param address: Account address in any TON format
+        """
+        self.address = address
+
+    @property
+    def dict(self):
+        return {'address': self.address}
+
+
+class ResultOfGetAddressType(object):
+    def __init__(self, address_type: 'AccountAddressType'):
+        """
+        :param address_type: Account address type
+        """
+        self.address_type = address_type
 
 
 # DEBOT module

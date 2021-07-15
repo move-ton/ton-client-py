@@ -4,7 +4,8 @@ import unittest
 from tonclient.errors import TonException
 from tonclient.test.helpers import async_core_client, sync_core_client
 from tonclient.types import AddressStringFormat, ParamsOfConvertAddress, \
-    ParamsOfCalcStorageFee, ParamsOfCompressZstd, ParamsOfDecompressZstd
+    ParamsOfCalcStorageFee, ParamsOfCompressZstd, ParamsOfDecompressZstd, \
+    ParamsOfGetAddressType, AccountAddressType
 
 
 class TestTonUtilsAsyncCore(unittest.TestCase):
@@ -84,6 +85,52 @@ class TestTonUtilsAsyncCore(unittest.TestCase):
         decompressed = async_core_client.utils.decompress_zstd(
             params=ParamsOfDecompressZstd(compressed=compressed.compressed))
         self.assertEqual(uncompressed, decompressed.decompressed)
+
+    def test_get_address_type(self):
+        params = ParamsOfGetAddressType(address='')
+        with self.assertRaises(TonException):
+            async_core_client.utils.get_address_type(params=params)
+
+            params.address = '         '
+            async_core_client.utils.get_address_type(params=params)
+
+            params.address = '123456'
+            async_core_client.utils.get_address_type(params=params)
+
+            params.address = 'abcdef'
+            async_core_client.utils.get_address_type(params=params)
+
+        params.address = '-1:7777777777777777777777777777777777777777777777777777777777777777'
+        result = async_core_client.utils.get_address_type(params=params)
+        self.assertEqual(AccountAddressType.HEX, result.address_type)
+
+        params.address = '0:919db8e740d50bf349df2eea03fa30c385d846b991ff5542e67098ee833fc7f7'
+        result = async_core_client.utils.get_address_type(params=params)
+        self.assertEqual(AccountAddressType.HEX, result.address_type)
+
+        params.address = '7777777777777777777777777777777777777777777777777777777777777777'
+        result = async_core_client.utils.get_address_type(params=params)
+        self.assertEqual(AccountAddressType.ACCOUNT_ID, result.address_type)
+
+        params.address = '919db8e740d50bf349df2eea03fa30c385d846b991ff5542e67098ee833fc7f7'
+        result = async_core_client.utils.get_address_type(params=params)
+        self.assertEqual(AccountAddressType.ACCOUNT_ID, result.address_type)
+
+        params.address = 'EQCRnbjnQNUL80nfLuoD+jDDhdhGuZH/VULmcJjugz/H9wam'
+        result = async_core_client.utils.get_address_type(params=params)
+        self.assertEqual(AccountAddressType.BASE64, result.address_type)
+
+        params.address = 'EQCRnbjnQNUL80nfLuoD-jDDhdhGuZH_VULmcJjugz_H9wam'
+        result = async_core_client.utils.get_address_type(params=params)
+        self.assertEqual(AccountAddressType.BASE64, result.address_type)
+
+        params.address = 'UQCRnbjnQNUL80nfLuoD+jDDhdhGuZH/VULmcJjugz/H91tj'
+        result = async_core_client.utils.get_address_type(params=params)
+        self.assertEqual(AccountAddressType.BASE64, result.address_type)
+
+        params.address = 'UQCRnbjnQNUL80nfLuoD-jDDhdhGuZH_VULmcJjugz_H91tj'
+        result = async_core_client.utils.get_address_type(params=params)
+        self.assertEqual(AccountAddressType.BASE64, result.address_type)
 
 
 class TestTonUtilsSyncCore(unittest.TestCase):
