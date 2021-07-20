@@ -2,29 +2,28 @@ import base64
 import unittest
 import logging
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 
-from tonclient.client import TonClient, DEVNET_BASE_URLS
+from tonclient.client import TonClient
 from tonclient.errors import TonException
 from tonclient.objects import AppSigningBox, AppEncryptionBox
-from tonclient.types import ClientConfig, ParamsOfMnemonicFromRandom, \
-    ParamsOfAppRequest, ParamsOfAppSigningBox, ResultOfAppSigningBox, \
-    ParamsOfSigningBoxSign, AppRequestResult, ParamsOfResolveAppRequest, \
-    ParamsOfSign, ParamsOfParse, SubscriptionResponseType, \
-    ResultOfSubscription, ClientError, ParamsOfSubscribeCollection, \
-    ParamsOfConvertAddress, AddressStringFormat, ParamsOfRunExecutor, \
-    AccountForExecutor, ParamsOfEncryptionBoxGetInfo, \
+from tonclient.types import ParamsOfMnemonicFromRandom, ParamsOfAppRequest, \
+    ParamsOfAppSigningBox, ResultOfAppSigningBox, ParamsOfSigningBoxSign, \
+    AppRequestResult, ParamsOfResolveAppRequest, ParamsOfSign, ParamsOfParse, \
+    SubscriptionResponseType, ResultOfSubscription, ClientError, \
+    ParamsOfSubscribeCollection, ParamsOfConvertAddress, AddressStringFormat, \
+    ParamsOfRunExecutor, AccountForExecutor, ParamsOfEncryptionBoxGetInfo, \
     ParamsOfEncryptionBoxEncrypt, ParamsOfEncryptionBoxDecrypt, \
     EncryptionBoxInfo, ParamsOfAppEncryptionBox
 
 from tonclient.test.test_client import LIB_VERSION
+from tonclient.test.helpers import async_core_client, tonos_punch
 
 
 class TestTonClientAsync(unittest.TestCase):
     def setUp(self) -> None:
-        client_config = ClientConfig()
-        client_config.network.endpoints = DEVNET_BASE_URLS
-        self.client = TonClient(config=client_config, is_async=True)
+        self.client = TonClient(config=async_core_client.config, is_async=True)
 
     def test_version(self):  # Client
         async def __main():
@@ -236,10 +235,14 @@ class TestTonClientAsync(unittest.TestCase):
 
             while True:
                 if len(results) > 0 or \
-                        int(datetime.now().timestamp()) > now + 10:
+                        int(datetime.now().timestamp()) > now + 30:
                     await self.client.net.unsubscribe(params=subscription)
                     break
-                await asyncio.sleep(1)
+
+                executor = ThreadPoolExecutor()
+                await asyncio.get_event_loop().run_in_executor(
+                    executor, tonos_punch)
+                await asyncio.sleep(5)
 
             self.assertGreater(len(results), 0)
 

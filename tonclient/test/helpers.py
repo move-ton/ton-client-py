@@ -1,21 +1,17 @@
 import os
 
-from tonclient.client import TonClient, DEVNET_BASE_URLS
+from tonclient.client import TonClient
 from tonclient.types import Abi, CallSet, Signer, ClientConfig, \
     ParamsOfEncodeMessage, ParamsOfProcessMessage
 
 BASE_DIR = os.path.dirname(__file__)
 SAMPLES_DIR = os.path.join(BASE_DIR, 'samples')
 GIVER_ADDRESS = '0:f5c2510bfe407363cb1db6b9d7bc1184a05f8b343aeaa828189c580e8569ee23'
-CUSTOM_BASE_URL = 'https://tonos.freeton.surf'
 
 client_config = ClientConfig()
-client_config.network.endpoints = DEVNET_BASE_URLS
+client_config.network.endpoints = ['https://tonos.freeton.surf']
 async_core_client = TonClient(config=client_config)
 sync_core_client = TonClient(config=client_config, is_core_async=False)
-
-client_config.network.endpoints = [CUSTOM_BASE_URL]
-async_custom_client = TonClient(config=client_config)
 
 
 def send_grams(address: str):
@@ -28,4 +24,9 @@ def send_grams(address: str):
         call_set=call_set)
     process_params = ParamsOfProcessMessage(
         message_encode_params=encode_params, send_events=False)
-    async_custom_client.processing.process_message(params=process_params)
+    async_core_client.processing.process_message(params=process_params)
+
+
+def tonos_punch():
+    send_grams(
+        address='0:b5e9240fc2d2f1ff8cbb1d1dee7fb7cae155e5f6320e585fcc685698994a19a5')

@@ -5,7 +5,7 @@ import unittest
 
 from tonclient.errors import TonException
 from tonclient.test.helpers import send_grams, SAMPLES_DIR, async_core_client,\
-    sync_core_client, async_custom_client
+    sync_core_client
 from tonclient.types import Abi, DeploySet, CallSet, Signer, StateInitSource, \
     AccountForExecutor, ParamsOfEncodeMessage, ParamsOfProcessMessage, \
     ParamsOfWaitForCollection, ParamsOfParse, ParamsOfRunExecutor, \
@@ -18,7 +18,7 @@ class TestTonTvmAsyncCore(unittest.TestCase):
             os.path.join(SAMPLES_DIR, 'Subscription.abi.json'))
         with open(os.path.join(SAMPLES_DIR, 'Subscription.tvc'), 'rb') as fp:
             tvc = base64.b64encode(fp.read()).decode()
-        keypair = async_custom_client.crypto.generate_random_sign_keys()
+        keypair = async_core_client.crypto.generate_random_sign_keys()
         wallet_address = '0:2222222222222222222222222222222222222222222222222222222222222222'
 
         # Deploy message
@@ -30,7 +30,7 @@ class TestTonTvmAsyncCore(unittest.TestCase):
         # Get account deploy message
         encode_params = ParamsOfEncodeMessage(
             abi=abi, signer=signer, deploy_set=deploy_set, call_set=call_set)
-        deploy_message = async_custom_client.abi.encode_message(
+        deploy_message = async_core_client.abi.encode_message(
             params=encode_params)
 
         # Send grams
@@ -39,17 +39,17 @@ class TestTonTvmAsyncCore(unittest.TestCase):
         # Deploy account
         process_params = ParamsOfProcessMessage(
             message_encode_params=encode_params, send_events=False)
-        async_custom_client.processing.process_message(params=process_params)
+        async_core_client.processing.process_message(params=process_params)
 
         # Get account data
         q_params = ParamsOfWaitForCollection(
             collection='accounts', result='id boc',
             filter={'id': {'eq': deploy_message.address}})
-        account = async_custom_client.net.wait_for_collection(params=q_params)
+        account = async_core_client.net.wait_for_collection(params=q_params)
 
         # Get account balance
         parse_params = ParamsOfParse(boc=account.result['boc'])
-        parsed = async_custom_client.boc.parse_account(params=parse_params)
+        parsed = async_core_client.boc.parse_account(params=parse_params)
         orig_balance = parsed.parsed['balance']
 
         # Run executor (unlimited balance should not affect account balance)
@@ -64,18 +64,18 @@ class TestTonTvmAsyncCore(unittest.TestCase):
         encode_params = ParamsOfEncodeMessage(
             abi=abi, signer=signer, address=deploy_message.address,
             call_set=call_set)
-        encoded_message = async_custom_client.abi.encode_message(
+        encoded_message = async_core_client.abi.encode_message(
             params=encode_params)
         account_for_executor = AccountForExecutor.Account(
             boc=account.result['boc'], unlimited_balance=True)
         run_params = ParamsOfRunExecutor(
             message=encoded_message.message, account=account_for_executor,
             abi=abi, return_updated_account=True)
-        result = async_custom_client.tvm.run_executor(params=run_params)
+        result = async_core_client.tvm.run_executor(params=run_params)
 
         # Get account balance again
         parse_params.boc = result.account
-        parsed = async_custom_client.boc.parse_account(params=parse_params)
+        parsed = async_core_client.boc.parse_account(params=parse_params)
         self.assertLess(
             int(orig_balance, 16), int(parsed.parsed['balance'], 16))
 
@@ -85,7 +85,7 @@ class TestTonTvmAsyncCore(unittest.TestCase):
         run_params = ParamsOfRunExecutor(
             message=encoded_message.message, account=account_for_executor,
             abi=abi, return_updated_account=True)
-        result = async_custom_client.tvm.run_executor(params=run_params)
+        result = async_core_client.tvm.run_executor(params=run_params)
         self.assertEqual(
             encoded_message.message_id, result.transaction['in_msg'])
         self.assertGreater(result.fees.total_account_fees, 0)
@@ -97,11 +97,11 @@ class TestTonTvmAsyncCore(unittest.TestCase):
         encode_params = ParamsOfEncodeMessage(
             abi=abi, signer=signer, address=deploy_message.address,
             call_set=call_set)
-        encoded_message = async_custom_client.abi.encode_message(
+        encoded_message = async_core_client.abi.encode_message(
             params=encode_params)
         run_params = ParamsOfRunTvm(
             message=encoded_message.message, account=result.account, abi=abi)
-        result = async_custom_client.tvm.run_tvm(params=run_params)
+        result = async_core_client.tvm.run_tvm(params=run_params)
         self.assertEqual(
             subscribe_params['pubkey'],
             result.decoded.output['value0']['pubkey'])

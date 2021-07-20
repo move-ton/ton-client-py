@@ -10,8 +10,7 @@ from typing import List, Dict, Tuple, Any, Union
 
 from tonclient.client import TonClient
 from tonclient.objects import AppDebotBrowser
-from tonclient.test.helpers import SAMPLES_DIR, async_custom_client, \
-    send_grams, CUSTOM_BASE_URL
+from tonclient.test.helpers import SAMPLES_DIR, async_core_client, send_grams
 from tonclient.types import Abi, Signer, CallSet, DeploySet, DebotAction, \
     DebotState, ParamsOfAppDebotBrowser, \
     ParamsOfEncodeMessage, ParamsOfProcessMessage, ParamsOfStart, \
@@ -19,7 +18,7 @@ from tonclient.types import Abi, Signer, CallSet, DeploySet, DebotAction, \
     ParamsOfDecodeMessageBody, ParamsOfSend, ParamsOfEncodeInternalMessage, \
     ParamsOfGetCodeFromTvc, ParamsOfGetBocHash, ParamsOfAggregateCollection, \
     FieldAggregation, AggregationFn, ParamsOfInit, ParamsOfRemove, \
-    RegisteredDebot, ClientConfig, ResultOfAppDebotBrowser
+    RegisteredDebot, ResultOfAppDebotBrowser
 
 
 DEBOT_WC = -31
@@ -279,7 +278,7 @@ class DebotBrowser(object):
 
                 params_decode = ParamsOfDecodeMessageBody(
                     abi=abi, body=body, is_internal=True)
-                decoded = async_custom_client.abi.decode_message_body(
+                decoded = async_core_client.abi.decode_message_body(
                     params=params_decode)
                 logging.debug(f'Request: `{decoded.name}` ({decoded.value})')
 
@@ -530,7 +529,7 @@ class DebotBrowserAsync(object):
 
 class TestTonDebotAsyncCore(unittest.TestCase):
     def setUp(self) -> None:
-        self.keypair = async_custom_client.crypto.generate_random_sign_keys()
+        self.keypair = async_core_client.crypto.generate_random_sign_keys()
         self.target_abi = Abi.from_path(
             path=os.path.join(SAMPLES_DIR, 'DebotTarget.abi.json'))
         with open(os.path.join(SAMPLES_DIR, 'DebotTarget.tvc'), 'rb') as fp:
@@ -545,7 +544,7 @@ class TestTonDebotAsyncCore(unittest.TestCase):
         ]
 
         browser = DebotBrowser(
-            client=async_custom_client, address=debot_address, steps=steps)
+            client=async_core_client, address=debot_address, steps=steps)
         browser.init_debot()
         browser.execute()
 
@@ -574,7 +573,7 @@ class TestTonDebotAsyncCore(unittest.TestCase):
         ]
 
         browser = DebotBrowser(
-            client=async_custom_client, address=debot_address, steps=steps)
+            client=async_core_client, address=debot_address, steps=steps)
         browser.init_debot()
         browser.execute()
 
@@ -607,12 +606,12 @@ class TestTonDebotAsyncCore(unittest.TestCase):
         ]
 
         browser = DebotBrowser(
-            client=async_custom_client, address=debot_address, steps=steps)
+            client=async_core_client, address=debot_address, steps=steps)
         browser.init_debot()
         browser.execute()
 
     def test_run_method(self):
-        keypair = async_custom_client.crypto.generate_random_sign_keys()
+        keypair = async_core_client.crypto.generate_random_sign_keys()
         debot_address, target_address = self.__init_debot(keypair=keypair)
 
         steps = [
@@ -624,7 +623,7 @@ class TestTonDebotAsyncCore(unittest.TestCase):
         ]
 
         browser = DebotBrowser(
-            client=async_custom_client, address=debot_address, steps=steps)
+            client=async_core_client, address=debot_address, steps=steps)
         browser.init_debot()
         browser.execute()
 
@@ -644,7 +643,7 @@ class TestTonDebotAsyncCore(unittest.TestCase):
         ]
 
         browser = DebotBrowser(
-            client=async_custom_client, address=debot_address, steps=steps,
+            client=async_core_client, address=debot_address, steps=steps,
             keypair=self.keypair)
         browser.init_debot()
         browser.execute()
@@ -685,7 +684,7 @@ class TestTonDebotAsyncCore(unittest.TestCase):
         ]
 
         browser = DebotBrowser(
-            client=async_custom_client, address=debot_address, steps=steps,
+            client=async_core_client, address=debot_address, steps=steps,
             keypair=self.keypair)
         browser.init_debot()
         browser.execute()
@@ -704,7 +703,7 @@ class TestTonDebotAsyncCore(unittest.TestCase):
         ]
 
         browser = DebotBrowser(
-            client=async_custom_client, address=debot_address, steps=steps)
+            client=async_core_client, address=debot_address, steps=steps)
         browser.init_debot()
         browser.execute()
 
@@ -721,12 +720,12 @@ class TestTonDebotAsyncCore(unittest.TestCase):
         ]
 
         browser = DebotBrowser(
-            client=async_custom_client, address=debot_address, steps=steps)
+            client=async_core_client, address=debot_address, steps=steps)
         browser.init_debot()
         browser.execute()
 
     def test_debot_msg_interface(self):
-        keypair = async_custom_client.crypto.generate_random_sign_keys()
+        keypair = async_core_client.crypto.generate_random_sign_keys()
         debot_address = self.__init_debot2(keypair=keypair)
         terminal_outputs = [
             'counter=10',
@@ -735,13 +734,13 @@ class TestTonDebotAsyncCore(unittest.TestCase):
         ]
 
         browser = DebotBrowser(
-            client=async_custom_client, address=debot_address,
+            client=async_core_client, address=debot_address,
             terminal_outputs=terminal_outputs)
         browser.init_debot()
         browser.execute()
 
     def test_debot_sdk_interface(self):
-        keypair = async_custom_client.crypto.generate_random_sign_keys()
+        keypair = async_core_client.crypto.generate_random_sign_keys()
         debot_address = self.__init_debot3(keypair=keypair)
         terminal_outputs = [
             'test substring1 passed',
@@ -761,19 +760,19 @@ class TestTonDebotAsyncCore(unittest.TestCase):
         ]
 
         browser = DebotBrowser(
-            client=async_custom_client, address=debot_address,
+            client=async_core_client, address=debot_address,
             terminal_outputs=terminal_outputs)
         browser.init_debot()
         browser.execute()
 
     def test_debot4(self):
-        keypair = async_custom_client.crypto.generate_random_sign_keys()
+        keypair = async_core_client.crypto.generate_random_sign_keys()
         debot_address, target_address = self.__init_debot4(keypair=keypair)
 
         # Check target address type
         target_boc = self.download_account(address=target_address)
         self.assertIsNotNone(target_boc)
-        account = async_custom_client.boc.parse_account(
+        account = async_core_client.boc.parse_account(
             params=ParamsOfParse(boc=target_boc))
         self.assertEqual(0, account.parsed['acc_type'])
 
@@ -789,7 +788,7 @@ class TestTonDebotAsyncCore(unittest.TestCase):
         ]
 
         browser = DebotBrowser(
-            client=async_custom_client, address=debot_address,
+            client=async_core_client, address=debot_address,
             terminal_outputs=terminal_outputs, keypair=keypair)
         browser.init_debot()
         browser.execute()
@@ -797,12 +796,12 @@ class TestTonDebotAsyncCore(unittest.TestCase):
         # Check address type again
         target_boc = self.download_account(address=target_address)
         self.assertIsNotNone(target_boc)
-        account = async_custom_client.boc.parse_account(
+        account = async_core_client.boc.parse_account(
             params=ParamsOfParse(boc=target_boc))
         self.assertEqual(1, account.parsed['acc_type'])
 
     def test_debot_invoke_msgs(self):
-        keypair = async_custom_client.crypto.generate_random_sign_keys()
+        keypair = async_core_client.crypto.generate_random_sign_keys()
         debot_a, _ = self.__init_debot_pair(keypair=keypair)
 
         # Run debot
@@ -813,7 +812,7 @@ class TestTonDebotAsyncCore(unittest.TestCase):
         ]
 
         browser = DebotBrowser(
-            client=async_custom_client, address=debot_a,
+            client=async_core_client, address=debot_a,
             terminal_outputs=terminal_outputs)
         browser.init_debot()
         browser.execute()
@@ -826,30 +825,28 @@ class TestTonDebotAsyncCore(unittest.TestCase):
         params = ParamsOfAggregateCollection(
             collection='accounts', filter={'code_hash': {'eq': contract_hash}},
             fields=[FieldAggregation(field='', fn=AggregationFn.COUNT)])
-        result = async_custom_client.net.aggregate_collection(params=params)
+        result = async_core_client.net.aggregate_collection(params=params)
         exists = int(result.values[0])
 
         # Run debot
         terminal_outputs = [f'{exists} contracts.']
         browser = DebotBrowser(
-            client=async_custom_client, address=addresses[0],
+            client=async_core_client, address=addresses[0],
             terminal_outputs=terminal_outputs)
         browser.init_debot()
         browser.execute()
 
     def test_debot_json_interface(self):
-        keypair = async_custom_client.crypto.generate_random_sign_keys()
+        keypair = async_core_client.crypto.generate_random_sign_keys()
         debot_address = self.__init_debot7(keypair=keypair)
 
         browser = DebotBrowser(
-            client=async_custom_client, address=debot_address)
+            client=async_core_client, address=debot_address)
         browser.init_debot()
         browser.execute()
 
     def test_invoke_async(self):
-        client_config = ClientConfig()
-        client_config.network.server_address = CUSTOM_BASE_URL
-        client = TonClient(config=client_config, is_async=True)
+        client = TonClient(config=async_core_client.config, is_async=True)
 
         debot_address, _ = self.__init_debot(keypair=self.keypair)
         steps = [
@@ -908,14 +905,14 @@ class TestTonDebotAsyncCore(unittest.TestCase):
         encode_params = ParamsOfEncodeMessage(
             abi=self.target_abi, signer=signer, deploy_set=deploy_set,
             call_set=call_set)
-        message = async_custom_client.abi.encode_message(params=encode_params)
+        message = async_core_client.abi.encode_message(params=encode_params)
 
         # Check if target contract does not exists
         target_address = self.__check_address(address=message.address)
         if not target_address:
             process_params = ParamsOfProcessMessage(
                 message_encode_params=encode_params, send_events=False)
-            target = async_custom_client.processing.process_message(
+            target = async_core_client.processing.process_message(
                 params=process_params)
             target_address = target.transaction['account_addr']
 
@@ -929,14 +926,14 @@ class TestTonDebotAsyncCore(unittest.TestCase):
         encode_params = ParamsOfEncodeMessage(
             abi=debot_abi, signer=signer, deploy_set=deploy_set,
             call_set=call_set)
-        message = async_custom_client.abi.encode_message(params=encode_params)
+        message = async_core_client.abi.encode_message(params=encode_params)
 
         # Check if debot contract does not exists
         debot_address = self.__check_address(address=message.address)
         if not debot_address:
             process_params = ParamsOfProcessMessage(
                 message_encode_params=encode_params, send_events=False)
-            debot = async_custom_client.processing.process_message(
+            debot = async_core_client.processing.process_message(
                 params=process_params)
             debot_address = debot.transaction['account_addr']
 
@@ -944,7 +941,7 @@ class TestTonDebotAsyncCore(unittest.TestCase):
             call_set = CallSet(
                 function_name='setAbi',
                 input={'debotAbi': debot_abi.value.encode().hex()})
-            async_custom_client.processing.process_message(
+            async_core_client.processing.process_message(
                 params=ParamsOfProcessMessage(
                     message_encode_params=ParamsOfEncodeMessage(
                         abi=debot_abi, signer=Signer.NoSigner(),
@@ -970,14 +967,14 @@ class TestTonDebotAsyncCore(unittest.TestCase):
         encode_params = ParamsOfEncodeMessage(
             abi=debot_abi, signer=signer, deploy_set=deploy_set,
             call_set=call_set)
-        message = async_custom_client.abi.encode_message(params=encode_params)
+        message = async_core_client.abi.encode_message(params=encode_params)
 
         # Check if debot contract does not exists
         debot_address = self.__check_address(address=message.address)
         if not debot_address:
             process_params = ParamsOfProcessMessage(
                 message_encode_params=encode_params, send_events=False)
-            debot = async_custom_client.processing.process_message(
+            debot = async_core_client.processing.process_message(
                 params=process_params)
             debot_address = debot.transaction['account_addr']
 
@@ -985,7 +982,7 @@ class TestTonDebotAsyncCore(unittest.TestCase):
             call_set = CallSet(
                 function_name='setAbi',
                 input={'debotAbi': debot_abi.value.encode().hex()})
-            async_custom_client.processing.process_message(
+            async_core_client.processing.process_message(
                 params=ParamsOfProcessMessage(
                     message_encode_params=ParamsOfEncodeMessage(
                         abi=debot_abi, signer=signer, address=debot_address,
@@ -1010,7 +1007,7 @@ class TestTonDebotAsyncCore(unittest.TestCase):
         encode_params = ParamsOfEncodeMessage(
             abi=self.target_abi, signer=signer, deploy_set=deploy_set,
             call_set=call_set)
-        message = async_custom_client.abi.encode_message(params=encode_params)
+        message = async_core_client.abi.encode_message(params=encode_params)
         target_address = message.address
         self.__check_address(address=target_address)
 
@@ -1024,14 +1021,14 @@ class TestTonDebotAsyncCore(unittest.TestCase):
         encode_params = ParamsOfEncodeMessage(
             abi=debot_abi, signer=signer, deploy_set=deploy_set,
             call_set=call_set)
-        message = async_custom_client.abi.encode_message(params=encode_params)
+        message = async_core_client.abi.encode_message(params=encode_params)
 
         # Check if debot contract does not exists
         debot_address = self.__check_address(address=message.address)
         if not debot_address:
             process_params = ParamsOfProcessMessage(
                 message_encode_params=encode_params, send_events=False)
-            debot = async_custom_client.processing.process_message(
+            debot = async_core_client.processing.process_message(
                 params=process_params)
             debot_address = debot.transaction['account_addr']
 
@@ -1039,7 +1036,7 @@ class TestTonDebotAsyncCore(unittest.TestCase):
             call_set = CallSet(
                 function_name='setAbi',
                 input={'debotAbi': debot_abi.value.encode().hex()})
-            async_custom_client.processing.process_message(
+            async_core_client.processing.process_message(
                 params=ParamsOfProcessMessage(
                     message_encode_params=ParamsOfEncodeMessage(
                         abi=debot_abi, signer=signer, address=debot_address,
@@ -1053,7 +1050,7 @@ class TestTonDebotAsyncCore(unittest.TestCase):
                     'image': self.target_tvc,
                     'pubkey': f'0x{keypair.public}'
                 })
-            async_custom_client.processing.process_message(
+            async_core_client.processing.process_message(
                 params=ParamsOfProcessMessage(
                     message_encode_params=ParamsOfEncodeMessage(
                         abi=debot_abi, signer=signer, address=debot_address,
@@ -1068,9 +1065,9 @@ class TestTonDebotAsyncCore(unittest.TestCase):
         with open(os.path.join(SAMPLES_DIR, 'Debot5.tvc'), 'rb') as fp:
             debot_tvc = base64.b64encode(fp.read()).decode()
 
-        result = async_custom_client.boc.get_code_from_tvc(
+        result = async_core_client.boc.get_code_from_tvc(
             params=ParamsOfGetCodeFromTvc(tvc=debot_tvc))
-        result = async_custom_client.boc.get_boc_hash(
+        result = async_core_client.boc.get_boc_hash(
             params=ParamsOfGetBocHash(boc=result.code))
         contract_hash = result.hash
 
@@ -1085,18 +1082,18 @@ class TestTonDebotAsyncCore(unittest.TestCase):
         addresses = []
         for i in range(count):
             # Set signer for deploy params
-            keypair = async_custom_client.crypto.generate_random_sign_keys()
+            keypair = async_core_client.crypto.generate_random_sign_keys()
             deploy_params.signer = Signer.Keys(keys=keypair)
 
             # Calculate address
-            message = async_custom_client.abi.encode_message(
+            message = async_core_client.abi.encode_message(
                 params=deploy_params)
             self.__check_address(address=message.address)
 
             # Deploy address
             process_params = ParamsOfProcessMessage(
                 message_encode_params=deploy_params, send_events=False)
-            result = async_custom_client.processing.process_message(
+            result = async_core_client.processing.process_message(
                 params=process_params)
             debot_address = result.transaction['account_addr']
             addresses.append(debot_address)
@@ -1107,7 +1104,7 @@ class TestTonDebotAsyncCore(unittest.TestCase):
             call_set = CallSet(
                 function_name='setABI',
                 input={'dabi': debot_abi.value.encode().hex()})
-            async_custom_client.processing.process_message(
+            async_core_client.processing.process_message(
                 params=ParamsOfProcessMessage(
                     message_encode_params=ParamsOfEncodeMessage(
                         abi=debot_abi, signer=deploy_params.signer,
@@ -1137,13 +1134,13 @@ class TestTonDebotAsyncCore(unittest.TestCase):
         encode_params = ParamsOfEncodeMessage(
             abi=debot_b_abi, signer=signer, deploy_set=deploy_set,
             call_set=call_set)
-        message = async_custom_client.abi.encode_message(params=encode_params)
+        message = async_core_client.abi.encode_message(params=encode_params)
         b_address = message.address
 
         self.__check_address(address=b_address)
         process_params = ParamsOfProcessMessage(
             message_encode_params=encode_params, send_events=False)
-        debot_b = async_custom_client.processing.process_message(
+        debot_b = async_core_client.processing.process_message(
             params=process_params)
         b_address = debot_b.transaction['account_addr']
 
@@ -1151,7 +1148,7 @@ class TestTonDebotAsyncCore(unittest.TestCase):
         call_set = CallSet(
             function_name='setAbi',
             input={'debotAbi': debot_b_abi.value.encode().hex()})
-        async_custom_client.processing.process_message(
+        async_core_client.processing.process_message(
             params=ParamsOfProcessMessage(
                 message_encode_params=ParamsOfEncodeMessage(
                     abi=debot_b_abi, signer=signer, address=b_address,
@@ -1167,13 +1164,13 @@ class TestTonDebotAsyncCore(unittest.TestCase):
         encode_params = ParamsOfEncodeMessage(
             abi=debot_a_abi, signer=signer, deploy_set=deploy_set,
             call_set=call_set)
-        message = async_custom_client.abi.encode_message(params=encode_params)
+        message = async_core_client.abi.encode_message(params=encode_params)
         a_address = message.address
 
         self.__check_address(address=a_address)
         process_params = ParamsOfProcessMessage(
             message_encode_params=encode_params, send_events=False)
-        debot_a = async_custom_client.processing.process_message(
+        debot_a = async_core_client.processing.process_message(
             params=process_params)
         a_address = debot_a.transaction['account_addr']
 
@@ -1181,7 +1178,7 @@ class TestTonDebotAsyncCore(unittest.TestCase):
         call_set = CallSet(
             function_name='setAbi',
             input={'debotAbi': debot_a_abi.value.encode().hex()})
-        async_custom_client.processing.process_message(
+        async_core_client.processing.process_message(
             params=ParamsOfProcessMessage(
                 message_encode_params=ParamsOfEncodeMessage(
                     abi=debot_a_abi, signer=signer, address=a_address,
@@ -1204,14 +1201,14 @@ class TestTonDebotAsyncCore(unittest.TestCase):
         encode_params = ParamsOfEncodeMessage(
             abi=debot_abi, signer=signer, deploy_set=deploy_set,
             call_set=call_set)
-        message = async_custom_client.abi.encode_message(params=encode_params)
+        message = async_core_client.abi.encode_message(params=encode_params)
 
         # Check if debot contract does not exists
         debot_address = self.__check_address(address=message.address)
         if not debot_address:
             process_params = ParamsOfProcessMessage(
                 message_encode_params=encode_params, send_events=False)
-            debot = async_custom_client.processing.process_message(
+            debot = async_core_client.processing.process_message(
                 params=process_params)
             debot_address = debot.transaction['account_addr']
 
@@ -1219,7 +1216,7 @@ class TestTonDebotAsyncCore(unittest.TestCase):
             call_set = CallSet(
                 function_name='setABI',
                 input={'dabi': debot_abi.value.encode().hex()})
-            async_custom_client.processing.process_message(
+            async_core_client.processing.process_message(
                 params=ParamsOfProcessMessage(
                     message_encode_params=ParamsOfEncodeMessage(
                         abi=debot_abi, signer=signer, address=debot_address,
@@ -1234,7 +1231,7 @@ class TestTonDebotAsyncCore(unittest.TestCase):
         q_params = ParamsOfQueryCollection(
             collection='accounts', result='id',
             filter={'id': {'eq': address}})
-        result = async_custom_client.net.query_collection(params=q_params)
+        result = async_core_client.net.query_collection(params=q_params)
         if len(result.result):
             return result.result[0]['id']
 
@@ -1242,7 +1239,7 @@ class TestTonDebotAsyncCore(unittest.TestCase):
 
     @staticmethod
     def download_account(address: str) -> Union[str, None]:
-        accounts = async_custom_client.net.query_collection(
+        accounts = async_core_client.net.query_collection(
             params=ParamsOfQueryCollection(
                 collection='accounts', result='boc',
                 filter={'id': {'eq': address}}, limit=1))

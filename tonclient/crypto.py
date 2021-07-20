@@ -281,7 +281,10 @@ class TonCrypto(TonModule):
     def nacl_sign_keypair_from_secret_key(
             self, params: ParamsOfNaclSignKeyPairFromSecret) -> KeyPair:
         """
-        Generates a key pair for signing from the secret key
+        Generates a key pair for signing from the secret key.
+        NOTE: In the result the secret key is actually the concatenation of
+        secret and public keys (128 symbols hex string) by design of NaCL.
+        See also the https://crypto.stackexchange.com/questions/54353/
 
         :param params: See `types.ParamsOfNaclSignKeyPairFromSecret`
         :return: See `types.KeyPair`

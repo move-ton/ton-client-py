@@ -110,7 +110,7 @@ class NetworkConfig(object):
             network_retries_count: int = None, reconnect_timeout: int = None,
             max_reconnect_timeout: int = None,
             message_retries_count: int = None,
-            message_processing_timeout: int = None,
+            message_processing_timeout: int = None, query_timeout: int = None,
             wait_for_timeout: int = None, out_of_sync_threshold: int = None,
             sending_endpoint_count: int = None, access_key: str = None,
             latency_detection_interval: int = None, max_latency: int = None):
@@ -163,6 +163,11 @@ class NetworkConfig(object):
                 `NetworkConfig.max_latency` then library selects another
                 endpoint.
                 Must be specified in milliseconds. Default is 60000 (1 min)
+        :param query_timeout: Default timeout for http requests.
+                Is is used when no timeout specified for the request to limit
+                the answer waiting time. If no answer received during the
+                timeout requests ends with error.
+                Must be specified in milliseconds. Default is 60000 (1 min)
         """
         self.server_address = server_address
         self.endpoints = endpoints
@@ -177,6 +182,7 @@ class NetworkConfig(object):
         self.access_key = access_key
         self.latency_detection_interval = latency_detection_interval
         self.max_latency = max_latency
+        self.query_timeout = query_timeout
 
     @property
     def dict(self):
@@ -193,7 +199,8 @@ class NetworkConfig(object):
             'sending_endpoint_count': self.sending_endpoint_count,
             'access_key': self.access_key,
             'latency_detection_interval': self.latency_detection_interval,
-            'max_latency': self.max_latency
+            'max_latency': self.max_latency,
+            'query_timeout': self.query_timeout
         }
 
 
@@ -386,6 +393,7 @@ class AbiErrorCode(int, Enum):
     INVALID_SIGNER = 310
     INVALID_ABI = 311
     INVALID_FUNCTION_ID = 312
+    INVALID_DATA = 313
 
 
 class Abi:
@@ -448,30 +456,37 @@ class Abi:
 
 class AbiContract(object):
     def __init__(
-            self, abi_version: int = None, header: List[str] = None,
-            functions: List['AbiFunction'] = None,
-            events: List['AbiEvent'] = None, data: List['AbiData'] = None):
+            self, abi_version: int = None, version: str = None,
+            header: List[str] = None, functions: List['AbiFunction'] = None,
+            events: List['AbiEvent'] = None, data: List['AbiData'] = None,
+            fields: List['AbiParam'] = None):
         """
         :param abi_version:
+        :param version:
         :param header:
         :param functions:
         :param events:
         :param data:
+        :param fields:
         """
         self.abi_version = abi_version
+        self.version = version
         self.header = header or []
         self.functions = functions or []
         self.events = events or []
         self.data = data or []
+        self.fields = fields or []
 
     @property
     def dict(self):
         return {
             'abi_version': self.abi_version,
+            'version': self.version,
             'header': self.header,
             'functions': [f.dict for f in self.functions],
             'events': [e.dict for e in self.events],
-            'data': [d.dict for d in self.data]
+            'data': [d.dict for d in self.data],
+            'fields': [f.dict for f in self.fields]
         }
 
 
@@ -1201,7 +1216,7 @@ class ParamsOfDecodeAccountData(object):
     def __init__(self, abi: 'AbiType', data: str):
         """
         :param abi: Contract ABI
-        :param data: Data BOC. Must be encoded with `base64`
+        :param data: Data BOC or BOC handle
         """
         self.abi = abi
         self.data = data
@@ -1854,8 +1869,10 @@ class ParamsOfNaclSign(object):
     def __init__(self, unsigned: str, secret: str):
         """
         :param unsigned: Data that must be signed encoded in `base64`
-        :param secret: Signer's secret key - unprefixed 0-padded to 64
-                symbols `hex` string
+        :param secret: Signer's secret key.
+                Unprefixed 0-padded to 128 symbols hex string (concatenation
+                of 64 symbols secret and 64 symbols public keys).
+                See `nacl_sign_keypair_from_secret_key`
         """
         self.unsigned = unsigned
         self.secret = secret
