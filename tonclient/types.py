@@ -1566,6 +1566,12 @@ class CryptoErrorCode(int, Enum):
     SIGNING_BOX_NOT_REGISTERED = 121
     INVALID_SIGNATURE = 122
     ENCRYPTION_BOX_NOT_REGISTERED = 123
+    INVALID_IV_SIZE = 124
+    UNSUPPORTED_CIPHER_MODE = 125
+    CANNOT_CREATE_CIPHER = 126
+    ENCRYPT_DATA_ERROR = 127
+    DECRYPT_DATA_ERROR = 128
+    IV_REQUIRED = 129
 
 
 class MnemonicDictionary(int, Enum):
@@ -2656,6 +2662,52 @@ class ResultOfEncryptionBoxDecrypt(object):
         self.data = data
 
 
+class CipherMode(str, Enum):
+    CBC = 'CBC'
+    CFB = 'CFB'
+    CTR = 'CTR'
+    ECB = 'ECB'
+    OFB = 'OFB'
+
+
+class EncryptionAlgorithm:
+    class Aes(BaseTypedType):
+        def __init__(self, mode: 'CipherMode', key: str, iv: str = None):
+            super(EncryptionAlgorithm.Aes, self).__init__(type='AES')
+            self.mode = mode
+            self.key = key
+            self.iv = iv
+
+        @property
+        def dict(self):
+            return {
+                **super(EncryptionAlgorithm.Aes, self).dict,
+                'value': {
+                    'mode': self.mode,
+                    'key': self.key,
+                    'iv': self.iv
+                }
+            }
+
+    class AesInfo(object):
+        def __init__(self, cipher: 'CipherMode', iv: str = None):
+            self.cipher = cipher
+            self.iv = iv
+
+
+class ParamsOfCreateEncryptionBox(object):
+    def __init__(self, algorithm: 'EncryptionAlgorithmType'):
+        """
+        :param algorithm: Encryption algorithm specifier including
+                cipher parameters (key, IV, etc)
+        """
+        self.algorithm = algorithm
+
+    @property
+    def dict(self):
+        return {'algorithm': self.algorithm.dict}
+
+
 # NET module
 class NetErrorCode(int, Enum):
     QUERY_FAILED = 601
@@ -3407,8 +3459,11 @@ class ProcessingErrorCode(int, Enum):
 class ProcessingEvent:
     class WillFetchFirstBlock(BaseTypedType):
         """
-        Notifies the app that the current shard block will be fetched from
-        the network. Fetched block will be used later in waiting phase
+        Notifies the application that the account's current shard block
+        will be fetched from the network. This step is performed before
+        the message sending so that sdk knows starting from which block
+        it will search for the transaction.
+        Fetched block will be used later in waiting phase
         """
 
         def __init__(self):
@@ -3417,8 +3472,12 @@ class ProcessingEvent:
 
     class FetchFirstBlockFailed(BaseTypedType):
         """
-        Notifies the app that the client has failed to fetch current shard
-        block. Message processing has finished
+        Notifies the app that the client has failed to fetch the account's
+        current shard block.
+        This may happen due to the network issues. Receiving this event
+        means that message processing will not proceed - message was not
+        sent, and Developer can try to run `process_message` again, in the
+        hope that the connection is restored
         """
 
         def __init__(self, error: 'ClientError'):
@@ -3430,7 +3489,12 @@ class ProcessingEvent:
             self.error = error
 
     class WillSend(BaseTypedType):
-        """ Notifies the app that the message will be sent to the network """
+        """
+        Notifies the app that the message will be sent to the network.
+        This event means that the account's current shard block was
+        successfully fetched and the message was successfully created
+        (`abi.encode_message` function was executed successfully)
+        """
 
         def __init__(
                 self, shard_block_id: str, message_id: str, message: str):
@@ -3445,7 +3509,17 @@ class ProcessingEvent:
             self.message = message
 
     class DidSend(BaseTypedType):
-        """ Notifies the app that the message was sent to the network """
+        """
+        Notifies the app that the message was sent to the network,
+        i.e `processing.send_message` was successfully executed.
+        Now, the message is in the blockchain.
+        If Application exits at this phase, Developer needs to proceed
+        with processing after the application is restored with
+        `wait_for_transaction` function, passing `shard_block_id` and
+        `message` from this event.
+        Do not forget to specify `abi` of your contract as well, it is
+        crucial for processing
+        """
 
         def __init__(
                 self, shard_block_id: str, message_id: str, message: str):
@@ -3461,9 +3535,16 @@ class ProcessingEvent:
 
     class SendFailed(BaseTypedType):
         """
-        Notifies the app that the sending operation was failed with network
-        error. Nevertheless the processing will be continued at the waiting
-        phase because the message possibly has been delivered to the node
+        Notifies the app that the sending operation was failed with
+        network error.
+        Nevertheless the processing will be continued at the waiting phase
+        because the message possibly has been delivered to the node.
+        If Application exits at this phase, Developer needs to proceed
+        with processing after the application is restored with
+        `wait_for_transaction` function, passing `shard_block_id` and
+        `message` from this event.
+        Do not forget to specify `abi` of your contract as well, it is
+        crucial for processing
         """
 
         def __init__(
@@ -3483,9 +3564,15 @@ class ProcessingEvent:
 
     class WillFetchNextBlock(BaseTypedType):
         """
-        Notifies the app that the next shard block will be fetched from the
-        network. Event can occurs more than one time due to block walking
-        procedure
+        Notifies the app that the next shard block will be fetched
+        from the network.
+        Event can occurs more than one time due to block walking procedure.
+        If Application exits at this phase, Developer needs to proceed with
+        processing after the application is restored with
+        `wait_for_transaction` function, passing `shard_block_id` and
+        `message` from this event.
+        Do not forget to specify `abi` of your contract as well, it is
+        crucial for processing
         """
 
         def __init__(self, shard_block_id: str, message_id: str, message: str):
@@ -3502,8 +3589,17 @@ class ProcessingEvent:
 
     class FetchNextBlockFailed(BaseTypedType):
         """
-        Notifies the app that the next block can't be fetched due to error.
-        Processing will be continued after `network_resume_timeout`
+        Notifies the app that the next block can't be fetched.
+        If no block was fetched within `NetworkConfig.wait_for_timeout`
+        then processing stops.
+        This may happen when the shard stops, or there are other network
+        issues. In this case Developer should resume message processing with
+        `wait_for_transaction`, passing `shard_block_id`, `message` and
+        contract `abi` to it.
+        Note that passing ABI is crucial, because it will influence the
+        processing strategy.
+        Another way to tune this is to specify long timeout in
+        `NetworkConfig.wait_for_timeout`
         """
 
         def __init__(
@@ -3524,10 +3620,16 @@ class ProcessingEvent:
 
     class MessageExpired(BaseTypedType):
         """
-        Notifies the app that the message was expired.
-        Event occurs for contracts which ABI includes header "expire"
-        Processing will be continued from encoding phase after
-        `expiration_retries_timeout`
+        Notifies the app that the message was not executed within expire
+        timeout on-chain and will never be because it is already expired.
+        The expiration timeout can be configured with `AbiConfig` parameters.
+        This event occurs only for the contracts which ABI includes
+        "expire" header.
+        If Application specifies `NetworkConfig.message_retries_count > 0`,
+        then `process_message` will perform retries: will create a new
+        message and send it again and repeat it until it reaches the maximum
+        retries count or receives a successful result.
+        All the processing events will be repeated
         """
 
         def __init__(
@@ -4660,3 +4762,4 @@ ParamsOfAppEncryptionBoxType = Union[
     ParamsOfAppEncryptionBox.GetInfo, ParamsOfAppEncryptionBox.Encrypt,
     ParamsOfAppEncryptionBox.Decrypt
 ]
+EncryptionAlgorithmType = Union[EncryptionAlgorithm.Aes]

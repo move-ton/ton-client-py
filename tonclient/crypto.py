@@ -27,7 +27,7 @@ from tonclient.types import KeyPair, ParamsOfFactorize, ResultOfFactorize, \
     ResponseHandler, RegisteredEncryptionBox, ParamsOfEncryptionBoxGetInfo, \
     ResultOfEncryptionBoxGetInfo, ParamsOfEncryptionBoxEncrypt, \
     ResultOfEncryptionBoxEncrypt, ParamsOfEncryptionBoxDecrypt, \
-    ResultOfEncryptionBoxDecrypt
+    ResultOfEncryptionBoxDecrypt, ParamsOfCreateEncryptionBox
 
 
 class TonCrypto(TonModule):
@@ -517,7 +517,11 @@ class TonCrypto(TonModule):
             self, params: ParamsOfEncryptionBoxEncrypt
     ) -> ResultOfEncryptionBoxEncrypt:
         """
-        Encrypts data using given encryption box
+        Encrypts data using given encryption box Note.
+        Block cipher algorithms pad data to cipher block size so encrypted
+        data can be longer then original data. Client should store the
+        original data size after encryption and use it after decryption
+        to retrieve the original data from decrypted data
 
         :param params: See `types.ParamsOfEncryptionBoxEncrypt`
         :return: See `types.ResultOfEncryptionBoxEncrypt`
@@ -530,10 +534,27 @@ class TonCrypto(TonModule):
             self, params: ParamsOfEncryptionBoxDecrypt
     ) -> ResultOfEncryptionBoxDecrypt:
         """
-        Decrypts data using given encryption box
+        Decrypts data using given encryption box Note.
+        Block cipher algorithms pad data to cipher block size so encrypted
+        data can be longer then original data. Client should store the
+        original data size after encryption and use it after decryption
+        to retrieve the original data from decrypted data
 
         :param params: See `types.ParamsOfEncryptionBoxDecrypt`
         :return: See `types.ResultOfEncryptionBoxDecrypt`
         """
         return self.request(
             method='crypto.encryption_box_decrypt', **params.dict)
+
+    @result_as(classname=RegisteredEncryptionBox)
+    def create_encryption_box(
+            self, params: ParamsOfCreateEncryptionBox
+    ) -> RegisteredEncryptionBox:
+        """
+        Creates encryption box with specified algorithm
+
+        :param params: See `types.ParamsOfCreateEncryptionBox`
+        :return: See `types.RegisteredEncryptionBox`
+        """
+        return self.request(
+            method='crypto.create_encryption_box', **params.dict)

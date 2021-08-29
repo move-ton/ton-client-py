@@ -1,10 +1,12 @@
 import base64
+import os
 
 import unittest
 
 from tonclient.errors import TonException
 from tonclient.objects import AppSigningBox, AppEncryptionBox
-from tonclient.test.helpers import async_core_client, sync_core_client
+from tonclient.test.helpers import async_core_client, sync_core_client, \
+    SAMPLES_DIR
 from tonclient.types import KeyPair, MnemonicDictionary, ParamsOfHash, \
     ParamsOfHDKeyXPrvFromMnemonic, ParamsOfHDKeySecretFromXPrv, \
     ParamsOfHDKeyPublicFromXPrv, ParamsOfHDKeyDeriveFromXPrv, \
@@ -21,7 +23,8 @@ from tonclient.types import KeyPair, MnemonicDictionary, ParamsOfHash, \
     ParamsOfResolveAppRequest, ResultOfAppSigningBox, AppRequestResult, \
     ParamsOfNaclSignDetachedVerify, ParamsOfEncryptionBoxGetInfo, \
     ParamsOfAppEncryptionBox, ResultOfAppEncryptionBox, EncryptionBoxInfo, \
-    ParamsOfEncryptionBoxEncrypt, ParamsOfEncryptionBoxDecrypt
+    ParamsOfEncryptionBoxEncrypt, ParamsOfEncryptionBoxDecrypt, \
+    ParamsOfCreateEncryptionBox, EncryptionAlgorithm, CipherMode
 
 
 class TestTonCryptoAsyncCore(unittest.TestCase):
@@ -766,6 +769,52 @@ class TestTonCryptoAsyncCore(unittest.TestCase):
         self.assertEqual(enc_data, dec_result.data)
 
         # Remove box
+        async_core_client.crypto.remove_encryption_box(params=box)
+
+    def test_encryption_box_aes(self):
+        # AES128
+        self._encryption_box_aes(
+            key='aes128.key.bin', data='aes.plaintext.bin',
+            encrypted='cbc-aes128.ciphertext.bin')
+
+        # AES256
+        self._encryption_box_aes(
+            key='aes256.key.bin', data='aes.plaintext.for.padding.bin',
+            encrypted='cbc-aes256.ciphertext.padded.bin')
+
+    def _encryption_box_aes(self, key: str, data: str, encrypted: str):
+        with open(os.path.join(SAMPLES_DIR, 'aes.iv.bin'), 'rb') as fp:
+            iv = fp.read().hex()
+
+        with open(os.path.join(SAMPLES_DIR, key), 'rb') as fp:
+            key = fp.read().hex()
+
+        with open(os.path.join(SAMPLES_DIR, data), 'rb') as fp:
+            data = fp.read()
+
+        fn = os.path.join(SAMPLES_DIR, encrypted)
+        with open(fn, 'rb') as fp:
+            encrypted = base64.b64encode(fp.read()).decode()
+
+        # Create encryption box
+        algorithm = EncryptionAlgorithm.Aes(
+            mode=CipherMode.CBC, key=key, iv=iv)
+        params = ParamsOfCreateEncryptionBox(algorithm=algorithm)
+        box = async_core_client.crypto.create_encryption_box(params)
+
+        # Encrypt data
+        params = ParamsOfEncryptionBoxEncrypt(
+            encryption_box=box.handle, data=base64.b64encode(data).decode())
+        enc_result = async_core_client.crypto.encryption_box_encrypt(params)
+        self.assertEqual(encrypted, enc_result.data)
+
+        # Decrypt data
+        params = ParamsOfEncryptionBoxDecrypt(
+            encryption_box=box.handle, data=enc_result.data)
+        dec_result = async_core_client.crypto.encryption_box_decrypt(params)
+        self.assertEqual(data, base64.b64decode(dec_result.data)[:len(data)])
+
+        # Remove encryption box
         async_core_client.crypto.remove_encryption_box(params=box)
 
 
