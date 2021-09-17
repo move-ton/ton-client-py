@@ -13,16 +13,26 @@ LIB_FILENAME = 'ton-rust-client'
 
 
 def _get_lib_path():
-    plt = platform.system().lower()
-    lib_ext_dict = {
+    machine = platform.machine().lower()
+    system = platform.system().lower()
+    system_ext = {
         'windows': 'dll',
         'darwin': 'dylib',
         'linux': 'so'
     }
-    if plt not in lib_ext_dict:
+    ext = system_ext.get(system, '')
+
+    # Try to load binary for system and machine type
+    path = os.path.join(LIB_DIR, f'{LIB_FILENAME}.{machine}.{ext}')
+    if os.path.exists(path):
+        return path
+
+    # Try to load library just for system
+    fallback = os.path.join(LIB_DIR, f'{LIB_FILENAME}.{ext}')
+    if not os.path.exists(fallback):
         raise RuntimeError(
-            f'No library for current platform "{plt.capitalize()}"')
-    return os.path.join(LIB_DIR, f'{LIB_FILENAME}.{lib_ext_dict[plt]}')
+            f'No library for machine `{machine}` and platform `{system}`')
+    return fallback
 
 
 _LIB = ctypes.cdll.LoadLibrary(_get_lib_path())
