@@ -11,7 +11,8 @@ from tonclient.types import Abi, KeyPair, DeploySet, CallSet, Signer, \
     ParamsOfDecodeMessageBody, ParamsOfEncodeMessage, ParamsOfSign, \
     ParamsOfAttachSignature, ParamsOfEncodeAccount, \
     ParamsOfEncodeInternalMessage, ParamsOfGetBocHash, ParamsOfGetCodeFromTvc, \
-    ParamsOfDecodeAccountData
+    ParamsOfDecodeAccountData, ParamsOfDecodeTvc, ParamsOfDecodeInitialData, \
+    ParamsOfUpdateInitialData
 
 
 class TestTonAbiAsyncCore(unittest.TestCase):
@@ -311,6 +312,39 @@ class TestTonAbiAsyncCore(unittest.TestCase):
         self.assertEqual(
             '0xe8b1d839abe27b2abb9d4a2943a9143a9c7e2ae06799bd24dec1d7a8891ae5dd',
             decoded.data['__pubkey'])
+
+    def test_decode_update_initial_data(self):
+        # Get contract abi, tvc
+        abi = Abi.from_path(
+            path=os.path.join(SAMPLES_DIR, 't24_initdata.abi.json'))
+        with open(os.path.join(SAMPLES_DIR, 't24_initdata.tvc'), 'rb') as fp:
+            tvc = base64.b64encode(fp.read()).decode()
+
+        # Get and decode contract initial data
+        params = ParamsOfDecodeTvc(tvc=tvc)
+        data = async_core_client.boc.decode_tvc(params).data
+        params = ParamsOfDecodeInitialData(data=data, abi=abi)
+        decoded = async_core_client.abi.decode_initial_data(params)
+        self.assertEqual('00' * 32, decoded.initial_pubkey)
+        self.assertEqual({}, decoded.initial_data)
+
+        # Update initial data
+        initial_data = {'a': 123, 's': 'some string'}
+        initial_pubkey = '22' * 32
+        params = ParamsOfUpdateInitialData(
+            data=data, abi=abi, initial_data=initial_data,
+            initial_pubkey=initial_pubkey)
+        data_updated = async_core_client.abi.update_initial_data(params).data
+        self.assertEqual(
+            'te6ccgEBBwEARwABAcABAgPPoAQCAQFIAwAWc29tZSBzdHJpbmcCASAGBQADHuAAQQiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIoA==',
+            data_updated)
+
+        # Decode updated data
+        params = ParamsOfDecodeInitialData(data=data_updated, abi=abi)
+        decoded = async_core_client.abi.decode_initial_data(params)
+        self.assertEqual(initial_data['a'], int(decoded.initial_data['a']))
+        self.assertEqual(initial_data['s'], decoded.initial_data['s'])
+        self.assertEqual(initial_pubkey, decoded.initial_pubkey)
 
 
 class TestTonAbiSyncCore(unittest.TestCase):

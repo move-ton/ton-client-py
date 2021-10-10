@@ -7,7 +7,8 @@ from tonclient.types import ParamsOfEncodeMessageBody, DecodedMessageBody, \
     ParamsOfDecodeMessage, ParamsOfDecodeMessageBody, ParamsOfEncodeAccount, \
     ResultOfEncodeAccount, ParamsOfEncodeInternalMessage, \
     ResultOfEncodeInternalMessage, ParamsOfDecodeAccountData, \
-    ResultOfDecodeData
+    ResultOfDecodeData, ParamsOfUpdateInitialData, ResultOfUpdateInitialData, \
+    ParamsOfDecodeInitialData, ResultOfDecodeInitialData
 
 
 class TonAbi(TonModule):
@@ -154,3 +155,37 @@ class TonAbi(TonModule):
         :return: See `types.ResultOfDecodeData`
         """
         return self.request(method='abi.decode_account_data', **params.dict)
+
+    @result_as(classname=ResultOfUpdateInitialData)
+    def update_initial_data(
+            self, params: ParamsOfUpdateInitialData
+    ) -> ResultOfUpdateInitialData:
+        """
+        Updates initial account data with initial values for the contract's
+        static variables and owner's public key.
+        This operation is applicable only for initial account data
+        (before deploy).
+        If the contract is already deployed, its data doesn't contain this
+        data section any more
+
+        :param params: See `types.ParamsOfUpdateInitialData`
+        :return: See `types.ResultOfUpdateInitialData`
+        """
+        return self.request(method='abi.update_initial_data', **params.dict)
+
+    @result_as(classname=ResultOfDecodeInitialData)
+    def decode_initial_data(
+            self, params: ParamsOfDecodeInitialData
+    ) -> ResultOfDecodeInitialData:
+        """
+        Decodes initial values of a contract's static variables and owner's
+        public key from account initial data.
+        This operation is applicable only for initial account data
+        (before deploy).
+        If the contract is already deployed, its data doesn't contain this
+        data section any more
+
+        :param params: See `types.ParamsOfDecodeInitialData`
+        :return: See `types.ResultOfDecodeInitialData`
+        """
+        return self.request(method='abi.decode_initial_data', **params.dict)

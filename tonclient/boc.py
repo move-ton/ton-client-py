@@ -5,7 +5,11 @@ from tonclient.types import ParamsOfParse, ResultOfParse, \
     ParamsOfGetBlockchainConfig, ResultOfGetBlockchainConfig, \
     ParamsOfGetCodeFromTvc, ResultOfGetCodeFromTvc, ParamsOfBocCacheGet, \
     ResultOfBocCacheGet, ParamsOfBocCacheSet, ResultOfBocCacheSet, \
-    ParamsOfBocCacheUnpin, ParamsOfEncodeBoc, ResultOfEncodeBoc
+    ParamsOfBocCacheUnpin, ParamsOfEncodeBoc, ResultOfEncodeBoc, \
+    ParamsOfGetCodeSalt, ResultOfGetCodeSalt, ParamsOfSetCodeSalt, \
+    ResultOfSetCodeSalt, ParamsOfDecodeTvc, ResultOfDecodeTvc, \
+    ParamsOfEncodeTvc, ResultOfEncodeTvc, ParamsOfGetCompilerVersion, \
+    ResultOfGetCompilerVersion
 
 
 class TonBoc(TonModule):
@@ -144,3 +148,59 @@ class TonBoc(TonModule):
         :return: See `types.ResultOfEncodeBoc`
         """
         return self.request(method='boc.encode_boc', **params.dict)
+
+    @result_as(classname=ResultOfGetCodeSalt)
+    def get_code_salt(
+            self, params: ParamsOfGetCodeSalt) -> ResultOfGetCodeSalt:
+        """
+        Returns the contract code's salt if it is present
+
+        :param params: See `types.ParamsOfGetCodeSalt`
+        :return: See `types.ResultOfGetCodeSalt`
+        """
+        return self.request(method='boc.get_code_salt', **params.dict)
+
+    @result_as(classname=ResultOfSetCodeSalt)
+    def set_code_salt(
+            self, params: ParamsOfSetCodeSalt) -> ResultOfSetCodeSalt:
+        """
+        Sets new salt to contract code.
+        Returns the new contract code with salt
+
+        :param params: See `types.ParamsOfSetCodeSalt`
+        :return: See `types.ResultOfSetCodeSalt`
+        """
+        return self.request(method='boc.set_code_salt', **params.dict)
+
+    @result_as(classname=ResultOfDecodeTvc)
+    def decode_tvc(self, params: ParamsOfDecodeTvc) -> ResultOfDecodeTvc:
+        """
+        Decodes tvc into code, data, libraries and special options
+
+        :param params: See `types.ParamsOfDecodeTvc`
+        :return: See `types.ResultOfDecodeTvc`
+        """
+        return self.request(method='boc.decode_tvc', **params.dict)
+
+    @result_as(classname=ResultOfEncodeTvc)
+    def encode_tvc(self, params: ParamsOfEncodeTvc) -> ResultOfEncodeTvc:
+        """
+        Encodes tvc from code, data, libraries ans special options
+        (see input params)
+
+        :param params: See `types.ParamsOfEncodeTvc`
+        :return: See `types.ResultOfEncodeTvc`
+        """
+        return self.request(method='boc.encode_tvc', **params.dict)
+
+    @result_as(classname=ResultOfGetCompilerVersion)
+    def get_compiler_version(
+            self, params: ParamsOfGetCompilerVersion
+    ) -> ResultOfGetCompilerVersion:
+        """
+        Returns the compiler version used to compile the code
+
+        :param params: See `types.ParamsOfGetCompilerVersion`
+        :return: See `types.ResultOfGetCompilerVersion`
+        """
+        return self.request(method='boc.get_compiler_version', **params.dict)

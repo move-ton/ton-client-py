@@ -1235,6 +1235,79 @@ class ResultOfDecodeData(object):
         self.data = data
 
 
+class ParamsOfUpdateInitialData(object):
+    def __init__(
+            self, data: str, abi: 'AbiType' = None, initial_data: Any = None,
+            initial_pubkey: str = None, boc_cache: 'BocCacheTypeType' = None):
+        """
+        :param data: Data BOC or BOC handle
+        :param abi: Contract ABI
+        :param initial_data: List of initial values for contract's static
+                variables.
+                `abi` parameter should be provided to set initial data
+        :param initial_pubkey: Initial account owner's public key to set
+                into account data
+        :param boc_cache: Cache type to put the result.
+                The BOC itself returned if no cache type provided
+        """
+        self.data = data
+        self.abi = abi
+        self.initial_data = initial_data
+        self.initial_pubkey = initial_pubkey
+        self.boc_cache = boc_cache
+
+    @property
+    def dict(self):
+        abi = self.abi.dict if self.abi else self.abi
+        boc_cache = self.boc_cache.dict if self.boc_cache else self.boc_cache
+        return {
+            'data': self.data,
+            'abi': abi,
+            'initial_data': self.initial_data,
+            'initial_pubkey': self.initial_pubkey,
+            'boc_cache': boc_cache
+        }
+
+
+class ResultOfUpdateInitialData(object):
+    def __init__(self, data: str):
+        """
+        :param data: Updated data BOC or BOC handle
+        """
+        self.data = data
+
+
+class ParamsOfDecodeInitialData(object):
+    def __init__(self, data: str, abi: 'AbiType' = None):
+        """
+        :param data: Data BOC or BOC handle
+        :param abi: Contract ABI.
+                Initial data is decoded if this parameter is provided
+        """
+        self.data = data
+        self.abi = abi
+
+    @property
+    def dict(self):
+        abi = self.abi.dict if self.abi else self.abi
+        return {
+            'data': self.data,
+            'abi': abi
+        }
+
+
+class ResultOfDecodeInitialData(object):
+    def __init__(self, initial_pubkey: str, initial_data: Any = None):
+        """
+        :param initial_pubkey: Initial account owner's public key
+        :param initial_data: List of initial values of contract's public
+                variables. Initial data is decoded if `abi` input parameter
+                is provided
+        """
+        self.initial_pubkey = initial_pubkey
+        self.initial_data = initial_data
+
+
 # BOC module
 class BocErrorCode(int, Enum):
     INVALID_BOC = 201
@@ -1536,6 +1609,175 @@ class ResultOfEncodeBoc(object):
         :param boc: Encoded cell BOC or BOC cache key
         """
         self.boc = boc
+
+
+class ParamsOfGetCodeSalt(object):
+    def __init__(self, code: str, boc_cache: 'BocCacheTypeType' = None):
+        """
+        :param code: Contract code BOC encoded as `base64` or code BOC handle
+        :param boc_cache: Cache type to put the result.
+                The BOC itself returned if no cache type provided
+        """
+        self.code = code
+        self.boc_cache = boc_cache
+
+    @property
+    def dict(self):
+        boc_cache = self.boc_cache.dict if self.boc_cache else self.boc_cache
+        return {
+            'code': self.code,
+            'boc_cache': boc_cache
+        }
+
+
+class ResultOfGetCodeSalt(object):
+    def __init__(self, salt: str = None):
+        """
+        :param salt: Contract code salt if present
+        """
+        self.salt = salt
+
+
+class ParamsOfSetCodeSalt(object):
+    def __init__(
+            self, code: str, salt: str, boc_cache: 'BocCacheTypeType' = None):
+        """
+        :param code: Contract code BOC encoded as `base64` or code BOC handle
+        :param salt: Code salt to set
+        :param boc_cache: Cache type to put the result.
+                The BOC itself returned if no cache type provided.
+        """
+        self.code = code
+        self.salt = salt
+        self.boc_cache = boc_cache
+
+    @property
+    def dict(self):
+        boc_cache = self.boc_cache.dict if self.boc_cache else self.boc_cache
+        return {
+            'code': self.code,
+            'salt': self.salt,
+            'boc_cache': boc_cache
+        }
+
+
+class ResultOfSetCodeSalt(object):
+    def __init__(self, code: str):
+        """
+        :param code: Contract code with salt set
+        """
+        self.code = code
+
+
+class ParamsOfDecodeTvc(object):
+    def __init__(self, tvc: str, boc_cache: 'BocCacheTypeType' = None):
+        """
+        :param tvc: Contract TVC image BOC encoded as `base64` or BOC handle
+        :param boc_cache: Cache type to put the result.
+                The BOC itself returned if no cache type provided
+        """
+        self.tvc = tvc
+        self.boc_cache = boc_cache
+
+    @property
+    def dict(self):
+        boc_cache = self.boc_cache.dict if self.boc_cache else self.boc_cache
+        return {
+            'tvc': self.tvc,
+            'boc_cache': boc_cache
+        }
+
+
+class ResultOfDecodeTvc(object):
+    def __init__(
+            self, code: str = None, data: str = None, library: str = None,
+            tick: bool = None, tock: bool = None, split_depth: int = None):
+        """
+        :param code: Contract code BOC encoded as `base64` or BOC handle
+        :param data: Contract data BOC encoded as `base64` or BOC handle
+        :param library: Contract library BOC encoded as `base64` or BOC handle
+        :param tick: `special.tick` field.
+                Specifies the contract ability to handle tick transactions
+        :param tock: `special.tock` field.
+                Specifies the contract ability to handle tock transactions
+        :param split_depth: Is present and non-zero only in instances
+                of large smart contracts
+        """
+        self.code = code
+        self.data = data
+        self.library = library
+        self.tick = tick
+        self.tock = tock
+        self.split_depth = split_depth
+
+
+class ParamsOfEncodeTvc(object):
+    def __init__(
+            self, code: str = None, data: str = None, library: str = None,
+            tick: bool = None, tock: bool = None, split_depth: int = None,
+            boc_cache: 'BocCacheTypeType' = None):
+        """
+        :param code: Contract code BOC encoded as `base64` or BOC handle
+        :param data: Contract data BOC encoded as `base64` or BOC handle
+        :param library: Contract library BOC encoded as `base64` or BOC handle
+        :param tick: `special.tick` field.
+                Specifies the contract ability to handle tick transactions
+        :param tock: `special.tock` field.
+                Specifies the contract ability to handle tock transactions
+        :param split_depth:  Is present and non-zero only in instances
+                of large smart contracts
+        :param boc_cache: Cache type to put the result.
+                The BOC itself returned if no cache type provided
+        """
+        self.code = code
+        self.data = data
+        self.library = library
+        self.tick = tick
+        self.tock = tock
+        self.split_depth = split_depth
+        self.boc_cache = boc_cache
+
+    @property
+    def dict(self):
+        boc_cache = self.boc_cache.dict if self.boc_cache else self.boc_cache
+        return {
+            'code': self.code,
+            'data': self.data,
+            'library': self.library,
+            'tick': self.tick,
+            'tock': self.tock,
+            'split_depth': self.split_depth,
+            'boc_cache': boc_cache
+        }
+
+
+class ResultOfEncodeTvc(object):
+    def __init__(self, tvc: str):
+        """
+        :param tvc: Contract TVC image BOC encoded as `base64` or
+                BOC handle of boc_cache parameter was specified
+        """
+        self.tvc = tvc
+
+
+class ParamsOfGetCompilerVersion(object):
+    def __init__(self, code: str):
+        """
+        :param code: Contract code BOC encoded as `base64` or code BOC handle
+        """
+        self.code = code
+
+    @property
+    def dict(self):
+        return {'code': self.code}
+
+
+class ResultOfGetCompilerVersion(object):
+    def __init__(self, version: str = None):
+        """
+        :param version: Compiler version, e.g. `sol 0.49.0`
+        """
+        self.version = version
 
 
 # CRYPTO module

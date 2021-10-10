@@ -8,7 +8,9 @@ from tonclient.test.helpers import async_core_client, sync_core_client, \
 from tonclient.types import ParamsOfParse, ParamsOfParseShardstate, \
     ParamsOfGetBocHash, ParamsOfGetBlockchainConfig, ParamsOfGetCodeFromTvc, \
     ParamsOfBocCacheSet, BocCacheType, ParamsOfBocCacheGet, \
-    ParamsOfBocCacheUnpin, ParamsOfEncodeBoc, BuilderOp
+    ParamsOfBocCacheUnpin, ParamsOfEncodeBoc, BuilderOp, ParamsOfGetCodeSalt, \
+    ParamsOfSetCodeSalt, ResultOfDecodeTvc, ParamsOfDecodeTvc, \
+    ParamsOfEncodeTvc, ParamsOfGetCompilerVersion
 
 
 class TestTonBocAsyncCore(unittest.TestCase):
@@ -230,6 +232,66 @@ class TestTonBocAsyncCore(unittest.TestCase):
         self.assertEqual(
             'te6ccgEBAgEAKQABL7/f4EAAAAAAAAAAAG2m0us0F8ViiEjLZAEAF7OJx0AnACRgJH/bsA==',
             result.boc)
+
+    def test_code_salt(self):
+        # `mycode_sel_dict_nosalt.boc`
+        code_no_salt = 'te6ccgECGAEAAmMAAgaK2zUXAQQkiu1TIOMDIMD/4wIgwP7jAvILFAMCDgKE7UTQ10nDAfhmIds80wABn4ECANcYIPkBWPhC+RDyqN7TPwH4QyG58rQg+COBA+iogggbd0CgufK0+GPTHwHbPPI8BgQDSu1E0NdJwwH4ZiLQ1wsDqTgA3CHHAOMCIdcNH/K8IeMDAds88jwTEwQDPCCCEDKVn7a64wIgghBgeXU+uuMCIIIQaLVfP7rjAg8HBQIiMPhCbuMA+Ebyc9H4ANs88gAGEAE+7UTQ10nCAYqOFHDtRND0BYBA9A7yvdcL//hicPhj4hICdjD4RvLgTNTR2zwhjicj0NMB+kAwMcjPhyDOjQQAAAAAAAAAAAAAAAAOB5dT6M8WzMlw+wCRMOLjAPIACBACMvhBiMjPjits1szOyTCBAIbIy/8B0AHJ2zwXCQIWIYs4rbNYxwWKiuILCgEIAds8yQwBJgHU1DAS0Ns8yM+OK2zWEszPEckMAWbViy9KQNcm9ATTCTEg10qR1I6A4osvShjXJjAByM+L0pD0AIAgzwsJz4vShswSzMjPEc4NAQSIAQ4AAAOEMPhG8uBM+EJu4wDT/9HbPCGOKCPQ0wH6QDAxyM+HIM6NBAAAAAAAAAAAAAAAAAspWftozxbL/8lw+wCRMOLbPPIAEhEQABz4Q/hCyMv/yz/Pg8ntVAAgIMECkXGYUwCltf/wHKjiMQAe7UTQ0//TP9MAMdH4Y/hiAAr4RvLgTAIK9KQg9KEWFQAUc29sIDAuNTEuMAAqoAAAABwgwQKRcZhTAKW1//AcqOIxAAwg+GHtHtk='
+
+        # Get code salt
+        params = ParamsOfGetCodeSalt(code=code_no_salt)
+        salt = async_core_client.boc.get_code_salt(params).salt
+        self.assertIsNone(salt)
+
+        # Set code salt
+        code_salt = 'te6ccgEBAQEAJAAAQ4AGPqCXQ2drhdqhLLt3rJ80LxA65YMTwgWLLUmt9EbElFA='
+        params = ParamsOfSetCodeSalt(code=code_no_salt, salt=code_salt)
+        code_with_salt = async_core_client.boc.set_code_salt(params).code
+        self.assertNotEqual(code_no_salt, code_with_salt)
+
+        # Get code salt
+        params = ParamsOfGetCodeSalt(code=code_with_salt)
+        salt = async_core_client.boc.get_code_salt(params).salt
+        self.assertEqual(code_salt, salt)
+
+    def test_encode_decode_tvc(self):
+        # `state_init_lib.boc`
+        tvc_check = 'te6ccgECDAEAARMAAwF/CAcBAgFiBQIBQr9BJCkgXqZtbyAE7fpXD29Ws+heWbqhvvvHO32l1VvcYQMBBBI0BAAEVngBQr9aLu9QVndfW5Vy/zrWPdKnHR+ygcoXel4cdHMOzLLlEwYAD6usq62rrKuoAEgR71YDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABFP8A9KQT9LzyyAsJAgEgCwoA36X//3aiaGmP6f/o5CxSZ4WPkOeF/+T2qmRnxET/s2X/wQgC+vCAfQFANeegZLh9gEB354V/wQgD39JAfQFANeegZLhkZ82JA6Mrm6RBCAOt5or9AUA156BF6kMrY2N5YQO7e5NjIQxni2S4fYB9gEAAAtI='
+        decoded_check = ResultOfDecodeTvc(
+            code='te6ccgEBBAEAhwABFP8A9KQT9LzyyAsBAgEgAwIA36X//3aiaGmP6f/o5CxSZ4WPkOeF/+T2qmRnxET/s2X/wQgC+vCAfQFANeegZLh9gEB354V/wQgD39JAfQFANeegZLhkZ82JA6Mrm6RBCAOt5or9AUA156BF6kMrY2N5YQO7e5NjIQxni2S4fYB9gEAAAtI=',
+            data='te6ccgEBAQEAJgAASBHvVgMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==',
+            library='te6ccgEBBgEAYAACAWIEAQFCv0EkKSBepm1vIATt+lcPb1az6F5ZuqG++8c7faXVW9xhAgEEEjQDAARWeAFCv1ou71BWd19blXL/OtY90qcdH7KByhd6Xhx0cw7MsuUTBQAPq6yrrausq6g=',
+            tick=True, tock=True)
+
+        # Decode TVC
+        params = ParamsOfDecodeTvc(tvc=tvc_check)
+        decoded = async_core_client.boc.decode_tvc(params)
+        self.assertEqual(decoded_check.code, decoded.code)
+        self.assertEqual(decoded_check.data, decoded.data)
+        self.assertEqual(decoded_check.library, decoded.library)
+        self.assertEqual(decoded_check.split_depth, decoded.split_depth)
+        self.assertEqual(decoded_check.tick, decoded.tick)
+        self.assertEqual(decoded_check.tock, decoded.tock)
+
+        # Encode tvc
+        params = ParamsOfEncodeTvc(
+            code=decoded.code, data=decoded.data, library=decoded.library,
+            tick=decoded.tick, tock=decoded.tock,
+            split_depth=decoded.split_depth)
+        tvc = async_core_client.boc.encode_tvc(params).tvc
+        self.assertEqual(tvc_check, tvc)
+
+    def test_get_compiler_version(self):
+        # t24_initdata.tvc
+        tvc = 'te6ccgECEwEAAbYAAgE0AwEBAcACAEPQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgBCSK7VMg4wMgwP/jAiDA/uMC8gsQBQQSAoTtRNDXScMB+GYh2zzTAAGfgQIA1xgg+QFY+EL5EPKo3tM/AfhDIbnytCD4I4ED6KiCCBt3QKC58rT4Y9MfAds88jwIBgNK7UTQ10nDAfhmItDXCwOpOADcIccA4wIh1w0f8rwh4wMB2zzyPA8PBgIoIIIQBoFGw7rjAiCCEGi1Xz+64wILBwIiMPhCbuMA+Ebyc9H4ANs88gAIDAIW7UTQ10nCAYqOgOIOCQFccO1E0PQFcSGAQPQOk9cLB5Fw4vhqciGAQPQPjoDf+GuAQPQO8r3XC//4YnD4YwoBAogSA3Aw+Eby4Ez4Qm7jANHbPCKOICTQ0wH6QDAxyM+HIM6AYs9AXgHPkhoFGw7LB8zJcPsAkVvi4wDyAA4NDAAq+Ev4SvhD+ELIy//LP8+DywfMye1UAAj4SvhLACztRNDT/9M/0wAx0wfU0fhr+Gr4Y/hiAAr4RvLgTAIK9KQg9KESEQAUc29sIDAuNTEuMAAA'
+
+        # Decode tvc
+        params = ParamsOfDecodeTvc(tvc=tvc)
+        decoded = async_core_client.boc.decode_tvc(params)
+
+        # Get compiler version
+        params = ParamsOfGetCompilerVersion(code=decoded.code)
+        version = async_core_client.boc.get_compiler_version(params).version
+        self.assertEqual('sol 0.51.0', version)
 
 
 class TestTonBocSyncCore(unittest.TestCase):
