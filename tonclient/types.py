@@ -1690,11 +1690,18 @@ class ParamsOfDecodeTvc(object):
 
 class ResultOfDecodeTvc(object):
     def __init__(
-            self, code: str = None, data: str = None, library: str = None,
-            tick: bool = None, tock: bool = None, split_depth: int = None):
+            self, code: str = None, code_hash: str = None,
+            code_depth: int = None, data: str = None, data_hash: str = None,
+            data_depth: int = None, library: str = None, tick: bool = None,
+            tock: bool = None, split_depth: int = None,
+            compiler_version: str = None):
         """
         :param code: Contract code BOC encoded as `base64` or BOC handle
+        :param code_hash: Contract code hash
+        :param code_depth: Contract code depth
         :param data: Contract data BOC encoded as `base64` or BOC handle
+        :param data_hash: Contract data hash
+        :param data_depth: Contract data depth
         :param library: Contract library BOC encoded as `base64` or BOC handle
         :param tick: `special.tick` field.
                 Specifies the contract ability to handle tick transactions
@@ -1702,13 +1709,19 @@ class ResultOfDecodeTvc(object):
                 Specifies the contract ability to handle tock transactions
         :param split_depth: Is present and non-zero only in instances
                 of large smart contracts
+        :param compiler_version: Compiler version, for example `sol 0.49.0`
         """
         self.code = code
+        self.code_hash = code_hash
+        self.code_depth = code_depth
         self.data = data
+        self.data_hash = data_hash
+        self.data_depth = data_depth
         self.library = library
         self.tick = tick
         self.tock = tock
         self.split_depth = split_depth
+        self.compiler_version = compiler_version
 
 
 class ParamsOfEncodeTvc(object):
@@ -1778,6 +1791,26 @@ class ResultOfGetCompilerVersion(object):
         :param version: Compiler version, e.g. `sol 0.49.0`
         """
         self.version = version
+
+
+class ParamsOfGetBocDepth(object):
+    def __init__(self, boc: str):
+        """
+        :param boc: BOC encoded as `base64` or BOC handle
+        """
+        self.boc = boc
+
+    @property
+    def dict(self):
+        return {'boc': self.boc}
+
+
+class ResultOfGetBocDepth(object):
+    def __init__(self, depth: int):
+        """
+        :param depth: BOC root cell depth
+        """
+        self.depth = depth
 
 
 # CRYPTO module

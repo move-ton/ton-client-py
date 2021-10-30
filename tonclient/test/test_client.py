@@ -4,7 +4,7 @@ from tonclient.client import TonClient, DEVNET_BASE_URLS
 from tonclient.types import ClientConfig
 
 
-LIB_VERSION = '1.23.0'
+LIB_VERSION = '1.24.0'
 
 
 class TestTonClientAsyncCore(unittest.TestCase):

@@ -9,7 +9,7 @@ from tonclient.types import ParamsOfParse, ResultOfParse, \
     ParamsOfGetCodeSalt, ResultOfGetCodeSalt, ParamsOfSetCodeSalt, \
     ResultOfSetCodeSalt, ParamsOfDecodeTvc, ResultOfDecodeTvc, \
     ParamsOfEncodeTvc, ResultOfEncodeTvc, ParamsOfGetCompilerVersion, \
-    ResultOfGetCompilerVersion
+    ResultOfGetCompilerVersion, ParamsOfGetBocDepth, ResultOfGetBocDepth
 
 
 class TonBoc(TonModule):
@@ -204,3 +204,14 @@ class TonBoc(TonModule):
         :return: See `types.ResultOfGetCompilerVersion`
         """
         return self.request(method='boc.get_compiler_version', **params.dict)
+
+    @result_as(classname=ResultOfGetBocDepth)
+    def get_boc_depth(
+            self, params: ParamsOfGetBocDepth) -> ResultOfGetBocDepth:
+        """
+        Calculates BOC depth
+
+        :param params: See `types.ParamsOfGetBocDepth`
+        :return: See `types.ResultOfGetBocDepth`
+        """
+        return self.request(method='boc.get_boc_depth', **params.dict)
