@@ -3,7 +3,7 @@ from typing import Any, Tuple, Union
 
 from tonclient.types import ClientError, AbiErrorCode, ClientErrorCode, \
     BocErrorCode, CryptoErrorCode, NetErrorCode, ProcessingErrorCode, \
-    TvmErrorCode, DebotErrorCode
+    TvmErrorCode, DebotErrorCode, ProofsErrorCode
 
 
 class TonException(Exception):
@@ -36,7 +36,8 @@ class TonException(Exception):
         """
         modules = [
             ClientErrorCode, AbiErrorCode, BocErrorCode, CryptoErrorCode,
-            NetErrorCode, ProcessingErrorCode, TvmErrorCode, DebotErrorCode
+            NetErrorCode, ProcessingErrorCode, TvmErrorCode, DebotErrorCode,
+            ProofsErrorCode
         ]
         for module in modules:
             if code not in list(module):

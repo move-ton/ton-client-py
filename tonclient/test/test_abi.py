@@ -12,7 +12,7 @@ from tonclient.types import Abi, KeyPair, DeploySet, CallSet, Signer, \
     ParamsOfAttachSignature, ParamsOfEncodeAccount, \
     ParamsOfEncodeInternalMessage, ParamsOfGetBocHash, ParamsOfGetCodeFromTvc, \
     ParamsOfDecodeAccountData, ParamsOfDecodeTvc, ParamsOfDecodeInitialData, \
-    ParamsOfUpdateInitialData
+    ParamsOfUpdateInitialData, AbiParam, ParamsOfDecodeBoc
 
 
 class TestTonAbiAsyncCore(unittest.TestCase):
@@ -345,6 +345,21 @@ class TestTonAbiAsyncCore(unittest.TestCase):
         self.assertEqual(initial_data['a'], int(decoded.initial_data['a']))
         self.assertEqual(initial_data['s'], decoded.initial_data['s'])
         self.assertEqual(initial_pubkey, decoded.initial_pubkey)
+
+    def test_decode_boc(self):
+        boc = 'te6ccgEBAgEAEgABCQAAAADAAQAQAAAAAAAAAHs='
+        p = [
+            AbiParam(name='a', type='uint32'),
+            AbiParam(name='b', type='ref(int64)'),
+            AbiParam(name='c', type='bool')
+        ]
+        params = ParamsOfDecodeBoc(params=p, boc=boc, allow_partial=True)
+        decoded = async_core_client.abi.decode_boc(params)
+        self.assertEqual({'a': '0', 'b': '123', 'c': True}, decoded.data)
+
+        params.params.pop()
+        decoded = async_core_client.abi.decode_boc(params)
+        self.assertEqual({'a': '0', 'b': '123'}, decoded.data)
 
 
 class TestTonAbiSyncCore(unittest.TestCase):

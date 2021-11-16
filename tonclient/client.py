@@ -10,6 +10,7 @@ from tonclient.crypto import TonCrypto
 from tonclient.net import TonNet
 from tonclient.abi import TonAbi
 from tonclient.processing import TonProcessing
+from tonclient.proofs import TonProofs
 from tonclient.tvm import TonTvm
 from tonclient.types import ClientError, ClientConfig, ResultOfVersion, \
     ResultOfGetApiReference, ResultOfBuildInfo, ParamsOfResolveAppRequest
@@ -75,6 +76,7 @@ class TonClient(object):
         self.utils = TonUtils(client=self)
         self.tvm = TonTvm(client=self)
         self.debot = TonDebot(client=self)
+        self.proofs = TonProofs(client=self)
 
     @property
     def config(self):

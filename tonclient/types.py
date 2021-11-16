@@ -395,6 +395,7 @@ class AbiErrorCode(int, Enum):
     INVALID_ABI = 311
     INVALID_FUNCTION_ID = 312
     INVALID_DATA = 313
+    ENCODE_INITIAL_DATA_FAILED = 314
 
 
 class Abi:
@@ -1306,6 +1307,35 @@ class ResultOfDecodeInitialData(object):
         """
         self.initial_pubkey = initial_pubkey
         self.initial_data = initial_data
+
+
+class ParamsOfDecodeBoc(object):
+    def __init__(
+            self, params: List['AbiParam'], boc: str, allow_partial: bool):
+        """
+        :param params: Parameters to decode from BOC
+        :param boc: Data BOC or BOC handle
+        :param allow_partial:
+        """
+        self.params = params
+        self.boc = boc
+        self.allow_partial = allow_partial
+
+    @property
+    def dict(self):
+        return {
+            'params': [p.dict for p in self.params],
+            'boc': self.boc,
+            'allow_partial': self.allow_partial
+        }
+
+
+class ResultOfDecodeBoc(object):
+    def __init__(self, data: Any):
+        """
+        :param data: Decoded data as a JSON structure
+        """
+        self.data = data
 
 
 # BOC module
@@ -4986,6 +5016,44 @@ class DebotState(int, Enum):
     CURRENT = 253
     PREV = 254
     EXIT = 255
+
+
+# PROOFS module
+class ProofsErrorCode(int, Enum):
+    INVALID_DATA = 901
+    PROOF_CHECK_FAILED = 902
+    INTERNAL_ERROR = 903
+    DATA_DIFFERS_FROM_PROVEN = 904
+
+
+class ParamsOfProofBlockData(object):
+    def __init__(self, block: Dict[str, Any]):
+        """
+        :param block: Single block's data, retrieved from TONOS API,
+                that needs proof. Required fields are `id` and/or
+                top-level `boc` (for block identification), others are optional
+        """
+        self.block = block
+
+    @property
+    def dict(self):
+        return {'block': self.block}
+
+
+class ParamsOfProofTransactionData(object):
+    def __init__(self, transaction: Dict[str, Any]):
+        """
+        :param transaction: Single transaction's data as queried from DApp
+                server, without modifications. The required fields are `id`
+                and/or top-level `boc`, others are optional. In order to
+                reduce network requests count, it is recommended to provide
+                `block_id` and `boc` of transaction
+        """
+        self.transaction = transaction
+
+    @property
+    def dict(self):
+        return {'transaction': self.transaction}
 
 
 # Aggregated types
