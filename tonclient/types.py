@@ -1297,6 +1297,44 @@ class ParamsOfDecodeInitialData(object):
         }
 
 
+class ParamsOfEncodeInitialData(object):
+    def __init__(
+            self, abi: 'AbiType' = None, initial_data: Dict[str, Any] = None,
+            initial_pubkey: str = None, boc_cache: 'BocCacheTypeType' = None):
+        """
+        :param abi: Contract ABI
+        :param initial_data: Initial values for contract's static variables.
+                `abi` parameter should be provided to set initial data
+        :param initial_pubkey: Initial account owner's public key to set
+                into account data
+        :param boc_cache: Cache type to put the result.
+                The BOC itself returned, if no cache type provided
+        """
+        self.abi = abi
+        self.initial_data = initial_data
+        self.initial_pubkey = initial_pubkey
+        self.boc_cache = boc_cache
+
+    @property
+    def dict(self):
+        abi = self.abi.dict if self.abi else self.abi
+        boc_cache = self.boc_cache.dict if self.boc_cache else self.boc_cache
+        return {
+            'abi': abi,
+            'initial_data': self.initial_data,
+            'initial_pubkey': self.initial_pubkey,
+            'boc_cache': boc_cache
+        }
+
+
+class ResultOfEncodeInitialData(object):
+    def __init__(self, data: str):
+        """
+        :param data: Updated data BOC or BOC handle
+        """
+        self.data = data
+
+
 class ResultOfDecodeInitialData(object):
     def __init__(self, initial_pubkey: str, initial_data: Any = None):
         """
@@ -5054,6 +5092,23 @@ class ParamsOfProofTransactionData(object):
     @property
     def dict(self):
         return {'transaction': self.transaction}
+
+
+class ParamsOfProofMessageData(object):
+    def __init__(self, message: Dict[str, Any]):
+        """
+        :param message: Single message's data as queried from DApp server,
+                without modifications. The required fields are id and/or
+                top-level `boc`, others are optional.
+                In order to reduce network requests count, it is recommended
+                to provide at least `boc` of message and non-null
+                `src_transaction.id` or `dst_transaction.id`
+        """
+        self.message = message
+
+    @property
+    def dict(self):
+        return {'message': self.message}
 
 
 # Aggregated types

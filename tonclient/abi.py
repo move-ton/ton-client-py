@@ -9,7 +9,7 @@ from tonclient.types import ParamsOfEncodeMessageBody, DecodedMessageBody, \
     ResultOfEncodeInternalMessage, ParamsOfDecodeAccountData, \
     ResultOfDecodeData, ParamsOfUpdateInitialData, ResultOfUpdateInitialData, \
     ParamsOfDecodeInitialData, ResultOfDecodeInitialData, ParamsOfDecodeBoc, \
-    ResultOfDecodeBoc
+    ResultOfDecodeBoc, ParamsOfEncodeInitialData, ResultOfEncodeInitialData
 
 
 class TonAbi(TonModule):
@@ -156,6 +156,22 @@ class TonAbi(TonModule):
         :return: See `types.ResultOfDecodeData`
         """
         return self.request(method='abi.decode_account_data', **params.dict)
+
+    @result_as(classname=ResultOfEncodeInitialData)
+    def encode_initial_data(
+            self, params: ParamsOfEncodeInitialData
+    ) -> ResultOfEncodeInitialData:
+        """
+        Encodes initial account data with initial values for the contract's
+        static variables and owner's public key into a data BOC that can be
+        passed to encode_tvc function afterwards.
+
+        This function is analogue of `tvm.buildDataInit` function in Solidity
+
+        :param params:
+        :return:
+        """
+        return self.request(method='abi.encode_initial_data', **params.dict)
 
     @result_as(classname=ResultOfUpdateInitialData)
     def update_initial_data(

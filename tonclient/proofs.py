@@ -1,6 +1,6 @@
 from tonclient.module import TonModule
 from tonclient.types import ParamsOfProofBlockData, \
-    ParamsOfProofTransactionData
+    ParamsOfProofTransactionData, ParamsOfProofMessageData
 
 
 class TonProofs(TonModule):
@@ -120,3 +120,34 @@ class TonProofs(TonModule):
         """
         return self.request(
             method='proofs.proof_transaction_data', **params.dict)
+
+    def proof_message_data(self, params: ParamsOfProofMessageData):
+        """
+        Proves that a given message's data, which is queried from TONOS API,
+        can be trusted.
+
+        This function first proves the corresponding transaction, ensures
+        that the proven transaction refers to the given message and compares
+        given data with the proven. If the given data differs from the proven,
+        the exception will be thrown. The input parameter is a single
+        message's JSON object (see params description), which was queried from
+        TONOS API using functions such as `net.query`, `net.query_collection`
+        or `net.wait_for_collection`.
+
+        If message's BOC and/or non-null `src_transaction.id` or
+        `dst_transaction.id` are not provided in the JSON, they will be
+        queried from TONOS API.
+
+        Please note, that joins (like `block`, `dst_account`,
+        `dst_transaction`, `src_account`, `src_transaction`, etc. in `Message`
+        entity) are separated entities and not supported, so function will
+        throw an exception in a case if JSON being checked has such entities
+        in it.
+
+        For more information about proofs checking, see description of
+        `proof_block_data function`
+
+        :param params: See `types.ParamsOfProofMessageData`
+        :return:
+        """
+        return self.request(method='proofs.proof_message_data', **params.dict)

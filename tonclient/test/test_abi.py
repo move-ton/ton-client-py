@@ -12,7 +12,8 @@ from tonclient.types import Abi, KeyPair, DeploySet, CallSet, Signer, \
     ParamsOfAttachSignature, ParamsOfEncodeAccount, \
     ParamsOfEncodeInternalMessage, ParamsOfGetBocHash, ParamsOfGetCodeFromTvc, \
     ParamsOfDecodeAccountData, ParamsOfDecodeTvc, ParamsOfDecodeInitialData, \
-    ParamsOfUpdateInitialData, AbiParam, ParamsOfDecodeBoc
+    ParamsOfUpdateInitialData, AbiParam, ParamsOfDecodeBoc, \
+    ParamsOfEncodeInitialData
 
 
 class TestTonAbiAsyncCore(unittest.TestCase):
@@ -328,16 +329,21 @@ class TestTonAbiAsyncCore(unittest.TestCase):
         self.assertEqual('00' * 32, decoded.initial_pubkey)
         self.assertEqual({}, decoded.initial_data)
 
-        # Update initial data
+        # Encode initial data
         initial_data = {'a': 123, 's': 'some string'}
         initial_pubkey = '22' * 32
+        encoded_initial_data = 'te6ccgEBBwEARwABAcABAgPPoAQCAQFIAwAWc29tZSBzdHJpbmcCASAGBQADHuAAQQiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIoA=='
+        params = ParamsOfEncodeInitialData(
+            abi=abi, initial_data=initial_data, initial_pubkey=initial_pubkey)
+        encoded = async_core_client.abi.encode_initial_data(params)
+        self.assertEqual(encoded_initial_data, encoded.data)
+
+        # Update initial data
         params = ParamsOfUpdateInitialData(
             data=data, abi=abi, initial_data=initial_data,
             initial_pubkey=initial_pubkey)
         data_updated = async_core_client.abi.update_initial_data(params).data
-        self.assertEqual(
-            'te6ccgEBBwEARwABAcABAgPPoAQCAQFIAwAWc29tZSBzdHJpbmcCASAGBQADHuAAQQiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIoA==',
-            data_updated)
+        self.assertEqual(encoded_initial_data, data_updated)
 
         # Decode updated data
         params = ParamsOfDecodeInitialData(data=data_updated, abi=abi)
