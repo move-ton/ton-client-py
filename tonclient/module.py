@@ -1,4 +1,5 @@
 import asyncio
+import inspect
 import logging
 import os
 
@@ -28,7 +29,8 @@ class TonModule(object):
 
     def request(
             self, method: str, callback: ResponseHandler = None,
-            params_or_str: Union[str, Dict[str, Any]] = None, **kwargs) -> Any:
+            params_or_str: Union[str, Dict[str, Any]] = None, **kwargs
+    ) -> Any:
         """ Perform core request """
         # Prepare request params
         request_params = self._prepare_params(params_or_str, **kwargs)
@@ -92,8 +94,7 @@ class TonModule(object):
         return future.result()
 
     async def _async_core_request_future(
-            self, method: str, request_params: str, callback: ResponseHandler
-    ) -> Any:
+            self, method: str, request_params: str, callback: ResponseHandler):
         """ Perform core asynchronous request """
         # Generate request id
         request_id = self._generate_request_id()
@@ -130,6 +131,32 @@ class TonModule(object):
             if request_id in list(self._async_response_map.keys()):
                 continue
             return request_id
+
+    @staticmethod
+    def response(classname: type, response: Any):
+        """
+        Parse response
+
+        :return: Awaitable if `response` is awaitable or `classname` instance
+        """
+        def _parse(result):
+            if hasattr(classname, 'from_dict'):
+                return classname.from_dict(data=result)
+            return classname(**result)
+
+        def _sync_response():
+            """ Decorate synchronous request response """
+            return _parse(result=response)
+
+        async def _async_response():
+            """ Decorate asynchronous request response """
+            _fn_result = await response
+            return _parse(result=_fn_result)
+
+        # Return result depending on sync/async request
+        if inspect.isawaitable(response):
+            return _async_response()
+        return _sync_response()
 
     @staticmethod
     def _prepare_params(params_or_str, **kwargs) -> str:

@@ -1,3 +1,5 @@
+from typing import Union, Awaitable
+
 from tonclient.module import TonModule
 from tonclient.types import ParamsOfProofBlockData, \
     ParamsOfProofTransactionData, ParamsOfProofMessageData
@@ -6,7 +8,9 @@ from tonclient.types import ParamsOfProofBlockData, \
 class TonProofs(TonModule):
     """ Module for proving data, retrieved from TONOS API """
 
-    def proof_block_data(self, params: ParamsOfProofBlockData):
+    def proof_block_data(
+            self, params: ParamsOfProofBlockData
+    ) -> Union[None, Awaitable[None]]:
         """
         Proves that a given block's data, which is queried from TONOS API,
         can be trusted.
@@ -83,7 +87,9 @@ class TonProofs(TonModule):
         """
         return self.request(method='proofs.proof_block_data', **params.dict)
 
-    def proof_transaction_data(self, params: ParamsOfProofTransactionData):
+    def proof_transaction_data(
+            self, params: ParamsOfProofTransactionData
+    ) -> Union[None, Awaitable[None]]:
         """
         Proves that a given transaction's data, which is queried from
         TONOS API, can be trusted.
@@ -121,7 +127,9 @@ class TonProofs(TonModule):
         return self.request(
             method='proofs.proof_transaction_data', **params.dict)
 
-    def proof_message_data(self, params: ParamsOfProofMessageData):
+    def proof_message_data(
+            self, params: ParamsOfProofMessageData
+    ) -> Union[None, Awaitable[None]]:
         """
         Proves that a given message's data, which is queried from TONOS API,
         can be trusted.

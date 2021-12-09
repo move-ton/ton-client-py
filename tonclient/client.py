@@ -1,9 +1,10 @@
+from typing import Awaitable, Union
+
 from tonclient.bindings.lib import tc_create_context, tc_destroy_context, \
     tc_read_string, tc_destroy_string
 from tonclient.bindings.types import TCClientContext, TCSyncResponseData
 from tonclient.boc import TonBoc
 from tonclient.debot import TonDebot
-from tonclient.decorators import result_as
 from tonclient.errors import TonException
 from tonclient.module import TonModule
 from tonclient.crypto import TonCrypto
@@ -29,21 +30,30 @@ MAINNET_BASE_URLS = [
 
 
 class TonClientBase(TonModule):
-    @result_as(classname=ResultOfVersion)
-    def version(self) -> ResultOfVersion:
+    def version(self) -> Union[ResultOfVersion, Awaitable[ResultOfVersion]]:
         """ Returns Core Library version """
-        return self.request(method='client.version')
+        response = self.request(method='client.version')
+        return self.response(classname=ResultOfVersion, response=response)
 
-    @result_as(classname=ResultOfGetApiReference)
-    def get_api_reference(self) -> ResultOfGetApiReference:
+    def get_api_reference(self) -> Union[
+        ResultOfGetApiReference,
+        Awaitable[ResultOfGetApiReference]
+    ]:
         """ Returns Core Library API reference """
-        return self.request(method='client.get_api_reference')
+        response = self.request(method='client.get_api_reference')
+        return self.response(
+            classname=ResultOfGetApiReference, response=response)
 
-    @result_as(classname=ResultOfBuildInfo)
-    def build_info(self) -> ResultOfBuildInfo:
-        return self.request(method='client.build_info')
+    def build_info(self) -> Union[
+        ResultOfBuildInfo,
+        Awaitable[ResultOfBuildInfo]
+    ]:
+        response = self.request(method='client.build_info')
+        return self.response(classname=ResultOfBuildInfo, response=response)
 
-    def resolve_app_request(self, params: ParamsOfResolveAppRequest):
+    def resolve_app_request(
+            self, params: ParamsOfResolveAppRequest
+    ) -> Union[None, Awaitable[None]]:
         """ Resolves application request processing result """
         return self.request(
             method='client.resolve_app_request', **params.dict)
@@ -111,7 +121,7 @@ class TonClient(object):
         return self.base.resolve_app_request
 
     @staticmethod
-    def create_context(config: ClientConfig):
+    def create_context(config: ClientConfig) -> TCClientContext:
         response_ptr = tc_create_context(config=config.dict)
         response = TCSyncResponseData(tc_read_string(string=response_ptr))
         is_success, result, error = (

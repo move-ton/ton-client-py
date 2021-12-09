@@ -141,9 +141,9 @@ class NetworkConfig(object):
         :param wait_for_timeout: Maximum timeout that is used for query
                 response in ms. The default value is 40000 (40 sec)
         :param out_of_sync_threshold: Maximum time difference between server
-                and client. If client's device time is out of sink and
+                and client. If client's device time is out of sync and
                 difference is more than the threshold then error will occur.
-                Also the error will occur if the specified threshold is more
+                Also, the error will occur if the specified threshold is more
                 than `message_processing_timeout / 2`.
                 The default value is 15000 (15 sec)
         :param sending_endpoint_count: Maximum number of randomly chosen
@@ -154,18 +154,18 @@ class NetworkConfig(object):
         :param latency_detection_interval: Frequency of sync latency detection.
                 Library periodically checks the current endpoint for blockchain
                 data synchronization latency. If the latency (time-lag) is
-                less then `NetworkConfig.max_latency` then library selects
+                less than `NetworkConfig.max_latency` then library selects
                 another endpoint.
                 Must be specified in milliseconds. Default is 60000 (1 min)
         :param max_latency: Maximum value for the endpoint's blockchain data
                 synchronization latency (time-lag). Library periodically checks
                 the current endpoint for blockchain data synchronization
-                latency. If the latency (time-lag) is less then
+                latency. If the latency (time-lag) is less than
                 `NetworkConfig.max_latency` then library selects another
                 endpoint.
                 Must be specified in milliseconds. Default is 60000 (1 min)
         :param query_timeout: Default timeout for http requests.
-                Is is used when no timeout specified for the request to limit
+                It is used when no timeout specified for the request to limit
                 the answer waiting time. If no answer received during the
                 timeout requests ends with error.
                 Must be specified in milliseconds. Default is 60000 (1 min)

@@ -1,4 +1,5 @@
-from tonclient.decorators import result_as
+from typing import Union, Awaitable
+
 from tonclient.module import TonModule
 from tonclient.types import ParamsOfParse, ResultOfParse, \
     ParamsOfParseShardstate, ParamsOfGetBocHash, ResultOfGetBocHash, \
@@ -15,8 +16,9 @@ from tonclient.types import ParamsOfParse, ResultOfParse, \
 class TonBoc(TonModule):
     """ Free TON boc SDK API implementation """
 
-    @result_as(classname=ResultOfParse)
-    def parse_message(self, params: ParamsOfParse) -> ResultOfParse:
+    def parse_message(
+            self, params: ParamsOfParse
+    ) -> Union[ResultOfParse, Awaitable[ResultOfParse]]:
         """
         Parses message boc into a JSON.
         JSON structure is compatible with GraphQL API message object
@@ -24,10 +26,12 @@ class TonBoc(TonModule):
         :param params: See `types.ParamsOfParse`
         :return: See `types.ResultOfParse`
         """
-        return self.request(method='boc.parse_message', **params.dict)
+        response = self.request(method='boc.parse_message', **params.dict)
+        return self.response(classname=ResultOfParse, response=response)
 
-    @result_as(classname=ResultOfParse)
-    def parse_transaction(self, params: ParamsOfParse) -> ResultOfParse:
+    def parse_transaction(
+            self, params: ParamsOfParse
+    ) -> Union[ResultOfParse, Awaitable[ResultOfParse]]:
         """
         Parses transaction boc into a JSON.
         JSON structure is compatible with GraphQL API transaction object
@@ -35,10 +39,12 @@ class TonBoc(TonModule):
         :param params: See `types.ParamsOfParse`
         :return: See `types.ResultOfParse`
         """
-        return self.request(method='boc.parse_transaction', **params.dict)
+        response = self.request(method='boc.parse_transaction', **params.dict)
+        return self.response(classname=ResultOfParse, response=response)
 
-    @result_as(classname=ResultOfParse)
-    def parse_account(self, params: ParamsOfParse) -> ResultOfParse:
+    def parse_account(
+            self, params: ParamsOfParse
+    ) -> Union[ResultOfParse, Awaitable[ResultOfParse]]:
         """
         Parses account boc into a JSON.
         JSON structure is compatible with GraphQL API account object
@@ -46,10 +52,12 @@ class TonBoc(TonModule):
         :param params: See `types.ParamsOfParse`
         :return: See `types.ResultOfParse`
         """
-        return self.request(method='boc.parse_account', **params.dict)
+        response = self.request(method='boc.parse_account', **params.dict)
+        return self.response(classname=ResultOfParse, response=response)
 
-    @result_as(classname=ResultOfParse)
-    def parse_block(self, params: ParamsOfParse) -> ResultOfParse:
+    def parse_block(
+            self, params: ParamsOfParse
+    ) -> Union[ResultOfParse, Awaitable[ResultOfParse]]:
         """
         Parses block boc into a JSON.
         JSON structure is compatible with GraphQL API block object
@@ -57,11 +65,12 @@ class TonBoc(TonModule):
         :param params: See `types.ParamsOfParse`
         :return: See `types.ResultOfParse`
         """
-        return self.request(method='boc.parse_block', **params.dict)
+        response = self.request(method='boc.parse_block', **params.dict)
+        return self.response(classname=ResultOfParse, response=response)
 
-    @result_as(classname=ResultOfParse)
     def parse_shardstate(
-            self, params: ParamsOfParseShardstate) -> ResultOfParse:
+            self, params: ParamsOfParseShardstate
+    ) -> Union[ResultOfParse, Awaitable[ResultOfParse]]:
         """
         Parses shardstate boc into a JSON.
         JSON structure is compatible with GraphQL API shardstate object
@@ -69,22 +78,30 @@ class TonBoc(TonModule):
         :param params: See `ParamsOfParseShardstate`
         :return: See `ResultOfParse`
         """
-        return self.request(method='boc.parse_shardstate', **params.dict)
+        response = self.request(method='boc.parse_shardstate', **params.dict)
+        return self.response(classname=ResultOfParse, response=response)
 
-    @result_as(classname=ResultOfGetBocHash)
-    def get_boc_hash(self, params: ParamsOfGetBocHash) -> ResultOfGetBocHash:
+    def get_boc_hash(
+            self, params: ParamsOfGetBocHash
+    ) -> Union[
+        ResultOfGetBocHash,
+        Awaitable[ResultOfGetBocHash]
+    ]:
         """
         Calculates BOC root hash
 
         :param params: See `ParamsOfGetBocHash`
         :return: See `ResultOfGetBocHash`
         """
-        return self.request(method='boc.get_boc_hash', **params.dict)
+        response = self.request(method='boc.get_boc_hash', **params.dict)
+        return self.response(classname=ResultOfGetBocHash, response=response)
 
-    @result_as(classname=ResultOfGetBlockchainConfig)
     def get_blockchain_config(
             self, params: ParamsOfGetBlockchainConfig
-    ) -> ResultOfGetBlockchainConfig:
+    ) -> Union[
+        ResultOfGetBlockchainConfig,
+        Awaitable[ResultOfGetBlockchainConfig]
+    ]:
         """
         Extract blockchain configuration from key block and also from
         zero state
@@ -92,41 +109,51 @@ class TonBoc(TonModule):
         :param params: See `ParamsOfGetBlockchainConfig`
         :return: See `ResultOfGetBlockchainConfig`
         """
-        return self.request(
+        response = self.request(
             method='boc.get_blockchain_config', **params.dict)
+        return self.response(
+            classname=ResultOfGetBlockchainConfig, response=response)
 
-    @result_as(classname=ResultOfGetCodeFromTvc)
     def get_code_from_tvc(
-            self, params: ParamsOfGetCodeFromTvc) -> ResultOfGetCodeFromTvc:
+            self, params: ParamsOfGetCodeFromTvc
+    ) -> Union[ResultOfGetCodeFromTvc, Awaitable[ResultOfGetCodeFromTvc]]:
         """
         Extracts code from TVC contract image
 
         :param params: See `types.ParamsOfGetCodeFromTvc`
         :return: See `types.ResultOfGetCodeFromTvc`
         """
-        return self.request(method='boc.get_code_from_tvc', **params.dict)
+        response = self.request(method='boc.get_code_from_tvc', **params.dict)
+        return self.response(
+            classname=ResultOfGetCodeFromTvc, response=response)
 
-    @result_as(classname=ResultOfBocCacheGet)
-    def cache_get(self, params: ParamsOfBocCacheGet) -> ResultOfBocCacheGet:
+    def cache_get(
+            self, params: ParamsOfBocCacheGet
+    ) -> Union[ResultOfBocCacheGet, Awaitable[ResultOfBocCacheGet]]:
         """
         Get BOC from cache
 
         :param params: See `types.ParamsOfBocCacheGet`
         :return: See `types.ResultOfBocCacheGet`
         """
-        return self.request(method='boc.cache_get', **params.dict)
+        response = self.request(method='boc.cache_get', **params.dict)
+        return self.response(classname=ResultOfBocCacheGet, response=response)
 
-    @result_as(classname=ResultOfBocCacheSet)
-    def cache_set(self, params: ParamsOfBocCacheSet) -> ResultOfBocCacheSet:
+    def cache_set(
+            self, params: ParamsOfBocCacheSet
+    ) -> Union[ResultOfBocCacheSet, Awaitable[ResultOfBocCacheSet]]:
         """
         Save BOC into cache
 
         :param params: See `types.ParamsOfBocCacheSet`
         :return: See `types.ResultOfBocCacheSet`
         """
-        return self.request(method='boc.cache_set', **params.dict)
+        response = self.request(method='boc.cache_set', **params.dict)
+        return self.response(classname=ResultOfBocCacheSet, response=response)
 
-    def cache_unpin(self, params: ParamsOfBocCacheUnpin):
+    def cache_unpin(
+            self, params: ParamsOfBocCacheUnpin
+    ) -> Union[None, Awaitable[None]]:
         """
         Unpin BOCs with specified pin.
         BOCs which don't have another pins will be removed from cache
@@ -136,8 +163,9 @@ class TonBoc(TonModule):
         """
         return self.request(method='boc.cache_unpin', **params.dict)
 
-    @result_as(classname=ResultOfEncodeBoc)
-    def encode_boc(self, params: ParamsOfEncodeBoc) -> ResultOfEncodeBoc:
+    def encode_boc(
+            self, params: ParamsOfEncodeBoc
+    ) -> Union[ResultOfEncodeBoc, Awaitable[ResultOfEncodeBoc]]:
         """
         Encodes bag of cells (BOC) with builder operations.
         This method provides the same functionality as Solidity TvmBuilder.
@@ -147,22 +175,24 @@ class TonBoc(TonModule):
         :param params: See `types.ParamsOfEncodeBoc`
         :return: See `types.ResultOfEncodeBoc`
         """
-        return self.request(method='boc.encode_boc', **params.dict)
+        response = self.request(method='boc.encode_boc', **params.dict)
+        return self.response(classname=ResultOfEncodeBoc, response=response)
 
-    @result_as(classname=ResultOfGetCodeSalt)
     def get_code_salt(
-            self, params: ParamsOfGetCodeSalt) -> ResultOfGetCodeSalt:
+            self, params: ParamsOfGetCodeSalt
+    ) -> Union[ResultOfGetCodeSalt, Awaitable[ResultOfGetCodeSalt]]:
         """
         Returns the contract code's salt if it is present
 
         :param params: See `types.ParamsOfGetCodeSalt`
         :return: See `types.ResultOfGetCodeSalt`
         """
-        return self.request(method='boc.get_code_salt', **params.dict)
+        response = self.request(method='boc.get_code_salt', **params.dict)
+        return self.response(classname=ResultOfGetCodeSalt, response=response)
 
-    @result_as(classname=ResultOfSetCodeSalt)
     def set_code_salt(
-            self, params: ParamsOfSetCodeSalt) -> ResultOfSetCodeSalt:
+            self, params: ParamsOfSetCodeSalt
+    ) -> Union[ResultOfSetCodeSalt, Awaitable[ResultOfSetCodeSalt]]:
         """
         Sets new salt to contract code.
         Returns the new contract code with salt
@@ -170,20 +200,24 @@ class TonBoc(TonModule):
         :param params: See `types.ParamsOfSetCodeSalt`
         :return: See `types.ResultOfSetCodeSalt`
         """
-        return self.request(method='boc.set_code_salt', **params.dict)
+        response = self.request(method='boc.set_code_salt', **params.dict)
+        return self.response(classname=ResultOfSetCodeSalt, response=response)
 
-    @result_as(classname=ResultOfDecodeTvc)
-    def decode_tvc(self, params: ParamsOfDecodeTvc) -> ResultOfDecodeTvc:
+    def decode_tvc(
+            self, params: ParamsOfDecodeTvc
+    ) -> Union[ResultOfDecodeTvc, Awaitable[ResultOfDecodeTvc]]:
         """
         Decodes tvc into code, data, libraries and special options
 
         :param params: See `types.ParamsOfDecodeTvc`
         :return: See `types.ResultOfDecodeTvc`
         """
-        return self.request(method='boc.decode_tvc', **params.dict)
+        response = self.request(method='boc.decode_tvc', **params.dict)
+        return self.response(classname=ResultOfDecodeTvc, response=response)
 
-    @result_as(classname=ResultOfEncodeTvc)
-    def encode_tvc(self, params: ParamsOfEncodeTvc) -> ResultOfEncodeTvc:
+    def encode_tvc(
+            self, params: ParamsOfEncodeTvc
+    ) -> Union[ResultOfEncodeTvc, Awaitable[ResultOfEncodeTvc]]:
         """
         Encodes tvc from code, data, libraries ans special options
         (see input params)
@@ -191,27 +225,34 @@ class TonBoc(TonModule):
         :param params: See `types.ParamsOfEncodeTvc`
         :return: See `types.ResultOfEncodeTvc`
         """
-        return self.request(method='boc.encode_tvc', **params.dict)
+        response = self.request(method='boc.encode_tvc', **params.dict)
+        return self.response(classname=ResultOfEncodeTvc, response=response)
 
-    @result_as(classname=ResultOfGetCompilerVersion)
     def get_compiler_version(
             self, params: ParamsOfGetCompilerVersion
-    ) -> ResultOfGetCompilerVersion:
+    ) -> Union[
+        ResultOfGetCompilerVersion,
+        Awaitable[ResultOfGetCompilerVersion]
+    ]:
         """
         Returns the compiler version used to compile the code
 
         :param params: See `types.ParamsOfGetCompilerVersion`
         :return: See `types.ResultOfGetCompilerVersion`
         """
-        return self.request(method='boc.get_compiler_version', **params.dict)
+        response = self.request(
+            method='boc.get_compiler_version', **params.dict)
+        return self.response(
+            classname=ResultOfGetCompilerVersion, response=response)
 
-    @result_as(classname=ResultOfGetBocDepth)
     def get_boc_depth(
-            self, params: ParamsOfGetBocDepth) -> ResultOfGetBocDepth:
+            self, params: ParamsOfGetBocDepth
+    ) -> Union[ResultOfGetBocDepth, Awaitable[ResultOfGetBocDepth]]:
         """
         Calculates BOC depth
 
         :param params: See `types.ParamsOfGetBocDepth`
         :return: See `types.ResultOfGetBocDepth`
         """
-        return self.request(method='boc.get_boc_depth', **params.dict)
+        response = self.request(method='boc.get_boc_depth', **params.dict)
+        return self.response(classname=ResultOfGetBocDepth, response=response)

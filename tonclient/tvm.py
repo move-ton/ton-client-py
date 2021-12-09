@@ -1,4 +1,5 @@
-from tonclient.decorators import result_as
+from typing import Union, Awaitable
+
 from tonclient.module import TonModule
 from tonclient.types import ParamsOfRunExecutor, ResultOfRunExecutor, \
     ParamsOfRunTvm, ResultOfRunTvm, ParamsOfRunGet, ResultOfRunGet
@@ -7,8 +8,9 @@ from tonclient.types import ParamsOfRunExecutor, ResultOfRunExecutor, \
 class TonTvm(TonModule):
     """ Free TON tvm SDK API implementation """
 
-    @result_as(classname=ResultOfRunGet)
-    def run_get(self, params: ParamsOfRunGet) -> ResultOfRunGet:
+    def run_get(
+            self, params: ParamsOfRunGet
+    ) -> Union[ResultOfRunGet, Awaitable[ResultOfRunGet]]:
         """
         Executes a get method of FIFT contract.
         Executes a get method of FIFT contract that fulfills the
@@ -18,11 +20,12 @@ class TonTvm(TonModule):
         :param params: See `types.ParamsOfRunGet`
         :return: See `types.ResultOfRunGet`
         """
-        return self.request(method='tvm.run_get', **params.dict)
+        response = self.request(method='tvm.run_get', **params.dict)
+        return self.response(classname=ResultOfRunGet, response=response)
 
-    @result_as(classname=ResultOfRunExecutor)
     def run_executor(
-            self, params: ParamsOfRunExecutor) -> ResultOfRunExecutor:
+            self, params: ParamsOfRunExecutor
+    ) -> Union[ResultOfRunExecutor, Awaitable[ResultOfRunExecutor]]:
         """
         Emulates all the phases of contract execution locally.
 
@@ -52,12 +55,12 @@ class TonTvm(TonModule):
         it from GraphQL API (field `boc` of `account`) or generate it with
         `abi.encode_account method`.
 
-        Also it requires message BOC. To get the message BOC - use
+        Also, it requires message BOC. To get the message BOC - use
         `abi.encode_message` or `abi.encode_internal_message`.
 
         If you need this emulation to be as precise as possible
         (for instance - emulate transaction with particular lt in particular
-        block or use particular blockchain config, downloaded from a
+        block or use particular blockchain config), downloaded from a
         particular key block - then specify `execution_options` parameter.
 
         If you need to see the aborted transaction as a result, not as an
@@ -66,10 +69,12 @@ class TonTvm(TonModule):
         :param params: See `types.ParamsOfRunExecutor`
         :return: `types.ResultOfRunExecutor`
         """
-        return self.request(method='tvm.run_executor', **params.dict)
+        response = self.request(method='tvm.run_executor', **params.dict)
+        return self.response(classname=ResultOfRunExecutor, response=response)
 
-    @result_as(classname=ResultOfRunTvm)
-    def run_tvm(self, params: ParamsOfRunTvm) -> ResultOfRunTvm:
+    def run_tvm(
+            self, params: ParamsOfRunTvm
+    ) -> Union[ResultOfRunTvm, Awaitable[ResultOfRunTvm]]:
         """
         Executes get methods of ABI-compatible contracts.
 
@@ -92,4 +97,5 @@ class TonTvm(TonModule):
         :param params: See `types.ParamsOfRunTvm`
         :return: See `types.ResultOfRunTvm`
         """
-        return self.request(method='tvm.run_tvm', **params.dict)
+        response = self.request(method='tvm.run_tvm', **params.dict)
+        return self.response(classname=ResultOfRunTvm, response=response)

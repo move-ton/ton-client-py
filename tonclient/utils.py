@@ -1,4 +1,5 @@
-from tonclient.decorators import result_as
+from typing import Union, Awaitable
+
 from tonclient.module import TonModule
 from tonclient.types import ParamsOfConvertAddress, ResultOfConvertAddress, \
     ParamsOfCalcStorageFee, ResultOfCalcStorageFee, ParamsOfCompressZstd, \
@@ -9,53 +10,60 @@ from tonclient.types import ParamsOfConvertAddress, ResultOfConvertAddress, \
 class TonUtils(TonModule):
     """ Free TON utils SDK API implementation """
 
-    @result_as(classname=ResultOfConvertAddress)
     def convert_address(
-            self, params: ParamsOfConvertAddress) -> ResultOfConvertAddress:
+            self, params: ParamsOfConvertAddress
+    ) -> Union[ResultOfConvertAddress, Awaitable[ResultOfConvertAddress]]:
         """
         Converts address from any TON format to any TON format
 
         :param params: See `types.ParamsOfConvertAddress`
         :return: See `types.ResultOfConvertAddress`
         """
-        return self.request(method='utils.convert_address', **params.dict)
+        response = self.request(method='utils.convert_address', **params.dict)
+        return self.response(
+            classname=ResultOfConvertAddress, response=response)
 
-    @result_as(classname=ResultOfCalcStorageFee)
     def calc_storage_fee(
-            self, params: ParamsOfCalcStorageFee) -> ResultOfCalcStorageFee:
+            self, params: ParamsOfCalcStorageFee
+    ) -> Union[ResultOfCalcStorageFee, Awaitable[ResultOfCalcStorageFee]]:
         """
         Calculates storage fee for an account over a specified time period
 
         :param params: See `types.ParamsOfCalcStorageFee`
         :return: See `types.ResultOfCalcStorageFee`
         """
-        return self.request(method='utils.calc_storage_fee', **params.dict)
+        response = self.request(method='utils.calc_storage_fee', **params.dict)
+        return self.response(
+            classname=ResultOfCalcStorageFee, response=response)
 
-    @result_as(classname=ResultOfCompressZstd)
     def compress_zstd(
-            self, params: ParamsOfCompressZstd) -> ResultOfCompressZstd:
+            self, params: ParamsOfCompressZstd
+    ) -> Union[ResultOfCompressZstd, Awaitable[ResultOfCompressZstd]]:
         """
         Compresses data using Zstandard algorithm
 
         :param params: See `types.ParamsOfCompressZstd`
         :return: See `types.ResultOfCompressZstd`
         """
-        return self.request(method='utils.compress_zstd', **params.dict)
+        response = self.request(method='utils.compress_zstd', **params.dict)
+        return self.response(classname=ResultOfCompressZstd, response=response)
 
-    @result_as(classname=ResultOfDecompressZstd)
     def decompress_zstd(
-            self, params: ParamsOfDecompressZstd) -> ResultOfDecompressZstd:
+            self, params: ParamsOfDecompressZstd
+    ) -> Union[ResultOfDecompressZstd, Awaitable[ResultOfDecompressZstd]]:
         """
         Decompresses data using Zstandard algorithm
 
         :param params: See `types.ParamsOfDecompressZstd`
         :return: See `types.ResultOfDecompressZstd`
         """
-        return self.request(method='utils.decompress_zstd', **params.dict)
+        response = self.request(method='utils.decompress_zstd', **params.dict)
+        return self.response(
+            classname=ResultOfDecompressZstd, response=response)
 
-    @result_as(classname=ResultOfGetAddressType)
     def get_address_type(
-            self, params: ParamsOfGetAddressType) -> ResultOfGetAddressType:
+            self, params: ParamsOfGetAddressType
+    ) -> Union[ResultOfGetAddressType, Awaitable[ResultOfGetAddressType]]:
         """
         Validates and returns the type of any TON address.
 
@@ -72,4 +80,6 @@ class TonUtils(TonModule):
         :param params: See `types.ParamsOfGetAddressType`
         :return: See `types.ResultOfGetAddressType`
         """
-        return self.request(method='utils.get_address_type', **params.dict)
+        response = self.request(method='utils.get_address_type', **params.dict)
+        return self.response(
+            classname=ResultOfGetAddressType, response=response)
