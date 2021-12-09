@@ -1,3 +1,6 @@
+## Version 1.27.0.1
+  * Internal refactor: methods' return types suggestion are correct and clear now;
+
 ## Version 1.27.0.0
   * Binaries updated to `1.27.0`;
   * Changes `1.26.0` (https://github.com/tonlabs/TON-SDK/blob/master/CHANGELOG.md#1260--2021-11-25);
