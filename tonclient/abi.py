@@ -1,23 +1,43 @@
+"""ABI module methods"""
 from typing import Union, Awaitable
 
 from tonclient.module import TonModule
-from tonclient.types import ParamsOfEncodeMessageBody, DecodedMessageBody, \
-    ResultOfEncodeMessageBody, ParamsOfAttachSignatureToMessageBody, \
-    ResultOfAttachSignatureToMessageBody, ParamsOfEncodeMessage, \
-    ResultOfEncodeMessage, ParamsOfAttachSignature, ResultOfAttachSignature, \
-    ParamsOfDecodeMessage, ParamsOfDecodeMessageBody, ParamsOfEncodeAccount, \
-    ResultOfEncodeAccount, ParamsOfEncodeInternalMessage, \
-    ResultOfEncodeInternalMessage, ParamsOfDecodeAccountData, \
-    ResultOfDecodeData, ParamsOfUpdateInitialData, ResultOfUpdateInitialData, \
-    ParamsOfDecodeInitialData, ResultOfDecodeInitialData, ParamsOfDecodeBoc, \
-    ResultOfDecodeBoc, ParamsOfEncodeInitialData, ResultOfEncodeInitialData
+from tonclient.types import (
+    ParamsOfEncodeMessageBody,
+    DecodedMessageBody,
+    ResultOfEncodeMessageBody,
+    ParamsOfAttachSignatureToMessageBody,
+    ResultOfAttachSignatureToMessageBody,
+    ParamsOfEncodeMessage,
+    ResultOfEncodeMessage,
+    ParamsOfAttachSignature,
+    ResultOfAttachSignature,
+    ParamsOfDecodeMessage,
+    ParamsOfDecodeMessageBody,
+    ParamsOfEncodeAccount,
+    ResultOfEncodeAccount,
+    ParamsOfEncodeInternalMessage,
+    ResultOfEncodeInternalMessage,
+    ParamsOfDecodeAccountData,
+    ResultOfDecodeData,
+    ParamsOfUpdateInitialData,
+    ResultOfUpdateInitialData,
+    ParamsOfDecodeInitialData,
+    ResultOfDecodeInitialData,
+    ParamsOfDecodeBoc,
+    ResultOfDecodeBoc,
+    ParamsOfEncodeInitialData,
+    ResultOfEncodeInitialData,
+    ParamsOfAbiEncodeBoc,
+    ResultOfAbiEncodeBoc,
+)
 
 
 class TonAbi(TonModule):
-    """ Free TON abi SDK API implementation """
+    """Free TON abi SDK API implementation"""
 
     def decode_message(
-            self, params: ParamsOfDecodeMessage
+        self, params: ParamsOfDecodeMessage
     ) -> Union[DecodedMessageBody, Awaitable[DecodedMessageBody]]:
         """
         Decodes message body using provided message BOC and ABI
@@ -25,11 +45,11 @@ class TonAbi(TonModule):
         :param params: See `types.ParamsOfDecodeMessage`
         :return: See `types.DecodedMessageBody`
         """
-        response = self.request(method='abi.decode_message', **params.dict)
+        response = self.request(method="abi.decode_message", **params.dict)
         return self.response(classname=DecodedMessageBody, response=response)
 
     def decode_message_body(
-            self, params: ParamsOfDecodeMessageBody
+        self, params: ParamsOfDecodeMessageBody
     ) -> Union[DecodedMessageBody, Awaitable[DecodedMessageBody]]:
         """
         Decodes message body using provided body BOC and ABI
@@ -37,12 +57,11 @@ class TonAbi(TonModule):
         :param params: See `types.ParamsOfDecodeMessageBody`
         :return: See `types.DecodedMessageBody`
         """
-        response = self.request(
-            method='abi.decode_message_body', **params.dict)
+        response = self.request(method="abi.decode_message_body", **params.dict)
         return self.response(classname=DecodedMessageBody, response=response)
 
     def encode_account(
-            self, params: ParamsOfEncodeAccount
+        self, params: ParamsOfEncodeAccount
     ) -> Union[ResultOfEncodeAccount, Awaitable[ResultOfEncodeAccount]]:
         """
         Creates account state BOC.
@@ -53,12 +72,11 @@ class TonAbi(TonModule):
         :param params: See `types.ParamsOfEncodeAccount`
         :return: See `types.ResultOfEncodeAccount`
         """
-        response = self.request(method='abi.encode_account', **params.dict)
-        return self.response(
-            classname=ResultOfEncodeAccount, response=response)
+        response = self.request(method="abi.encode_account", **params.dict)
+        return self.response(classname=ResultOfEncodeAccount, response=response)
 
     def encode_message(
-            self, params: ParamsOfEncodeMessage
+        self, params: ParamsOfEncodeMessage
     ) -> Union[ResultOfEncodeMessage, Awaitable[ResultOfEncodeMessage]]:
         """
         Encodes an ABI-compatible message.
@@ -87,29 +105,23 @@ class TonAbi(TonModule):
         :param params: See `types.ParamsOfEncodeMessage`
         :return: See `types.ResultOfEncodeMessage`
         """
-        response = self.request(method='abi.encode_message', **params.dict)
-        return self.response(
-            classname=ResultOfEncodeMessage, response=response)
+        response = self.request(method="abi.encode_message", **params.dict)
+        return self.response(classname=ResultOfEncodeMessage, response=response)
 
     def encode_message_body(
-            self, params: ParamsOfEncodeMessageBody
-    ) -> Union[
-        ResultOfEncodeMessageBody,
-        Awaitable[ResultOfEncodeMessageBody]
-    ]:
+        self, params: ParamsOfEncodeMessageBody
+    ) -> Union[ResultOfEncodeMessageBody, Awaitable[ResultOfEncodeMessageBody]]:
         """
         Encodes message body according to ABI function call
 
         :param params: See `types.ParamsOfEncodeMessageBody`
         :return: See `types.ResultOfEncodeMessageBody`
         """
-        response = self.request(
-            method='abi.encode_message_body', **params.dict)
-        return self.response(
-            classname=ResultOfEncodeMessageBody, response=response)
+        response = self.request(method="abi.encode_message_body", **params.dict)
+        return self.response(classname=ResultOfEncodeMessageBody, response=response)
 
     def attach_signature(
-            self, params: ParamsOfAttachSignature
+        self, params: ParamsOfAttachSignature
     ) -> Union[ResultOfAttachSignature, Awaitable[ResultOfAttachSignature]]:
         """
         Combines `hex`-encoded `signature` with `base64`-encoded
@@ -118,31 +130,29 @@ class TonAbi(TonModule):
         :param params: See `types.ParamsOfAttachSignature`
         :return: See `types.ResultOfAttachSignature`
         """
-        response = self.request(method='abi.attach_signature', **params.dict)
-        return self.response(
-            classname=ResultOfAttachSignature, response=response)
+        response = self.request(method="abi.attach_signature", **params.dict)
+        return self.response(classname=ResultOfAttachSignature, response=response)
 
     def attach_signature_to_message_body(
-            self, params: ParamsOfAttachSignatureToMessageBody
+        self, params: ParamsOfAttachSignatureToMessageBody
     ) -> Union[
         ResultOfAttachSignatureToMessageBody,
-        Awaitable[ResultOfAttachSignatureToMessageBody]
+        Awaitable[ResultOfAttachSignatureToMessageBody],
     ]:
         """
         :param params: See `types.ParamsOfAttachSignatureToMessageBody`
         :return: See `types.ResultOfAttachSignatureToMessageBody`
         """
         response = self.request(
-            method='abi.attach_signature_to_message_body', **params.dict)
+            method="abi.attach_signature_to_message_body", **params.dict
+        )
         return self.response(
-            classname=ResultOfAttachSignatureToMessageBody, response=response)
+            classname=ResultOfAttachSignatureToMessageBody, response=response
+        )
 
     def encode_internal_message(
-            self, params: ParamsOfEncodeInternalMessage
-    ) -> Union[
-        ResultOfEncodeInternalMessage,
-        Awaitable[ResultOfEncodeInternalMessage]
-    ]:
+        self, params: ParamsOfEncodeInternalMessage
+    ) -> Union[ResultOfEncodeInternalMessage, Awaitable[ResultOfEncodeInternalMessage]]:
         """
         Encodes an internal ABI-compatible message.
         Allows encoding deploy and function call messages.
@@ -161,13 +171,11 @@ class TonAbi(TonModule):
         :param params: See `types.ParamsOfEncodeInternalMessage`
         :return: See `types.ResultOfEncodeInternalMessage`
         """
-        response = self.request(
-            method='abi.encode_internal_message', **params.dict)
-        return self.response(
-            classname=ResultOfEncodeInternalMessage, response=response)
+        response = self.request(method="abi.encode_internal_message", **params.dict)
+        return self.response(classname=ResultOfEncodeInternalMessage, response=response)
 
     def decode_account_data(
-            self, params: ParamsOfDecodeAccountData
+        self, params: ParamsOfDecodeAccountData
     ) -> Union[ResultOfDecodeData, Awaitable[ResultOfDecodeData]]:
         """
         Decodes account data using provided data BOC and ABI.
@@ -176,16 +184,12 @@ class TonAbi(TonModule):
         :param params: See `types.ParamsOfDecodeAccountData`
         :return: See `types.ResultOfDecodeData`
         """
-        response = self.request(
-            method='abi.decode_account_data', **params.dict)
+        response = self.request(method="abi.decode_account_data", **params.dict)
         return self.response(classname=ResultOfDecodeData, response=response)
 
     def encode_initial_data(
-            self, params: ParamsOfEncodeInitialData
-    ) -> Union[
-        ResultOfEncodeInitialData,
-        Awaitable[ResultOfEncodeInitialData]
-    ]:
+        self, params: ParamsOfEncodeInitialData
+    ) -> Union[ResultOfEncodeInitialData, Awaitable[ResultOfEncodeInitialData]]:
         """
         Encodes initial account data with initial values for the contract's
         static variables and owner's public key into a data BOC that can be
@@ -196,17 +200,12 @@ class TonAbi(TonModule):
         :param params:
         :return:
         """
-        response = self.request(
-            method='abi.encode_initial_data', **params.dict)
-        return self.response(
-            classname=ResultOfEncodeInitialData, response=response)
+        response = self.request(method="abi.encode_initial_data", **params.dict)
+        return self.response(classname=ResultOfEncodeInitialData, response=response)
 
     def update_initial_data(
-            self, params: ParamsOfUpdateInitialData
-    ) -> Union[
-        ResultOfUpdateInitialData,
-        Awaitable[ResultOfUpdateInitialData]
-    ]:
+        self, params: ParamsOfUpdateInitialData
+    ) -> Union[ResultOfUpdateInitialData, Awaitable[ResultOfUpdateInitialData]]:
         """
         Updates initial account data with initial values for the contract's
         static variables and owner's public key.
@@ -218,17 +217,12 @@ class TonAbi(TonModule):
         :param params: See `types.ParamsOfUpdateInitialData`
         :return: See `types.ResultOfUpdateInitialData`
         """
-        response = self.request(
-            method='abi.update_initial_data', **params.dict)
-        return self.response(
-            classname=ResultOfUpdateInitialData, response=response)
+        response = self.request(method="abi.update_initial_data", **params.dict)
+        return self.response(classname=ResultOfUpdateInitialData, response=response)
 
     def decode_initial_data(
-            self, params: ParamsOfDecodeInitialData
-    ) -> Union[
-        ResultOfDecodeInitialData,
-        Awaitable[ResultOfDecodeInitialData]
-    ]:
+        self, params: ParamsOfDecodeInitialData
+    ) -> Union[ResultOfDecodeInitialData, Awaitable[ResultOfDecodeInitialData]]:
         """
         Decodes initial values of a contract's static variables and owner's
         public key from account initial data.
@@ -240,13 +234,11 @@ class TonAbi(TonModule):
         :param params: See `types.ParamsOfDecodeInitialData`
         :return: See `types.ResultOfDecodeInitialData`
         """
-        response = self.request(
-            method='abi.decode_initial_data', **params.dict)
-        return self.response(
-            classname=ResultOfDecodeInitialData, response=response)
+        response = self.request(method="abi.decode_initial_data", **params.dict)
+        return self.response(classname=ResultOfDecodeInitialData, response=response)
 
     def decode_boc(
-            self, params: ParamsOfDecodeBoc
+        self, params: ParamsOfDecodeBoc
     ) -> Union[ResultOfDecodeBoc, Awaitable[ResultOfDecodeBoc]]:
         """
         Decodes BOC into JSON as a set of provided parameters.
@@ -271,5 +263,17 @@ class TonAbi(TonModule):
         :param params: See `types.ParamsOfDecodeBoc`
         :return: See `types.ResultOfDecodeBoc`
         """
-        response = self.request(method='abi.decode_boc', **params.dict)
+        response = self.request(method="abi.decode_boc", **params.dict)
         return self.response(classname=ResultOfDecodeBoc, response=response)
+
+    def encode_boc(
+        self, params: ParamsOfAbiEncodeBoc
+    ) -> Union[ResultOfAbiEncodeBoc, Awaitable[ResultOfAbiEncodeBoc]]:
+        """
+        Encodes given parameters in JSON into a BOC using param types from ABI.
+
+        :param params: See `types.ParamsOfAbiEncodeBoc`
+        :return: See `types.ResultOfAbiEncodeBoc`
+        """
+        response = self.request(method="abi.encode_boc", **params.dict)
+        return self.response(classname=ResultOfAbiEncodeBoc, response=response)

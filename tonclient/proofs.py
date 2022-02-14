@@ -1,15 +1,19 @@
+"""Proofs module methods"""
 from typing import Union, Awaitable
 
 from tonclient.module import TonModule
-from tonclient.types import ParamsOfProofBlockData, \
-    ParamsOfProofTransactionData, ParamsOfProofMessageData
+from tonclient.types import (
+    ParamsOfProofBlockData,
+    ParamsOfProofTransactionData,
+    ParamsOfProofMessageData,
+)
 
 
 class TonProofs(TonModule):
-    """ Module for proving data, retrieved from TONOS API """
+    """Module for proving data, retrieved from TONOS API"""
 
     def proof_block_data(
-            self, params: ParamsOfProofBlockData
+        self, params: ParamsOfProofBlockData
     ) -> Union[None, Awaitable[None]]:
         """
         Proves that a given block's data, which is queried from TONOS API,
@@ -88,7 +92,7 @@ class TonProofs(TonModule):
         return self.request(method='proofs.proof_block_data', **params.dict)
 
     def proof_transaction_data(
-            self, params: ParamsOfProofTransactionData
+        self, params: ParamsOfProofTransactionData
     ) -> Union[None, Awaitable[None]]:
         """
         Proves that a given transaction's data, which is queried from
@@ -124,11 +128,10 @@ class TonProofs(TonModule):
         :param params: See `types.ParamsOfProofTransactionData`
         :return:
         """
-        return self.request(
-            method='proofs.proof_transaction_data', **params.dict)
+        return self.request(method='proofs.proof_transaction_data', **params.dict)
 
     def proof_message_data(
-            self, params: ParamsOfProofMessageData
+        self, params: ParamsOfProofMessageData
     ) -> Union[None, Awaitable[None]]:
         """
         Proves that a given message's data, which is queried from TONOS API,

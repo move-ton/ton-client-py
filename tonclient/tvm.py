@@ -1,15 +1,22 @@
+"""TVM module methods"""
 from typing import Union, Awaitable
 
 from tonclient.module import TonModule
-from tonclient.types import ParamsOfRunExecutor, ResultOfRunExecutor, \
-    ParamsOfRunTvm, ResultOfRunTvm, ParamsOfRunGet, ResultOfRunGet
+from tonclient.types import (
+    ParamsOfRunExecutor,
+    ResultOfRunExecutor,
+    ParamsOfRunTvm,
+    ResultOfRunTvm,
+    ParamsOfRunGet,
+    ResultOfRunGet,
+)
 
 
 class TonTvm(TonModule):
-    """ Free TON tvm SDK API implementation """
+    """Free TON tvm SDK API implementation"""
 
     def run_get(
-            self, params: ParamsOfRunGet
+        self, params: ParamsOfRunGet
     ) -> Union[ResultOfRunGet, Awaitable[ResultOfRunGet]]:
         """
         Executes a get method of FIFT contract.
@@ -24,7 +31,7 @@ class TonTvm(TonModule):
         return self.response(classname=ResultOfRunGet, response=response)
 
     def run_executor(
-            self, params: ParamsOfRunExecutor
+        self, params: ParamsOfRunExecutor
     ) -> Union[ResultOfRunExecutor, Awaitable[ResultOfRunExecutor]]:
         """
         Emulates all the phases of contract execution locally.
@@ -73,7 +80,7 @@ class TonTvm(TonModule):
         return self.response(classname=ResultOfRunExecutor, response=response)
 
     def run_tvm(
-            self, params: ParamsOfRunTvm
+        self, params: ParamsOfRunTvm
     ) -> Union[ResultOfRunTvm, Awaitable[ResultOfRunTvm]]:
         """
         Executes get methods of ABI-compatible contracts.

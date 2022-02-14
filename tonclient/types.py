@@ -1,3 +1,7 @@
+"""
+Everscale binding types.
+https://github.com/tonlabs/TON-SDK/tree/master/docs/reference/types-and-methods
+"""
 import json
 from asyncio.selector_events import BaseSelectorEventLoop
 from enum import Enum
@@ -5,7 +9,7 @@ from io import StringIO
 from typing import Dict, Union, Any, List, Callable
 
 
-class BaseTypedType(object):
+class BaseTypedType:
     """
     Base class for objects which should be sent as dict {'type': '', ...}.
     E.g. `Abi`, `Signer`, `MessageSource`, etc.
@@ -19,15 +23,17 @@ class BaseTypedType(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'type': self.type}
 
 
-ResponseHandler = Callable[
-    [Any, int, Union[BaseSelectorEventLoop, None]], None]
+ResponseHandler = Callable[[Any, int, Union[BaseSelectorEventLoop, None]], None]
 
 
 # CLIENT module
 class ClientErrorCode(int, Enum):
+    """Client module error codes"""
+
     NOT_IMPLEMENTED = 1
     INVALID_HEX = 2
     INVALID_BASE64 = 3
@@ -64,7 +70,9 @@ class ClientErrorCode(int, Enum):
     INVALID_HANDLE = 34
 
 
-class ClientError(object):
+class ClientError:
+    """Client error object"""
+
     def __init__(self, code: int, message: str, data: Any):
         """
         :param code:
@@ -79,42 +87,58 @@ class ClientError(object):
         return f'[{self.code}] {self.message} (Data: {self.data})'
 
 
-class ClientConfig(object):
+class ClientConfig:
+    """Client config object"""
+
     def __init__(
-            self, network: 'NetworkConfig' = None, boc: 'BocConfig' = None,
-            crypto: 'CryptoConfig' = None, abi: 'AbiConfig' = None):
+        self,
+        network: 'NetworkConfig' = None,
+        boc: 'BocConfig' = None,
+        crypto: 'CryptoConfig' = None,
+        abi: 'AbiConfig' = None,
+    ):
         """
         :param network:
         :param crypto:
         :param abi:
         :param boc:
         """
-        self.network = \
-            network or NetworkConfig(server_address='http://localhost')
+        self.network = network or NetworkConfig(server_address='http://localhost')
         self.crypto = crypto or CryptoConfig()
         self.abi = abi or AbiConfig()
         self.boc = boc or BocConfig()
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'network': self.network.dict,
             'crypto': self.crypto.dict,
             'abi': self.abi.dict,
-            'boc': self.boc.dict
+            'boc': self.boc.dict,
         }
 
 
-class NetworkConfig(object):
+class NetworkConfig:
+    """Network config object"""
+
     def __init__(
-            self, server_address: str = None, endpoints: List[str] = None,
-            network_retries_count: int = None, reconnect_timeout: int = None,
-            max_reconnect_timeout: int = None,
-            message_retries_count: int = None,
-            message_processing_timeout: int = None, query_timeout: int = None,
-            wait_for_timeout: int = None, out_of_sync_threshold: int = None,
-            sending_endpoint_count: int = None, access_key: str = None,
-            latency_detection_interval: int = None, max_latency: int = None):
+        self,
+        server_address: str = None,
+        endpoints: List[str] = None,
+        network_retries_count: int = None,
+        reconnect_timeout: int = None,
+        max_reconnect_timeout: int = None,
+        message_retries_count: int = None,
+        message_processing_timeout: int = None,
+        query_timeout: int = None,
+        wait_for_timeout: int = None,
+        out_of_sync_threshold: int = None,
+        sending_endpoint_count: int = None,
+        access_key: str = None,
+        latency_detection_interval: int = None,
+        max_latency: int = None,
+    ):
         """
         :param server_address: DApp Server public address. For instance,
                 for `net.ton.dev/graphql` GraphQL endpoint the server
@@ -187,6 +211,7 @@ class NetworkConfig(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'server_address': self.server_address,
             'endpoints': self.endpoints,
@@ -201,15 +226,19 @@ class NetworkConfig(object):
             'access_key': self.access_key,
             'latency_detection_interval': self.latency_detection_interval,
             'max_latency': self.max_latency,
-            'query_timeout': self.query_timeout
+            'query_timeout': self.query_timeout,
         }
 
 
-class CryptoConfig(object):
+class CryptoConfig:
+    """Crypto config object"""
+
     def __init__(
-            self, mnemonic_dictionary: int = None,
-            mnemonic_word_count: int = None,
-            hdkey_derivation_path: str = None):
+        self,
+        mnemonic_dictionary: int = None,
+        mnemonic_word_count: int = None,
+        hdkey_derivation_path: str = None,
+    ):
         """
         :param mnemonic_dictionary: Mnemonic dictionary that will be used by
                 default in crypto functions. If not specified, 1 dictionary
@@ -227,18 +256,23 @@ class CryptoConfig(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'mnemonic_dictionary': self.mnemonic_dictionary,
             'mnemonic_word_count': self.mnemonic_word_count,
-            'hdkey_derivation_path': self.hdkey_derivation_path
+            'hdkey_derivation_path': self.hdkey_derivation_path,
         }
 
 
-class AbiConfig(object):
+class AbiConfig:
+    """ABI config object"""
+
     def __init__(
-            self, workchain: int = None,
-            message_expiration_timeout: int = None,
-            message_expiration_timeout_grow_factor: Union[int, float] = None):
+        self,
+        workchain: int = None,
+        message_expiration_timeout: int = None,
+        message_expiration_timeout_grow_factor: Union[int, float] = None,
+    ):
         """
         :param workchain: Workchain id that is used by default in DeploySet
         :param message_expiration_timeout: Message lifetime for contracts
@@ -248,20 +282,23 @@ class AbiConfig(object):
         """
         self.workchain = workchain
         self.message_expiration_timeout = message_expiration_timeout
-        self.message_expiration_timeout_grow_factor = \
+        self.message_expiration_timeout_grow_factor = (
             message_expiration_timeout_grow_factor
+        )
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'workchain': self.workchain,
             'message_expiration_timeout': self.message_expiration_timeout,
-            'message_expiration_timeout_grow_factor':
-                self.message_expiration_timeout_grow_factor
+            'message_expiration_timeout_grow_factor': self.message_expiration_timeout_grow_factor,
         }
 
 
-class BocConfig(object):
+class BocConfig:
+    """BOC config object"""
+
     def __init__(self, cache_max_size: int = None):
         """
         :param cache_max_size: Maximum BOC cache size in kilobytes.
@@ -271,10 +308,13 @@ class BocConfig(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'cache_max_size': self.cache_max_size}
 
 
-class BuildInfoDependency(object):
+class BuildInfoDependency:
+    """BuildInfoDependency"""
+
     def __init__(self, name: str, git_commit: str):
         """
         :param name: Dependency name. Usually it is a crate name
@@ -284,7 +324,9 @@ class BuildInfoDependency(object):
         self.git_commit = git_commit
 
 
-class ParamsOfAppRequest(object):
+class ParamsOfAppRequest:
+    """ParamsOfAppRequest"""
+
     def __init__(self, app_request_id: int, request_data: Any):
         """
         :param app_request_id: Request ID. Should be used in
@@ -296,8 +338,10 @@ class ParamsOfAppRequest(object):
 
 
 class AppRequestResult:
-    class Error(object):
-        """ Error occurred during request processing """
+    """AppRequestResult"""
+
+    class Error:
+        """Error occurred during request processing"""
 
         def __init__(self, text: str):
             """
@@ -307,10 +351,11 @@ class AppRequestResult:
 
         @property
         def dict(self):
+            """Dict from object"""
             return {'type': 'Error', 'text': self.text}
 
-    class Ok(object):
-        """ Request processed successfully """
+    class Ok:
+        """Request processed successfully"""
 
         def __init__(self, result: Any):
             """
@@ -320,10 +365,13 @@ class AppRequestResult:
 
         @property
         def dict(self):
+            """Dict from object"""
             return {'type': 'Ok', 'result': self.result}
 
 
-class ResultOfGetApiReference(object):
+class ResultOfGetApiReference:
+    """ResultOfGetApiReference"""
+
     def __init__(self, api: Any):
         """
         :param api: API
@@ -331,7 +379,9 @@ class ResultOfGetApiReference(object):
         self.api = api
 
 
-class ResultOfVersion(object):
+class ResultOfVersion:
+    """ResultOfVersion"""
+
     def __init__(self, version: str):
         """
         :param version: Core Library version
@@ -339,10 +389,10 @@ class ResultOfVersion(object):
         self.version = version
 
 
-class ResultOfBuildInfo(object):
-    def __init__(
-            self, build_number: int,
-            dependencies: List['BuildInfoDependency']):
+class ResultOfBuildInfo:
+    """ResultOfBuildInfo"""
+
+    def __init__(self, build_number: int, dependencies: List['BuildInfoDependency']):
         """
         :param build_number: Build number assigned to this build by the CI
         :param dependencies: Fingerprint of the most important dependencies
@@ -352,15 +402,17 @@ class ResultOfBuildInfo(object):
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> 'ResultOfBuildInfo':
+        """Object from dict"""
         if data['dependencies']:
             data['dependencies'] = [
                 BuildInfoDependency(**d) for d in data['dependencies']
             ]
-
         return ResultOfBuildInfo(**data)
 
 
-class ParamsOfResolveAppRequest(object):
+class ParamsOfResolveAppRequest:
+    """ParamsOfResolveAppRequest"""
+
     def __init__(self, app_request_id: int, result: 'AppRequestResultType'):
         """
         :param app_request_id: Request ID received from SDK
@@ -371,10 +423,8 @@ class ParamsOfResolveAppRequest(object):
 
     @property
     def dict(self):
-        return {
-            'app_request_id': self.app_request_id,
-            'result': self.result.dict
-        }
+        """Dict from object"""
+        return {'app_request_id': self.app_request_id, 'result': self.result.dict}
 
 
 # ABI module
@@ -382,6 +432,8 @@ AbiHandle = int
 
 
 class AbiErrorCode(int, Enum):
+    """ABI error codes"""
+
     REQUIRED_ADDRESS_MISSING_FOR_ENCODE_MESSAGE = 301
     REQUIRED_CALL_SET_MISSING_FOR_ENCODE_MESSAGE = 302
     INVALID_JSON = 303
@@ -399,7 +451,11 @@ class AbiErrorCode(int, Enum):
 
 
 class Abi:
+    """Abi"""
+
     class Contract(BaseTypedType):
+        """Abi.Contract"""
+
         def __init__(self, value: 'AbiContract'):
             """
             :param value:
@@ -412,6 +468,8 @@ class Abi:
             return {**super(Abi.Contract, self).dict, 'value': self.value.dict}
 
     class Json(BaseTypedType):
+        """Abi.Json"""
+
         def __init__(self, value: str):
             """
             :param value:
@@ -424,6 +482,8 @@ class Abi:
             return {**super(Abi.Json, self).dict, 'value': self.value}
 
     class Handle(BaseTypedType):
+        """Abi.Handle"""
+
         def __init__(self, value: 'AbiHandle'):
             """
             :param value:
@@ -436,6 +496,8 @@ class Abi:
             return {**super(Abi.Handle, self).dict, 'value': self.value}
 
     class Serialized(BaseTypedType):
+        """Abi.Serialized"""
+
         def __init__(self, value: 'AbiContract'):
             """
             :param value:
@@ -445,23 +507,28 @@ class Abi:
 
         @property
         def dict(self):
-            return {
-                **super(Abi.Serialized, self).dict,
-                'value': self.value.dict
-            }
+            return {**super(Abi.Serialized, self).dict, 'value': self.value.dict}
 
     @staticmethod
     def from_path(path: str) -> Json:
-        with open(path) as fp:
+        """Create Abi object from path"""
+        with open(path, encoding='utf8') as fp:
             return Abi.Json(value=fp.read())
 
 
-class AbiContract(object):
+class AbiContract:
+    """AbiContract"""
+
     def __init__(
-            self, abi_version: int = None, version: str = None,
-            header: List[str] = None, functions: List['AbiFunction'] = None,
-            events: List['AbiEvent'] = None, data: List['AbiData'] = None,
-            fields: List['AbiParam'] = None):
+        self,
+        abi_version: int = None,
+        version: str = None,
+        header: List[str] = None,
+        functions: List['AbiFunction'] = None,
+        events: List['AbiEvent'] = None,
+        data: List['AbiData'] = None,
+        fields: List['AbiParam'] = None,
+    ):
         """
         :param abi_version:
         :param version:
@@ -481,6 +548,7 @@ class AbiContract(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'abi_version': self.abi_version,
             'version': self.version,
@@ -488,14 +556,20 @@ class AbiContract(object):
             'functions': [f.dict for f in self.functions],
             'events': [e.dict for e in self.events],
             'data': [d.dict for d in self.data],
-            'fields': [f.dict for f in self.fields]
+            'fields': [f.dict for f in self.fields],
         }
 
 
-class AbiFunction(object):
+class AbiFunction:
+    """AbiFunction"""
+
     def __init__(
-            self, name: str, inputs: List['AbiParam'],
-            outputs: List['AbiParam'], id: str = None):
+        self,
+        name: str,
+        inputs: List['AbiParam'],
+        outputs: List['AbiParam'],
+        id: str = None,
+    ):
         """
         :param name:
         :param inputs:
@@ -509,15 +583,18 @@ class AbiFunction(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'name': self.name,
             'inputs': [i.dict for i in self.inputs],
             'outputs': [o.dict for o in self.outputs],
-            'id': self.id
+            'id': self.id,
         }
 
 
-class AbiEvent(object):
+class AbiEvent:
+    """AbiEvent"""
+
     def __init__(self, name: str, inputs: List['AbiParam'], id: str = None):
         """
         :param name:
@@ -530,17 +607,20 @@ class AbiEvent(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'name': self.name,
             'inputs': [i.dict for i in self.inputs],
-            'id': self.id
+            'id': self.id,
         }
 
 
-class AbiData(object):
+class AbiData:
+    """AbiData"""
+
     def __init__(
-            self, key: int, name: str, type: str,
-            components: List['AbiParam'] = None):
+        self, key: int, name: str, type: str, components: List['AbiParam'] = None
+    ):
         """
         :param key:
         :param name:
@@ -554,17 +634,19 @@ class AbiData(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'key': self.key,
             'name': self.name,
             'type': self.type,
-            'components': [c.dict for c in self.components]
+            'components': [c.dict for c in self.components],
         }
 
 
-class AbiParam(object):
-    def __init__(
-            self, name: str, type: str, components: List['AbiParam'] = None):
+class AbiParam:
+    """AbiParam"""
+
+    def __init__(self, name: str, type: str, components: List['AbiParam'] = None):
         """
         :param name:
         :param type:
@@ -576,14 +658,15 @@ class AbiParam(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'name': self.name,
             'type': self.type,
-            'components': [c.dict for c in self.components]
+            'components': [c.dict for c in self.components],
         }
 
 
-class FunctionHeader(object):
+class FunctionHeader:
     """
     The ABI function header.
     Includes several hidden function parameters that contract uses for
@@ -593,8 +676,7 @@ class FunctionHeader(object):
     not filled.
     """
 
-    def __init__(
-            self, expire: int = None, time: int = None, pubkey: str = None):
+    def __init__(self, expire: int = None, time: int = None, pubkey: str = None):
         """
         :param expire: Message expiration time in seconds. If not specified -
                 calculated automatically from `message_expiration_timeout()`,
@@ -612,17 +694,16 @@ class FunctionHeader(object):
 
     @property
     def dict(self):
-        return {
-            'expire': self.expire,
-            'time': self.time,
-            'pubkey': self.pubkey
-        }
+        """Dict from object"""
+        return {'expire': self.expire, 'time': self.time, 'pubkey': self.pubkey}
 
 
-class CallSet(object):
+class CallSet:
+    """CallSet"""
+
     def __init__(
-            self, function_name: str, header: 'FunctionHeader' = None,
-            input: Any = None):
+        self, function_name: str, header: 'FunctionHeader' = None, input: Any = None
+    ):
         """
         :param function_name: Function name that is being called.
                 Or function id encoded as string in `hex` (starting with 0x)
@@ -637,18 +718,24 @@ class CallSet(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'function_name': self.function_name,
             'header': self.header.dict,
-            'input': self.input
+            'input': self.input,
         }
 
 
-class DeploySet(object):
+class DeploySet:
+    """DeploySet"""
+
     def __init__(
-            self, tvc: str, workchain_id: int = None,
-            initial_data: List[Dict[str, Any]] = None,
-            initial_pubkey: str = None):
+        self,
+        tvc: str,
+        workchain_id: int = None,
+        initial_data: List[Dict[str, Any]] = None,
+        initial_pubkey: str = None,
+    ):
         """
         :param tvc: Content of TVC file encoded in `base64`
         :param workchain_id: Target workchain for destination address.
@@ -670,17 +757,20 @@ class DeploySet(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'tvc': self.tvc,
             'workchain_id': self.workchain_id,
             'initial_data': self.initial_data,
-            'initial_pubkey': self.initial_pubkey
+            'initial_pubkey': self.initial_pubkey,
         }
 
 
 class Signer:
+    """Signer"""
+
     class NoSigner(BaseTypedType):
-        """ No keys are provided. Creates an unsigned message """
+        """No keys are provided. Creates an unsigned message"""
 
         def __init__(self):
             super(Signer.NoSigner, self).__init__(type='None')
@@ -700,13 +790,10 @@ class Signer:
 
         @property
         def dict(self):
-            return {
-                **super(Signer.External, self).dict,
-                'public_key': self.public_key
-            }
+            return {**super(Signer.External, self).dict, 'public_key': self.public_key}
 
     class Keys(BaseTypedType):
-        """ Key pair is provided for signing """
+        """Key pair is provided for signing"""
 
         def __init__(self, keys: 'KeyPair'):
             """
@@ -734,13 +821,12 @@ class Signer:
 
         @property
         def dict(self):
-            return {
-                **super(Signer.SigningBox, self).dict,
-                'handle': self.handle
-            }
+            return {**super(Signer.SigningBox, self).dict, 'handle': self.handle}
 
 
 class MessageBodyType(str, Enum):
+    """Message body types"""
+
     # Message contains the input of the ABI function
     INPUT = 'Input'
     # Message contains the output of the ABI function
@@ -754,8 +840,10 @@ class MessageBodyType(str, Enum):
 
 
 class StateInitSource:
+    """StateInitSource"""
+
     class Message(BaseTypedType):
-        """ Deploy message """
+        """Deploy message"""
 
         def __init__(self, source: 'MessageSourceType'):
             """
@@ -768,11 +856,11 @@ class StateInitSource:
         def dict(self):
             return {
                 **super(StateInitSource.Message, self).dict,
-                'source': self.source.dict
+                'source': self.source.dict,
             }
 
     class StateInit(BaseTypedType):
-        """ State init data """
+        """State init data"""
 
         def __init__(self, code: str, data: str, library: str = None):
             """
@@ -791,15 +879,18 @@ class StateInitSource:
                 **super(StateInitSource.StateInit, self).dict,
                 'code': self.code,
                 'data': self.data,
-                'library': self.library
+                'library': self.library,
             }
 
     class Tvc(BaseTypedType):
-        """ Content of the TVC file """
+        """Content of the TVC file"""
 
         def __init__(
-                self, tvc: str, public_key: str = None,
-                init_params: 'StateInitParams' = None):
+            self,
+            tvc: str,
+            public_key: str = None,
+            init_params: 'StateInitParams' = None,
+        ):
             """
             :param tvc: Content of the TVC file. Encoded in `base64`
             :param public_key:
@@ -812,18 +903,21 @@ class StateInitSource:
 
         @property
         def dict(self):
-            init_params = self.init_params.dict \
-                if self.init_params else self.init_params
+            init_params = (
+                self.init_params.dict if self.init_params else self.init_params
+            )
 
             return {
                 **super(StateInitSource.Tvc, self).dict,
                 'tvc': self.tvc,
                 'public_key': self.public_key,
-                'init_params': init_params
+                'init_params': init_params,
             }
 
 
-class StateInitParams(object):
+class StateInitParams:
+    """StateInitParams"""
+
     def __init__(self, abi: 'AbiType', value: Any):
         """
         :param abi: One of Abi.*
@@ -834,11 +928,16 @@ class StateInitParams(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'abi': self.abi.dict, 'value': self.value}
 
 
 class MessageSource:
+    """MessageSource"""
+
     class Encoded(BaseTypedType):
+        """MessageSource.Encoded"""
+
         def __init__(self, message: str, abi: 'AbiType' = None):
             """
             :param message:
@@ -853,30 +952,38 @@ class MessageSource:
             return {
                 **super(MessageSource.Encoded, self).dict,
                 'message': self.message,
-                'abi': self.abi.dict if self.abi else self.abi
+                'abi': self.abi.dict if self.abi else self.abi,
             }
 
     class EncodingParams(BaseTypedType):
+        """MessageSource.EncodingParams"""
+
         def __init__(self, params: 'ParamsOfEncodeMessage'):
             """
             :param params:
             """
-            super(MessageSource.EncodingParams, self).__init__(
-                type='EncodingParams')
+            super(MessageSource.EncodingParams, self).__init__(type='EncodingParams')
             self.params = params
 
         @property
         def dict(self):
             return {
                 **super(MessageSource.EncodingParams, self).dict,
-                **self.params.dict
+                **self.params.dict,
             }
 
 
-class ParamsOfEncodeMessageBody(object):
+class ParamsOfEncodeMessageBody:
+    """ParamsOfEncodeMessageBody"""
+
     def __init__(
-            self, abi: 'AbiType', call_set: 'CallSet', is_internal: bool,
-            signer: 'SignerType', processing_try_index: int = None):
+        self,
+        abi: 'AbiType',
+        call_set: 'CallSet',
+        is_internal: bool,
+        signer: 'SignerType',
+        processing_try_index: int = None,
+    ):
         """
         :param abi: Contract ABI
         :param call_set: Function call parameters. Must be specified in non
@@ -897,16 +1004,19 @@ class ParamsOfEncodeMessageBody(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'abi': self.abi.dict,
             'call_set': self.call_set.dict,
             'is_internal': self.is_internal,
             'signer': self.signer.dict,
-            'processing_try_index': self.processing_try_index
+            'processing_try_index': self.processing_try_index,
         }
 
 
-class ResultOfEncodeMessageBody(object):
+class ResultOfEncodeMessageBody:
+    """ResultOfEncodeMessageBody"""
+
     def __init__(self, body: str, data_to_sign: str = None):
         """
         :param body: Message body BOC encoded with `base64`
@@ -919,10 +1029,10 @@ class ResultOfEncodeMessageBody(object):
         self.data_to_sign = data_to_sign
 
 
-class ParamsOfAttachSignatureToMessageBody(object):
-    def __init__(
-            self, abi: 'AbiType', public_key: str, message: str,
-            signature: str):
+class ParamsOfAttachSignatureToMessageBody:
+    """ParamsOfAttachSignatureToMessageBody"""
+
+    def __init__(self, abi: 'AbiType', public_key: str, message: str, signature: str):
         """
         :param abi: Contract ABI
         :param public_key: Public key. Must be encoded with `hex`
@@ -937,15 +1047,18 @@ class ParamsOfAttachSignatureToMessageBody(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'abi': self.abi.dict,
             'public_key': self.public_key,
             'message': self.message,
-            'signature': self.signature
+            'signature': self.signature,
         }
 
 
-class ResultOfAttachSignatureToMessageBody(object):
+class ResultOfAttachSignatureToMessageBody:
+    """ResultOfAttachSignatureToMessageBody"""
+
     def __init__(self, body: str):
         """
         :param body:
@@ -953,11 +1066,18 @@ class ResultOfAttachSignatureToMessageBody(object):
         self.body = body
 
 
-class ParamsOfEncodeMessage(object):
+class ParamsOfEncodeMessage:
+    """ParamsOfEncodeMessage"""
+
     def __init__(
-            self, abi: 'AbiType', signer: 'SignerType', address: str = None,
-            deploy_set: 'DeploySet' = None, call_set: 'CallSet' = None,
-            processing_try_index: int = None):
+        self,
+        abi: 'AbiType',
+        signer: 'SignerType',
+        address: str = None,
+        deploy_set: 'DeploySet' = None,
+        call_set: 'CallSet' = None,
+        processing_try_index: int = None,
+    ):
         """
         :param abi: Contract ABI
         :param signer: Signing parameters
@@ -985,8 +1105,8 @@ class ParamsOfEncodeMessage(object):
 
     @property
     def dict(self):
-        deploy_set = self.deploy_set.dict \
-            if self.deploy_set else self.deploy_set
+        """Dict from object"""
+        deploy_set = self.deploy_set.dict if self.deploy_set else self.deploy_set
         call_set = self.call_set.dict if self.call_set else self.call_set
 
         return {
@@ -995,14 +1115,16 @@ class ParamsOfEncodeMessage(object):
             'address': self.address,
             'deploy_set': deploy_set,
             'call_set': call_set,
-            'processing_try_index': self.processing_try_index
+            'processing_try_index': self.processing_try_index,
         }
 
 
-class ResultOfEncodeMessage(object):
+class ResultOfEncodeMessage:
+    """ResultOfEncodeMessage"""
+
     def __init__(
-            self, message: str, address: str, message_id: str,
-            data_to_sign: str = None):
+        self, message: str, address: str, message_id: str, data_to_sign: str = None
+    ):
         """
         :param message: Message BOC encoded with `base64`
         :param address:
@@ -1019,10 +1141,10 @@ class ResultOfEncodeMessage(object):
         self.data_to_sign = data_to_sign
 
 
-class ParamsOfAttachSignature(object):
-    def __init__(
-            self, abi: 'AbiType', public_key: str, message: str,
-            signature: str):
+class ParamsOfAttachSignature:
+    """ParamsOfAttachSignature"""
+
+    def __init__(self, abi: 'AbiType', public_key: str, message: str, signature: str):
         """
         :param abi: Contract ABI
         :param public_key: Public key encoded in `hex`
@@ -1036,15 +1158,18 @@ class ParamsOfAttachSignature(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'abi': self.abi.dict,
             'public_key': self.public_key,
             'message': self.message,
-            'signature': self.signature
+            'signature': self.signature,
         }
 
 
-class ResultOfAttachSignature(object):
+class ResultOfAttachSignature:
+    """ResultOfAttachSignature"""
+
     def __init__(self, message: str, message_id: str):
         """
         :param message: Signed message BOC
@@ -1054,7 +1179,9 @@ class ResultOfAttachSignature(object):
         self.message_id = message_id
 
 
-class ParamsOfDecodeMessage(object):
+class ParamsOfDecodeMessage:
+    """ParamsOfDecodeMessage"""
+
     def __init__(self, abi: 'AbiType', message: str):
         """
         :param abi: Contract ABI
@@ -1065,13 +1192,20 @@ class ParamsOfDecodeMessage(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'abi': self.abi.dict, 'message': self.message}
 
 
-class DecodedMessageBody(object):
+class DecodedMessageBody:
+    """DecodedMessageBody"""
+
     def __init__(
-            self, body_type: 'MessageBodyType', name: str, value: Any = None,
-            header: 'FunctionHeader' = None):
+        self,
+        body_type: 'MessageBodyType',
+        name: str,
+        value: Any = None,
+        header: 'FunctionHeader' = None,
+    ):
         """
         :param body_type: Type of the message body content
         :param name: Function or event name
@@ -1085,13 +1219,16 @@ class DecodedMessageBody(object):
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> 'DecodedMessageBody':
+        """Object from dict"""
         if data['header']:
             data['header'] = FunctionHeader(**data['header'])
 
         return DecodedMessageBody(**data)
 
 
-class ParamsOfDecodeMessageBody(object):
+class ParamsOfDecodeMessageBody:
+    """ParamsOfDecodeMessageBody"""
+
     def __init__(self, abi: 'AbiType', body: str, is_internal: bool):
         """
         :param abi: Contract ABI used to decode
@@ -1104,18 +1241,25 @@ class ParamsOfDecodeMessageBody(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'abi': self.abi.dict,
             'body': self.body,
-            'is_internal': self.is_internal
+            'is_internal': self.is_internal,
         }
 
 
-class ParamsOfEncodeAccount(object):
+class ParamsOfEncodeAccount:
+    """ParamsOfEncodeAccount"""
+
     def __init__(
-            self, state_init: 'StateInitSourceType', balance: int = None,
-            last_trans_lt: int = None, last_paid: int = None,
-            boc_cache: 'BocCacheTypeType' = None):
+        self,
+        state_init: 'StateInitSourceType',
+        balance: int = None,
+        last_trans_lt: int = None,
+        last_paid: int = None,
+        boc_cache: 'BocCacheTypeType' = None,
+    ):
         """
         :param state_init: Source of the account state init
         :param balance: Initial balance
@@ -1132,16 +1276,19 @@ class ParamsOfEncodeAccount(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'state_init': self.state_init.dict,
             'balance': self.balance,
             'last_trans_lt': self.last_trans_lt,
             'last_paid': self.last_paid,
-            'boc_cache': self.boc_cache
+            'boc_cache': self.boc_cache,
         }
 
 
-class ResultOfEncodeAccount(object):
+class ResultOfEncodeAccount:
+    """ResultOfEncodeAccount"""
+
     def __init__(self, account: str, id: str):
         """
         :param account: Account BOC encoded in `base64`
@@ -1151,12 +1298,20 @@ class ResultOfEncodeAccount(object):
         self.id = id
 
 
-class ParamsOfEncodeInternalMessage(object):
+class ParamsOfEncodeInternalMessage:
+    """ParamsOfEncodeInternalMessage"""
+
     def __init__(
-            self, value: str, abi: 'AbiType' = None, address: str = None,
-            deploy_set: 'DeploySet' = None, call_set: 'CallSet' = None,
-            bounce: bool = None, enable_ihr: bool = None,
-            src_address: str = None):
+        self,
+        value: str,
+        abi: 'AbiType' = None,
+        address: str = None,
+        deploy_set: 'DeploySet' = None,
+        call_set: 'CallSet' = None,
+        bounce: bool = None,
+        enable_ihr: bool = None,
+        src_address: str = None,
+    ):
         """
         :param abi: Contract ABI. Can be None if both `deploy_set`
                 and `call_set` are None
@@ -1185,9 +1340,9 @@ class ParamsOfEncodeInternalMessage(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         abi = self.abi.dict if self.abi else self.abi
-        deploy_set = self.deploy_set.dict \
-            if self.deploy_set else self.deploy_set
+        deploy_set = self.deploy_set.dict if self.deploy_set else self.deploy_set
         call_set = self.call_set.dict if self.call_set else self.call_set
 
         return {
@@ -1198,11 +1353,13 @@ class ParamsOfEncodeInternalMessage(object):
             'call_set': call_set,
             'bounce': self.bounce,
             'enable_ihr': self.enable_ihr,
-            'src_address': self.src_address
+            'src_address': self.src_address,
         }
 
 
-class ResultOfEncodeInternalMessage(object):
+class ResultOfEncodeInternalMessage:
+    """ResultOfEncodeInternalMessage"""
+
     def __init__(self, message: str, address: str, message_id: str):
         """
         :param message: Message BOC encoded with `base64`
@@ -1214,7 +1371,9 @@ class ResultOfEncodeInternalMessage(object):
         self.message_id = message_id
 
 
-class ParamsOfDecodeAccountData(object):
+class ParamsOfDecodeAccountData:
+    """ParamsOfDecodeAccountData"""
+
     def __init__(self, abi: 'AbiType', data: str):
         """
         :param abi: Contract ABI
@@ -1225,10 +1384,13 @@ class ParamsOfDecodeAccountData(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'abi': self.abi.dict, 'data': self.data}
 
 
-class ResultOfDecodeData(object):
+class ResultOfDecodeData:
+    """ResultOfDecodeData"""
+
     def __init__(self, data: Dict[str, Any]):
         """
         :param data: Decoded data as a JSON structure
@@ -1236,10 +1398,17 @@ class ResultOfDecodeData(object):
         self.data = data
 
 
-class ParamsOfUpdateInitialData(object):
+class ParamsOfUpdateInitialData:
+    """ParamsOfUpdateInitialData"""
+
     def __init__(
-            self, data: str, abi: 'AbiType' = None, initial_data: Any = None,
-            initial_pubkey: str = None, boc_cache: 'BocCacheTypeType' = None):
+        self,
+        data: str,
+        abi: 'AbiType' = None,
+        initial_data: Any = None,
+        initial_pubkey: str = None,
+        boc_cache: 'BocCacheTypeType' = None,
+    ):
         """
         :param data: Data BOC or BOC handle
         :param abi: Contract ABI
@@ -1259,6 +1428,7 @@ class ParamsOfUpdateInitialData(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         abi = self.abi.dict if self.abi else self.abi
         boc_cache = self.boc_cache.dict if self.boc_cache else self.boc_cache
         return {
@@ -1266,11 +1436,13 @@ class ParamsOfUpdateInitialData(object):
             'abi': abi,
             'initial_data': self.initial_data,
             'initial_pubkey': self.initial_pubkey,
-            'boc_cache': boc_cache
+            'boc_cache': boc_cache,
         }
 
 
-class ResultOfUpdateInitialData(object):
+class ResultOfUpdateInitialData:
+    """ResultOfUpdateInitialData"""
+
     def __init__(self, data: str):
         """
         :param data: Updated data BOC or BOC handle
@@ -1278,7 +1450,9 @@ class ResultOfUpdateInitialData(object):
         self.data = data
 
 
-class ParamsOfDecodeInitialData(object):
+class ParamsOfDecodeInitialData:
+    """ParamsOfDecodeInitialData"""
+
     def __init__(self, data: str, abi: 'AbiType' = None):
         """
         :param data: Data BOC or BOC handle
@@ -1290,17 +1464,21 @@ class ParamsOfDecodeInitialData(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         abi = self.abi.dict if self.abi else self.abi
-        return {
-            'data': self.data,
-            'abi': abi
-        }
+        return {'data': self.data, 'abi': abi}
 
 
-class ParamsOfEncodeInitialData(object):
+class ParamsOfEncodeInitialData:
+    """ParamsOfEncodeInitialData"""
+
     def __init__(
-            self, abi: 'AbiType' = None, initial_data: Dict[str, Any] = None,
-            initial_pubkey: str = None, boc_cache: 'BocCacheTypeType' = None):
+        self,
+        abi: 'AbiType' = None,
+        initial_data: Dict[str, Any] = None,
+        initial_pubkey: str = None,
+        boc_cache: 'BocCacheTypeType' = None,
+    ):
         """
         :param abi: Contract ABI
         :param initial_data: Initial values for contract's static variables.
@@ -1317,17 +1495,20 @@ class ParamsOfEncodeInitialData(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         abi = self.abi.dict if self.abi else self.abi
         boc_cache = self.boc_cache.dict if self.boc_cache else self.boc_cache
         return {
             'abi': abi,
             'initial_data': self.initial_data,
             'initial_pubkey': self.initial_pubkey,
-            'boc_cache': boc_cache
+            'boc_cache': boc_cache,
         }
 
 
-class ResultOfEncodeInitialData(object):
+class ResultOfEncodeInitialData:
+    """ResultOfEncodeInitialData"""
+
     def __init__(self, data: str):
         """
         :param data: Updated data BOC or BOC handle
@@ -1335,7 +1516,9 @@ class ResultOfEncodeInitialData(object):
         self.data = data
 
 
-class ResultOfDecodeInitialData(object):
+class ResultOfDecodeInitialData:
+    """ResultOfDecodeInitialData"""
+
     def __init__(self, initial_pubkey: str, initial_data: Any = None):
         """
         :param initial_pubkey: Initial account owner's public key
@@ -1347,9 +1530,10 @@ class ResultOfDecodeInitialData(object):
         self.initial_data = initial_data
 
 
-class ParamsOfDecodeBoc(object):
-    def __init__(
-            self, params: List['AbiParam'], boc: str, allow_partial: bool):
+class ParamsOfDecodeBoc:
+    """ParamsOfDecodeBoc"""
+
+    def __init__(self, params: List['AbiParam'], boc: str, allow_partial: bool):
         """
         :param params: Parameters to decode from BOC
         :param boc: Data BOC or BOC handle
@@ -1361,14 +1545,17 @@ class ParamsOfDecodeBoc(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'params': [p.dict for p in self.params],
             'boc': self.boc,
-            'allow_partial': self.allow_partial
+            'allow_partial': self.allow_partial,
         }
 
 
-class ResultOfDecodeBoc(object):
+class ResultOfDecodeBoc:
+    """ResultOfDecodeBoc"""
+
     def __init__(self, data: Any):
         """
         :param data: Decoded data as a JSON structure
@@ -1376,18 +1563,59 @@ class ResultOfDecodeBoc(object):
         self.data = data
 
 
+class ParamsOfAbiEncodeBoc:
+    """ParamsOfAbiEncodeBoc"""
+
+    def __init__(
+        self, params: List['AbiParam'], data: Any, boc_cache: 'BocCacheTypeType' = None
+    ):
+        """
+        :param params: Parameters to encode into BOC
+        :param data: Parameters and values as a JSON structure
+        :param boc_cache: Cache type to put the result.
+                The BOC itself returned if no cache type provided
+        """
+        self.params = params
+        self.data = data
+        self.boc_cache = boc_cache
+
+    @property
+    def dict(self):
+        """Dict from object"""
+        boc_cache = self.boc_cache.dict if self.boc_cache else self.boc_cache
+        return {
+            'params': [p.dict for p in self.params],
+            'data': self.data,
+            'boc_cache': boc_cache,
+        }
+
+
+class ResultOfAbiEncodeBoc:
+    """ResultOfAbiEncodeBoc"""
+
+    def __init__(self, boc: str):
+        """
+        :param boc: BOC encoded as `base64`
+        """
+        self.boc = boc
+
+
 # BOC module
 class BocErrorCode(int, Enum):
+    """BOC module error codes"""
+
     INVALID_BOC = 201
     SERIALIZATION_ERROR = 202
     INAPPROPRIATE_BLOCK = 203
     MISSING_SOURCE_BOC = 204
-    INSUFFICIENT_CACHE_SIZE = 205,
-    BOC_REF_NOT_FOUND = 206,
+    INSUFFICIENT_CACHE_SIZE = (205,)
+    BOC_REF_NOT_FOUND = (206,)
     INVALID_BOC_REF = 207
 
 
-class ParamsOfParse(object):
+class ParamsOfParse:
+    """ParamsOfParse"""
+
     def __init__(self, boc: str):
         """
         :param boc: BOC encoded as `base64`
@@ -1396,10 +1624,13 @@ class ParamsOfParse(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'boc': self.boc}
 
 
-class ResultOfParse(object):
+class ResultOfParse:
+    """ResultOfParse"""
+
     def __init__(self, parsed: Any):
         """
         :param parsed: JSON containing parsed BOC
@@ -1407,7 +1638,9 @@ class ResultOfParse(object):
         self.parsed = parsed
 
 
-class ParamsOfParseShardstate(object):
+class ParamsOfParseShardstate:
+    """ParamsOfParseShardstate"""
+
     def __init__(self, boc: str, id: str, workchain_id: int):
         """
         :param boc: BOC encoded as `base64`
@@ -1420,14 +1653,13 @@ class ParamsOfParseShardstate(object):
 
     @property
     def dict(self):
-        return {
-            'boc': self.boc,
-            'id': self.id,
-            'workchain_id': self.workchain_id
-        }
+        """Dict from object"""
+        return {'boc': self.boc, 'id': self.id, 'workchain_id': self.workchain_id}
 
 
-class ParamsOfGetBlockchainConfig(object):
+class ParamsOfGetBlockchainConfig:
+    """ParamsOfGetBlockchainConfig"""
+
     def __init__(self, block_boc: str):
         """
         :param block_boc: Key block BOC or zero state BOC encoded as `base64`
@@ -1436,10 +1668,13 @@ class ParamsOfGetBlockchainConfig(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'block_boc': self.block_boc}
 
 
-class ResultOfGetBlockchainConfig(object):
+class ResultOfGetBlockchainConfig:
+    """ResultOfGetBlockchainConfig"""
+
     def __init__(self, config_boc: str):
         """
         :param config_boc: Blockchain config BOC encoded as `base64`
@@ -1447,7 +1682,9 @@ class ResultOfGetBlockchainConfig(object):
         self.config_boc = config_boc
 
 
-class ParamsOfGetBocHash(object):
+class ParamsOfGetBocHash:
+    """ParamsOfGetBocHash"""
+
     def __init__(self, boc: str):
         """
         :param boc: BOC encoded as `base64`
@@ -1456,10 +1693,13 @@ class ParamsOfGetBocHash(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'boc': self.boc}
 
 
-class ResultOfGetBocHash(object):
+class ResultOfGetBocHash:
+    """ResultOfGetBocHash"""
+
     def __init__(self, hash: str):
         """
         :param hash: BOC root hash encoded with `hex`
@@ -1467,7 +1707,9 @@ class ResultOfGetBocHash(object):
         self.hash = hash
 
 
-class ParamsOfGetCodeFromTvc(object):
+class ParamsOfGetCodeFromTvc:
+    """ParamsOfGetCodeFromTvc"""
+
     def __init__(self, tvc: str):
         """
         :param tvc: Contract TVC image encoded as `base64`
@@ -1476,10 +1718,13 @@ class ParamsOfGetCodeFromTvc(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'tvc': self.tvc}
 
 
-class ResultOfGetCodeFromTvc(object):
+class ResultOfGetCodeFromTvc:
+    """ResultOfGetCodeFromTvc"""
+
     def __init__(self, code: str):
         """
         :param code: Contract code encoded as `base64`
@@ -1488,7 +1733,11 @@ class ResultOfGetCodeFromTvc(object):
 
 
 class BocCacheType:
+    """BocCacheType"""
+
     class Pinned(BaseTypedType):
+        """BocCacheType.Pinned"""
+
         def __init__(self, pin: str):
             """
             :param pin: Pin the BOC with `pin` name. Such BOC will not be
@@ -1499,17 +1748,18 @@ class BocCacheType:
 
         @property
         def dict(self):
-            return {
-                **super(BocCacheType.Pinned, self).dict,
-                'pin': self.pin
-            }
+            return {**super(BocCacheType.Pinned, self).dict, 'pin': self.pin}
 
     class Unpinned(BaseTypedType):
+        """BocCacheType.Unpinned"""
+
         def __init__(self):
             super(BocCacheType.Unpinned, self).__init__(type='Unpinned')
 
 
-class ParamsOfBocCacheGet(object):
+class ParamsOfBocCacheGet:
+    """ParamsOfBocCacheGet"""
+
     def __init__(self, boc_ref: str):
         """
         :param boc_ref: Reference to the cached BOC
@@ -1518,10 +1768,13 @@ class ParamsOfBocCacheGet(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'boc_ref': self.boc_ref}
 
 
-class ResultOfBocCacheGet(object):
+class ResultOfBocCacheGet:
+    """ResultOfBocCacheGet"""
+
     def __init__(self, boc: str = None):
         """
         :param boc: BOC encoded as `base64`
@@ -1529,7 +1782,9 @@ class ResultOfBocCacheGet(object):
         self.boc = boc
 
 
-class ParamsOfBocCacheSet(object):
+class ParamsOfBocCacheSet:
+    """ParamsOfBocCacheSet"""
+
     def __init__(self, boc: str, cache_type: 'BocCacheTypeType'):
         """
         :param boc: BOC encoded as `base64` or BOC reference
@@ -1540,10 +1795,13 @@ class ParamsOfBocCacheSet(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'boc': self.boc, 'cache_type': self.cache_type.dict}
 
 
-class ResultOfBocCacheSet(object):
+class ResultOfBocCacheSet:
+    """ResultOfBocCacheSet"""
+
     def __init__(self, boc_ref: str):
         """
         :param boc_ref: Reference to the cached BOC
@@ -1551,7 +1809,9 @@ class ResultOfBocCacheSet(object):
         self.boc_ref = boc_ref
 
 
-class ParamsOfBocCacheUnpin(object):
+class ParamsOfBocCacheUnpin:
+    """ParamsOfBocCacheUnpin"""
+
     def __init__(self, pin: str, boc_ref: str = None):
         """
         :param pin: Pinned name
@@ -1563,11 +1823,16 @@ class ParamsOfBocCacheUnpin(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'pin': self.pin, 'boc_ref': self.boc_ref}
 
 
 class BuilderOp:
+    """BuilderOp"""
+
     class Integer(BaseTypedType):
+        """BuilderOp.Integer"""
+
         def __init__(self, size: int, value: Any):
             """
             Append integer to cell data
@@ -1585,10 +1850,12 @@ class BuilderOp:
             return {
                 **super(BuilderOp.Integer, self).dict,
                 'size': self.size,
-                'value': self.value
+                'value': self.value,
             }
 
     class BitString(BaseTypedType):
+        """BuilderOp.BitString"""
+
         def __init__(self, value: str):
             """
             Append bit string to cell data
@@ -1611,12 +1878,11 @@ class BuilderOp:
 
         @property
         def dict(self):
-            return {
-                **super(BuilderOp.BitString, self).dict,
-                'value': self.value
-            }
+            return {**super(BuilderOp.BitString, self).dict, 'value': self.value}
 
     class Cell(BaseTypedType):
+        """BuilderOp.Cell"""
+
         def __init__(self, builder: List['BuilderOpType']):
             """
             Append ref to nested cells
@@ -1629,10 +1895,12 @@ class BuilderOp:
         def dict(self):
             return {
                 **super(BuilderOp.Cell, self).dict,
-                'builder': [b.dict for b in self.builder]
+                'builder': [b.dict for b in self.builder],
             }
 
     class CellBoc(BaseTypedType):
+        """BuilderOp.CellBoc"""
+
         def __init__(self, boc: str):
             """
             Append ref to nested cell
@@ -1643,16 +1911,29 @@ class BuilderOp:
 
         @property
         def dict(self):
-            return {
-                **super(BuilderOp.CellBoc, self).dict,
-                'boc': self.boc
-            }
+            return {**super(BuilderOp.CellBoc, self).dict, 'boc': self.boc}
+
+    class Address(BaseTypedType):
+        """BuilderOp.Address"""
+
+        def __init__(self, address: str):
+            """
+            :params address: Address in a common `workchain:account` or `base64` format
+            """
+            super().__init__(type='Address')
+            self.address = address
+
+        @property
+        def dict(self):
+            return {**super(BuilderOp.Address, self).dict, 'address': self.address}
 
 
-class ParamsOfEncodeBoc(object):
+class ParamsOfEncodeBoc:
+    """ParamsOfEncodeBoc"""
+
     def __init__(
-            self, builder: List['BuilderOpType'],
-            boc_cache: 'BocCacheTypeType' = None):
+        self, builder: List['BuilderOpType'], boc_cache: 'BocCacheTypeType' = None
+    ):
         """
         :param builder: Cell builder operations
         :param boc_cache: Cache type to put the result. The BOC itself
@@ -1663,15 +1944,14 @@ class ParamsOfEncodeBoc(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         boc_cache = self.boc_cache.dict if self.boc_cache else self.boc_cache
-
-        return {
-            'builder': [b.dict for b in self.builder],
-            'boc_cache': boc_cache
-        }
+        return {'builder': [b.dict for b in self.builder], 'boc_cache': boc_cache}
 
 
-class ResultOfEncodeBoc(object):
+class ResultOfEncodeBoc:
+    """ResultOfEncodeBoc"""
+
     def __init__(self, boc: str):
         """
         :param boc: Encoded cell BOC or BOC cache key
@@ -1679,7 +1959,9 @@ class ResultOfEncodeBoc(object):
         self.boc = boc
 
 
-class ParamsOfGetCodeSalt(object):
+class ParamsOfGetCodeSalt:
+    """ParamsOfGetCodeSalt"""
+
     def __init__(self, code: str, boc_cache: 'BocCacheTypeType' = None):
         """
         :param code: Contract code BOC encoded as `base64` or code BOC handle
@@ -1691,14 +1973,14 @@ class ParamsOfGetCodeSalt(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         boc_cache = self.boc_cache.dict if self.boc_cache else self.boc_cache
-        return {
-            'code': self.code,
-            'boc_cache': boc_cache
-        }
+        return {'code': self.code, 'boc_cache': boc_cache}
 
 
-class ResultOfGetCodeSalt(object):
+class ResultOfGetCodeSalt:
+    """ResultOfGetCodeSalt"""
+
     def __init__(self, salt: str = None):
         """
         :param salt: Contract code salt if present
@@ -1706,9 +1988,10 @@ class ResultOfGetCodeSalt(object):
         self.salt = salt
 
 
-class ParamsOfSetCodeSalt(object):
-    def __init__(
-            self, code: str, salt: str, boc_cache: 'BocCacheTypeType' = None):
+class ParamsOfSetCodeSalt:
+    """ParamsOfSetCodeSalt"""
+
+    def __init__(self, code: str, salt: str, boc_cache: 'BocCacheTypeType' = None):
         """
         :param code: Contract code BOC encoded as `base64` or code BOC handle
         :param salt: Code salt to set
@@ -1721,15 +2004,14 @@ class ParamsOfSetCodeSalt(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         boc_cache = self.boc_cache.dict if self.boc_cache else self.boc_cache
-        return {
-            'code': self.code,
-            'salt': self.salt,
-            'boc_cache': boc_cache
-        }
+        return {'code': self.code, 'salt': self.salt, 'boc_cache': boc_cache}
 
 
-class ResultOfSetCodeSalt(object):
+class ResultOfSetCodeSalt:
+    """ResultOfSetCodeSalt"""
+
     def __init__(self, code: str):
         """
         :param code: Contract code with salt set
@@ -1737,7 +2019,9 @@ class ResultOfSetCodeSalt(object):
         self.code = code
 
 
-class ParamsOfDecodeTvc(object):
+class ParamsOfDecodeTvc:
+    """ParamsOfDecodeTvc"""
+
     def __init__(self, tvc: str, boc_cache: 'BocCacheTypeType' = None):
         """
         :param tvc: Contract TVC image BOC encoded as `base64` or BOC handle
@@ -1749,20 +2033,28 @@ class ParamsOfDecodeTvc(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         boc_cache = self.boc_cache.dict if self.boc_cache else self.boc_cache
-        return {
-            'tvc': self.tvc,
-            'boc_cache': boc_cache
-        }
+        return {'tvc': self.tvc, 'boc_cache': boc_cache}
 
 
-class ResultOfDecodeTvc(object):
+class ResultOfDecodeTvc:
+    """ResultOfDecodeTvc"""
+
     def __init__(
-            self, code: str = None, code_hash: str = None,
-            code_depth: int = None, data: str = None, data_hash: str = None,
-            data_depth: int = None, library: str = None, tick: bool = None,
-            tock: bool = None, split_depth: int = None,
-            compiler_version: str = None):
+        self,
+        code: str = None,
+        code_hash: str = None,
+        code_depth: int = None,
+        data: str = None,
+        data_hash: str = None,
+        data_depth: int = None,
+        library: str = None,
+        tick: bool = None,
+        tock: bool = None,
+        split_depth: int = None,
+        compiler_version: str = None,
+    ):
         """
         :param code: Contract code BOC encoded as `base64` or BOC handle
         :param code_hash: Contract code hash
@@ -1792,11 +2084,19 @@ class ResultOfDecodeTvc(object):
         self.compiler_version = compiler_version
 
 
-class ParamsOfEncodeTvc(object):
+class ParamsOfEncodeTvc:
+    """ParamsOfEncodeTvc"""
+
     def __init__(
-            self, code: str = None, data: str = None, library: str = None,
-            tick: bool = None, tock: bool = None, split_depth: int = None,
-            boc_cache: 'BocCacheTypeType' = None):
+        self,
+        code: str = None,
+        data: str = None,
+        library: str = None,
+        tick: bool = None,
+        tock: bool = None,
+        split_depth: int = None,
+        boc_cache: 'BocCacheTypeType' = None,
+    ):
         """
         :param code: Contract code BOC encoded as `base64` or BOC handle
         :param data: Contract data BOC encoded as `base64` or BOC handle
@@ -1820,6 +2120,7 @@ class ParamsOfEncodeTvc(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         boc_cache = self.boc_cache.dict if self.boc_cache else self.boc_cache
         return {
             'code': self.code,
@@ -1828,11 +2129,13 @@ class ParamsOfEncodeTvc(object):
             'tick': self.tick,
             'tock': self.tock,
             'split_depth': self.split_depth,
-            'boc_cache': boc_cache
+            'boc_cache': boc_cache,
         }
 
 
-class ResultOfEncodeTvc(object):
+class ResultOfEncodeTvc:
+    """ResultOfEncodeTvc"""
+
     def __init__(self, tvc: str):
         """
         :param tvc: Contract TVC image BOC encoded as `base64` or
@@ -1841,7 +2144,9 @@ class ResultOfEncodeTvc(object):
         self.tvc = tvc
 
 
-class ParamsOfGetCompilerVersion(object):
+class ParamsOfGetCompilerVersion:
+    """ParamsOfGetCompilerVersion"""
+
     def __init__(self, code: str):
         """
         :param code: Contract code BOC encoded as `base64` or code BOC handle
@@ -1850,10 +2155,13 @@ class ParamsOfGetCompilerVersion(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'code': self.code}
 
 
-class ResultOfGetCompilerVersion(object):
+class ResultOfGetCompilerVersion:
+    """ResultOfGetCompilerVersion"""
+
     def __init__(self, version: str = None):
         """
         :param version: Compiler version, e.g. `sol 0.49.0`
@@ -1861,7 +2169,9 @@ class ResultOfGetCompilerVersion(object):
         self.version = version
 
 
-class ParamsOfGetBocDepth(object):
+class ParamsOfGetBocDepth:
+    """ParamsOfGetBocDepth"""
+
     def __init__(self, boc: str):
         """
         :param boc: BOC encoded as `base64` or BOC handle
@@ -1870,15 +2180,68 @@ class ParamsOfGetBocDepth(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'boc': self.boc}
 
 
-class ResultOfGetBocDepth(object):
+class ResultOfGetBocDepth:
+    """ResultOfGetBocDepth"""
+
     def __init__(self, depth: int):
         """
         :param depth: BOC root cell depth
         """
         self.depth = depth
+
+
+class ParamsOfEncodeExternalInMessage:
+    """ParamsOfEncodeExternalInMessage"""
+
+    def __init__(
+        self,
+        dst: str,
+        src: str = None,
+        init: str = None,
+        body: str = None,
+        boc_cache: 'BocCacheTypeType' = None,
+    ):
+        """
+        :param dst: Destination address
+        :param src: Source address
+        :param init: Bag of cells with state init (used in deploy messages)
+        :param body: Bag of cells with the message body encoded as `base64`
+        :param boc_cache: Cache type to put the result.
+                The BOC itself returned if no cache type provided
+        """
+        self.dst = dst
+        self.src = src
+        self.init = init
+        self.body = body
+        self.boc_cache = boc_cache
+
+    @property
+    def dict(self):
+        """Dict from object"""
+        boc_cache = self.boc_cache.dict if self.boc_cache else self.boc_cache
+        return {
+            'dst': self.dst,
+            'src': self.src,
+            'init': self.init,
+            'body': self.body,
+            'boc_cache': boc_cache,
+        }
+
+
+class ResultOfEncodeExternalInMessage:
+    """ResultOfEncodeExternalInMessage"""
+
+    def __init__(self, message: str, message_id: str):
+        """
+        :param message: Message BOC encoded with `base64`
+        :param message_id: Message id
+        """
+        self.message = message
+        self.message_id = message_id
 
 
 # CRYPTO module
@@ -1888,6 +2251,8 @@ EncryptionBoxHandle = int
 
 
 class CryptoErrorCode(int, Enum):
+    """Crypto module error codes"""
+
     INVALID_PUBLIC_KEY = 100
     INVALID_SECRET_KEY = 101
     INVALID_KEY = 102
@@ -1918,6 +2283,8 @@ class CryptoErrorCode(int, Enum):
 
 
 class MnemonicDictionary(int, Enum):
+    """Mnemonic dictionary types"""
+
     TON = 0
     ENGLISH = 1
     CHINESE_SIMPLIFIED = 2
@@ -1929,8 +2296,8 @@ class MnemonicDictionary(int, Enum):
     SPANISH = 8
 
 
-class KeyPair(object):
-    """ Keypair object representation """
+class KeyPair:
+    """Keypair object representation"""
 
     def __init__(self, public: str, secret: str):
         """
@@ -1942,15 +2309,17 @@ class KeyPair(object):
 
     @property
     def dict(self) -> Dict[str, str]:
+        """Dict from keypair"""
         return {'public': self.public, 'secret': self.secret}
 
     @property
     def binary(self) -> bytes:
+        """Keypair in binary format"""
         return bytes.fromhex(f'{self.secret}{self.public}')
 
     @staticmethod
     def load(path: str, is_binary: bool) -> 'KeyPair':
-        """ Load keypair from file """
+        """Load keypair from file"""
         if is_binary:
             with open(path, 'rb') as fp:
                 keys = fp.read().hex()
@@ -1962,7 +2331,7 @@ class KeyPair(object):
         return KeyPair(**keys)
 
     def dump(self, path: str, as_binary: bool) -> None:
-        """ Dump keypair to file """
+        """Dump keypair to file"""
         if as_binary:
             with open(path, 'wb') as fp:
                 fp.write(self.binary)
@@ -1972,20 +2341,25 @@ class KeyPair(object):
 
     @staticmethod
     def load_io(io: StringIO, as_binary: bool = False) -> 'KeyPair':
-        """ Load keypair from StringIO """
+        """Load keypair from StringIO"""
         data = io.getvalue()
-        keys = json.loads(data) \
-            if not as_binary else {'public': data[64:], 'secret': data[:64]}
+        keys = (
+            json.loads(data)
+            if not as_binary
+            else {'public': data[64:], 'secret': data[:64]}
+        )
 
         return KeyPair(**keys)
 
     def dump_io(self, io: StringIO, as_binary: bool = False):
-        """ Dump keypair to StringIO """
+        """Dump keypair to StringIO"""
         keys = json.dumps(self.dict) if not as_binary else self.binary.hex()
         io.write(keys)
 
 
-class ParamsOfFactorize(object):
+class ParamsOfFactorize:
+    """ParamsOfFactorize"""
+
     def __init__(self, composite: str):
         """
         :param composite: Hexadecimal representation of u64 composite number
@@ -1994,10 +2368,13 @@ class ParamsOfFactorize(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'composite': self.composite}
 
 
-class ResultOfFactorize(object):
+class ResultOfFactorize:
+    """ResultOfFactorize"""
+
     def __init__(self, factors: List[str]):
         """
         :param factors: Two factors of composite or empty if composite
@@ -2006,7 +2383,9 @@ class ResultOfFactorize(object):
         self.factors = factors
 
 
-class ParamsOfModularPower(object):
+class ParamsOfModularPower:
+    """ParamsOfModularPower"""
+
     def __init__(self, base: str, exponent: str, modulus: str):
         """
         :param base: `base` argument of calculation
@@ -2019,14 +2398,13 @@ class ParamsOfModularPower(object):
 
     @property
     def dict(self):
-        return {
-            'base': self.base,
-            'exponent': self.exponent,
-            'modulus': self.modulus
-        }
+        """Dict from object"""
+        return {'base': self.base, 'exponent': self.exponent, 'modulus': self.modulus}
 
 
-class ResultOfModularPower(object):
+class ResultOfModularPower:
+    """ResultOfModularPower"""
+
     def __init__(self, modular_power: str):
         """
         :param modular_power: Result of modular exponentiation
@@ -2034,7 +2412,9 @@ class ResultOfModularPower(object):
         self.modular_power = modular_power
 
 
-class ParamsOfTonCrc16(object):
+class ParamsOfTonCrc16:
+    """ParamsOfTonCrc16"""
+
     def __init__(self, data: str):
         """
         :param data: Input data for CRC calculation. Encoded with `base64`
@@ -2043,10 +2423,13 @@ class ParamsOfTonCrc16(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'data': self.data}
 
 
-class ResultOfTonCrc16(object):
+class ResultOfTonCrc16:
+    """ResultOfTonCrc16"""
+
     def __init__(self, crc: int):
         """
         :param crc: Calculated CRC for input data
@@ -2054,7 +2437,9 @@ class ResultOfTonCrc16(object):
         self.crc = crc
 
 
-class ParamsOfGenerateRandomBytes(object):
+class ParamsOfGenerateRandomBytes:
+    """ParamsOfGenerateRandomBytes"""
+
     def __init__(self, length: int):
         """
         :param length: Size of random byte array
@@ -2063,10 +2448,13 @@ class ParamsOfGenerateRandomBytes(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'length': self.length}
 
 
-class ResultOfGenerateRandomBytes(object):
+class ResultOfGenerateRandomBytes:
+    """ResultOfGenerateRandomBytes"""
+
     def __init__(self, bytes: str):
         """
         :param bytes: Generated bytes encoded in `base64`
@@ -2074,7 +2462,9 @@ class ResultOfGenerateRandomBytes(object):
         self.bytes = bytes
 
 
-class ParamsOfConvertPublicKeyToTonSafeFormat(object):
+class ParamsOfConvertPublicKeyToTonSafeFormat:
+    """ParamsOfConvertPublicKeyToTonSafeFormat"""
+
     def __init__(self, public_key: str):
         """
         :param public_key: Public key - 64 symbols `hex` string
@@ -2083,10 +2473,13 @@ class ParamsOfConvertPublicKeyToTonSafeFormat(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'public_key': self.public_key}
 
 
-class ResultOfConvertPublicKeyToTonSafeFormat(object):
+class ResultOfConvertPublicKeyToTonSafeFormat:
+    """ResultOfConvertPublicKeyToTonSafeFormat"""
+
     def __init__(self, ton_public_key: str):
         """
         :param ton_public_key: Public key represented in TON safe format
@@ -2094,7 +2487,9 @@ class ResultOfConvertPublicKeyToTonSafeFormat(object):
         self.ton_public_key = ton_public_key
 
 
-class ParamsOfSign(object):
+class ParamsOfSign:
+    """ParamsOfSign"""
+
     def __init__(self, unsigned: str, keys: 'KeyPair'):
         """
         :param unsigned: Data that must be signed encoded in `base64`
@@ -2105,10 +2500,13 @@ class ParamsOfSign(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'unsigned': self.unsigned, 'keys': self.keys.dict}
 
 
-class ResultOfSign(object):
+class ResultOfSign:
+    """ResultOfSign"""
+
     def __init__(self, signed: str, signature: str):
         """
         :param signed: Signed data combined with signature encoded in `base64`
@@ -2118,7 +2516,9 @@ class ResultOfSign(object):
         self.signature = signature
 
 
-class ParamsOfVerifySignature(object):
+class ParamsOfVerifySignature:
+    """ParamsOfVerifySignature"""
+
     def __init__(self, signed: str, public: str):
         """
         :param signed: Signed data that must be verified encoded in `base64`
@@ -2129,10 +2529,13 @@ class ParamsOfVerifySignature(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'signed': self.signed, 'public': self.public}
 
 
-class ResultOfVerifySignature(object):
+class ResultOfVerifySignature:
+    """ResultOfVerifySignature"""
+
     def __init__(self, unsigned: str):
         """
         :param unsigned: Unsigned data encoded in `base64`
@@ -2140,7 +2543,9 @@ class ResultOfVerifySignature(object):
         self.unsigned = unsigned
 
 
-class ParamsOfHash(object):
+class ParamsOfHash:
+    """ParamsOfHash"""
+
     def __init__(self, data: str):
         """
         :param data: Input data for hash calculation. Encoded with `base64`
@@ -2149,10 +2554,13 @@ class ParamsOfHash(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'data': self.data}
 
 
-class ResultOfHash(object):
+class ResultOfHash:
+    """ResultOfHash"""
+
     def __init__(self, hash: str):
         """
         :param hash: Hash of input data
@@ -2160,10 +2568,12 @@ class ResultOfHash(object):
         self.hash = hash
 
 
-class ParamsOfScrypt(object):
+class ParamsOfScrypt:
+    """ParamsOfScrypt"""
+
     def __init__(
-            self, password: str, salt: str, log_n: int, r: int, p: int,
-            dk_len: int):
+        self, password: str, salt: str, log_n: int, r: int, p: int, dk_len: int
+    ):
         """
         :param password: The password bytes to be hashed. Must be encoded
                 with `base64`
@@ -2184,17 +2594,20 @@ class ParamsOfScrypt(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'password': self.password,
             'salt': self.salt,
             'log_n': self.log_n,
             'r': self.r,
             'p': self.p,
-            'dk_len': self.dk_len
+            'dk_len': self.dk_len,
         }
 
 
-class ResultOfScrypt(object):
+class ResultOfScrypt:
+    """ResultOfScrypt"""
+
     def __init__(self, key: str):
         """
         :param key: Derived key. Encoded with `hex`
@@ -2202,7 +2615,9 @@ class ResultOfScrypt(object):
         self.key = key
 
 
-class ParamsOfNaclSignKeyPairFromSecret(object):
+class ParamsOfNaclSignKeyPairFromSecret:
+    """ParamsOfNaclSignKeyPairFromSecret"""
+
     def __init__(self, secret: str):
         """
         :param secret: Secret key - unprefixed 0-padded to 64
@@ -2212,10 +2627,13 @@ class ParamsOfNaclSignKeyPairFromSecret(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'secret': self.secret}
 
 
-class ParamsOfNaclSign(object):
+class ParamsOfNaclSign:
+    """ParamsOfNaclSign"""
+
     def __init__(self, unsigned: str, secret: str):
         """
         :param unsigned: Data that must be signed encoded in `base64`
@@ -2229,10 +2647,13 @@ class ParamsOfNaclSign(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'unsigned': self.unsigned, 'secret': self.secret}
 
 
-class ResultOfNaclSign(object):
+class ResultOfNaclSign:
+    """ResultOfNaclSign"""
+
     def __init__(self, signed: str):
         """
         :param signed: Signed data, encoded in `base64`
@@ -2240,7 +2661,9 @@ class ResultOfNaclSign(object):
         self.signed = signed
 
 
-class ParamsOfNaclSignOpen(object):
+class ParamsOfNaclSignOpen:
+    """ParamsOfNaclSignOpen"""
+
     def __init__(self, signed: str, public: str):
         """
         :param signed: Signed data that must be unsigned. Encoded with `base64`
@@ -2252,10 +2675,13 @@ class ParamsOfNaclSignOpen(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'signed': self.signed, 'public': self.public}
 
 
-class ResultOfNaclSignOpen(object):
+class ResultOfNaclSignOpen:
+    """ResultOfNaclSignOpen"""
+
     def __init__(self, unsigned: str):
         """
         :param unsigned: Unsigned data, encoded in `base64`
@@ -2263,7 +2689,9 @@ class ResultOfNaclSignOpen(object):
         self.unsigned = unsigned
 
 
-class ResultOfNaclSignDetached(object):
+class ResultOfNaclSignDetached:
+    """ResultOfNaclSignDetached"""
+
     def __init__(self, signature: str):
         """
         :param signature: Signature encoded in `hex`
@@ -2271,7 +2699,9 @@ class ResultOfNaclSignDetached(object):
         self.signature = signature
 
 
-class ParamsOfNaclBoxKeyPairFromSecret(object):
+class ParamsOfNaclBoxKeyPairFromSecret:
+    """ParamsOfNaclBoxKeyPairFromSecret"""
+
     def __init__(self, secret: str):
         """
         :param secret: Secret key - unprefixed 0-padded to 64
@@ -2281,12 +2711,14 @@ class ParamsOfNaclBoxKeyPairFromSecret(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'secret': self.secret}
 
 
-class ParamsOfNaclBox(object):
-    def __init__(
-            self, decrypted: str, nonce: str, their_public: str, secret: str):
+class ParamsOfNaclBox:
+    """ParamsOfNaclBox"""
+
+    def __init__(self, decrypted: str, nonce: str, their_public: str, secret: str):
         """
         :param decrypted: Data that must be encrypted encoded in `base64`
         :param nonce: Nonce, encoded in `hex`
@@ -2302,15 +2734,18 @@ class ParamsOfNaclBox(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'decrypted': self.decrypted,
             'nonce': self.nonce,
             'their_public': self.their_public,
-            'secret': self.secret
+            'secret': self.secret,
         }
 
 
-class ResultOfNaclBox(object):
+class ResultOfNaclBox:
+    """ResultOfNaclBox"""
+
     def __init__(self, encrypted: str):
         """
         :param encrypted: Encrypted data encoded in `base64`
@@ -2318,9 +2753,10 @@ class ResultOfNaclBox(object):
         self.encrypted = encrypted
 
 
-class ParamsOfNaclBoxOpen(object):
-    def __init__(
-            self, encrypted: str, nonce: str, their_public: str, secret: str):
+class ParamsOfNaclBoxOpen:
+    """ParamsOfNaclBoxOpen"""
+
+    def __init__(self, encrypted: str, nonce: str, their_public: str, secret: str):
         """
         :param encrypted: Data that must be decrypted. Encoded with `base64`
         :param nonce: Nonce, encoded in `hex`
@@ -2336,15 +2772,18 @@ class ParamsOfNaclBoxOpen(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'encrypted': self.encrypted,
             'nonce': self.nonce,
             'their_public': self.their_public,
-            'secret': self.secret
+            'secret': self.secret,
         }
 
 
-class ResultOfNaclBoxOpen(object):
+class ResultOfNaclBoxOpen:
+    """ResultOfNaclBoxOpen"""
+
     def __init__(self, decrypted: str):
         """
         :param decrypted: Decrypted data encoded in `base64`
@@ -2352,7 +2791,9 @@ class ResultOfNaclBoxOpen(object):
         self.decrypted = decrypted
 
 
-class ParamsOfNaclSecretBox(object):
+class ParamsOfNaclSecretBox:
+    """ParamsOfNaclSecretBox"""
+
     def __init__(self, decrypted: str, nonce: str, key: str):
         """
         :param decrypted:  Data that must be encrypted. Encoded with `base64`
@@ -2365,14 +2806,13 @@ class ParamsOfNaclSecretBox(object):
 
     @property
     def dict(self):
-        return {
-            'decrypted': self.decrypted,
-            'nonce': self.nonce,
-            'key': self.key
-        }
+        """Dict from object"""
+        return {'decrypted': self.decrypted, 'nonce': self.nonce, 'key': self.key}
 
 
-class ParamsOfNaclSecretBoxOpen(object):
+class ParamsOfNaclSecretBoxOpen:
+    """ParamsOfNaclSecretBoxOpen"""
+
     def __init__(self, encrypted: str, nonce: str, key: str):
         """
         :param encrypted: Data that must be decrypted. Encoded with `base64`
@@ -2385,14 +2825,13 @@ class ParamsOfNaclSecretBoxOpen(object):
 
     @property
     def dict(self):
-        return {
-            'encrypted': self.encrypted,
-            'nonce': self.nonce,
-            'key': self.key
-        }
+        """Dict from object"""
+        return {'encrypted': self.encrypted, 'nonce': self.nonce, 'key': self.key}
 
 
-class ParamsOfMnemonicWords(object):
+class ParamsOfMnemonicWords:
+    """ParamsOfMnemonicWords"""
+
     def __init__(self, dictionary: 'MnemonicDictionary' = None):
         """
         :param dictionary: Dictionary identifier
@@ -2401,10 +2840,13 @@ class ParamsOfMnemonicWords(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'dictionary': self.dictionary}
 
 
-class ResultOfMnemonicWords(object):
+class ResultOfMnemonicWords:
+    """ResultOfMnemonicWords"""
+
     def __init__(self, words: str):
         """
         :param words: The list of mnemonic words
@@ -2412,10 +2854,10 @@ class ResultOfMnemonicWords(object):
         self.words = words
 
 
-class ParamsOfMnemonicFromRandom(object):
-    def __init__(
-            self, dictionary: 'MnemonicDictionary' = None,
-            word_count: int = None):
+class ParamsOfMnemonicFromRandom:
+    """ParamsOfMnemonicFromRandom"""
+
+    def __init__(self, dictionary: 'MnemonicDictionary' = None, word_count: int = None):
         """
         :param dictionary: Dictionary identifier
         :param word_count: Mnemonic word count
@@ -2425,10 +2867,13 @@ class ParamsOfMnemonicFromRandom(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'dictionary': self.dictionary, 'word_count': self.word_count}
 
 
-class ResultOfMnemonicFromRandom(object):
+class ResultOfMnemonicFromRandom:
+    """ResultOfMnemonicFromRandom"""
+
     def __init__(self, phrase: str):
         """
         :param phrase: String of mnemonic words
@@ -2436,10 +2881,15 @@ class ResultOfMnemonicFromRandom(object):
         self.phrase = phrase
 
 
-class ParamsOfMnemonicFromEntropy(object):
+class ParamsOfMnemonicFromEntropy:
+    """ParamsOfMnemonicFromEntropy"""
+
     def __init__(
-            self, entropy: str, dictionary: 'MnemonicDictionary' = None,
-            word_count: int = None):
+        self,
+        entropy: str,
+        dictionary: 'MnemonicDictionary' = None,
+        word_count: int = None,
+    ):
         """
         :param entropy: Entropy bytes. `Hex` encoded
         :param dictionary: Dictionary identifier
@@ -2451,14 +2901,17 @@ class ParamsOfMnemonicFromEntropy(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'entropy': self.entropy,
             'dictionary': self.dictionary,
-            'word_count': self.word_count
+            'word_count': self.word_count,
         }
 
 
-class ResultOfMnemonicFromEntropy(object):
+class ResultOfMnemonicFromEntropy:
+    """ResultOfMnemonicFromEntropy"""
+
     def __init__(self, phrase: str):
         """
         :param phrase: String of mnemonic words
@@ -2466,10 +2919,15 @@ class ResultOfMnemonicFromEntropy(object):
         self.phrase = phrase
 
 
-class ParamsOfMnemonicVerify(object):
+class ParamsOfMnemonicVerify:
+    """ParamsOfMnemonicVerify"""
+
     def __init__(
-            self, phrase: str, dictionary: 'MnemonicDictionary' = None,
-            word_count: int = None):
+        self,
+        phrase: str,
+        dictionary: 'MnemonicDictionary' = None,
+        word_count: int = None,
+    ):
         """
         :param phrase: Phrase to be verified
         :param dictionary: Dictionary identifier
@@ -2481,14 +2939,17 @@ class ParamsOfMnemonicVerify(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'phrase': self.phrase,
             'dictionary': self.dictionary,
-            'word_count': self.word_count
+            'word_count': self.word_count,
         }
 
 
-class ResultOfMnemonicVerify(object):
+class ResultOfMnemonicVerify:
+    """ResultOfMnemonicVerify"""
+
     def __init__(self, valid: bool):
         """
         :param valid: Flag indicating if the mnemonic is valid or not
@@ -2496,10 +2957,16 @@ class ResultOfMnemonicVerify(object):
         self.valid = valid
 
 
-class ParamsOfMnemonicDeriveSignKeys(object):
+class ParamsOfMnemonicDeriveSignKeys:
+    """ParamsOfMnemonicDeriveSignKeys"""
+
     def __init__(
-            self, phrase: str, path: str = None,
-            dictionary: 'MnemonicDictionary' = None, word_count: int = None):
+        self,
+        phrase: str,
+        path: str = None,
+        dictionary: 'MnemonicDictionary' = None,
+        word_count: int = None,
+    ):
         """
         :param phrase: String of mnemonic words
         :param path: Derivation path, for instance "m/44'/396'/0'/0/0"
@@ -2513,18 +2980,24 @@ class ParamsOfMnemonicDeriveSignKeys(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'phrase': self.phrase,
             'path': self.path,
             'dictionary': self.dictionary,
-            'word_count': self.word_count
+            'word_count': self.word_count,
         }
 
 
-class ParamsOfHDKeyXPrvFromMnemonic(object):
+class ParamsOfHDKeyXPrvFromMnemonic:
+    """ParamsOfHDKeyXPrvFromMnemonic"""
+
     def __init__(
-            self, phrase: str, dictionary: 'MnemonicDictionary' = None,
-            word_count: int = None):
+        self,
+        phrase: str,
+        dictionary: 'MnemonicDictionary' = None,
+        word_count: int = None,
+    ):
         """
         :param phrase: String of mnemonic words
         :param dictionary: Dictionary identifier
@@ -2536,14 +3009,17 @@ class ParamsOfHDKeyXPrvFromMnemonic(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'phrase': self.phrase,
             'dictionary': self.dictionary,
-            'word_count': self.word_count
+            'word_count': self.word_count,
         }
 
 
-class ResultOfHDKeyXPrvFromMnemonic(object):
+class ResultOfHDKeyXPrvFromMnemonic:
+    """ResultOfHDKeyXPrvFromMnemonic"""
+
     def __init__(self, xprv: str):
         """
         :param xprv: Serialized extended master private key
@@ -2551,7 +3027,9 @@ class ResultOfHDKeyXPrvFromMnemonic(object):
         self.xprv = xprv
 
 
-class ParamsOfHDKeyDeriveFromXPrv(object):
+class ParamsOfHDKeyDeriveFromXPrv:
+    """ParamsOfHDKeyDeriveFromXPrv"""
+
     def __init__(self, xprv: str, child_index: int, hardened: bool):
         """
         :param xprv: Serialized extended private key
@@ -2565,14 +3043,17 @@ class ParamsOfHDKeyDeriveFromXPrv(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'xprv': self.xprv,
             'child_index': self.child_index,
-            'hardened': self.hardened
+            'hardened': self.hardened,
         }
 
 
-class ResultOfHDKeyDeriveFromXPrv(object):
+class ResultOfHDKeyDeriveFromXPrv:
+    """ResultOfHDKeyDeriveFromXPrv"""
+
     def __init__(self, xprv: str):
         """
         :param xprv: Serialized extended private key
@@ -2580,7 +3061,9 @@ class ResultOfHDKeyDeriveFromXPrv(object):
         self.xprv = xprv
 
 
-class ParamsOfHDKeyDeriveFromXPrvPath(object):
+class ParamsOfHDKeyDeriveFromXPrvPath:
+    """ParamsOfHDKeyDeriveFromXPrvPath"""
+
     def __init__(self, xprv: str, path: str):
         """
         :param xprv: Serialized extended private key
@@ -2591,10 +3074,13 @@ class ParamsOfHDKeyDeriveFromXPrvPath(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'xprv': self.xprv, 'path': self.path}
 
 
-class ResultOfHDKeyDeriveFromXPrvPath(object):
+class ResultOfHDKeyDeriveFromXPrvPath:
+    """ResultOfHDKeyDeriveFromXPrvPath"""
+
     def __init__(self, xprv: str):
         """
         :param xprv: Derived serialized extended private key
@@ -2602,7 +3088,9 @@ class ResultOfHDKeyDeriveFromXPrvPath(object):
         self.xprv = xprv
 
 
-class ParamsOfHDKeySecretFromXPrv(object):
+class ParamsOfHDKeySecretFromXPrv:
+    """ParamsOfHDKeySecretFromXPrv"""
+
     def __init__(self, xprv: str):
         """
         :param xprv: Serialized extended private key
@@ -2611,10 +3099,13 @@ class ParamsOfHDKeySecretFromXPrv(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'xprv': self.xprv}
 
 
-class ResultOfHDKeySecretFromXPrv(object):
+class ResultOfHDKeySecretFromXPrv:
+    """ResultOfHDKeySecretFromXPrv"""
+
     def __init__(self, secret: str):
         """
         :param secret: Private key - 64 symbols `hex` string
@@ -2622,7 +3113,9 @@ class ResultOfHDKeySecretFromXPrv(object):
         self.secret = secret
 
 
-class ParamsOfHDKeyPublicFromXPrv(object):
+class ParamsOfHDKeyPublicFromXPrv:
+    """ParamsOfHDKeyPublicFromXPrv"""
+
     def __init__(self, xprv: str):
         """
         :param xprv: Serialized extended private key
@@ -2631,10 +3124,13 @@ class ParamsOfHDKeyPublicFromXPrv(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'xprv': self.xprv}
 
 
-class ResultOfHDKeyPublicFromXPrv(object):
+class ResultOfHDKeyPublicFromXPrv:
+    """ResultOfHDKeyPublicFromXPrv"""
+
     def __init__(self, public: str):
         """
         :param public: Public key - 64 symbols `hex` string
@@ -2642,7 +3138,9 @@ class ResultOfHDKeyPublicFromXPrv(object):
         self.public = public
 
 
-class ParamsOfChaCha20(object):
+class ParamsOfChaCha20:
+    """ParamsOfChaCha20"""
+
     def __init__(self, data: str, key: str, nonce: str):
         """
         :param data: Source data to be encrypted or decrypted.
@@ -2656,10 +3154,13 @@ class ParamsOfChaCha20(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'data': self.data, 'key': self.key, 'nonce': self.nonce}
 
 
-class ResultOfChaCha20(object):
+class ResultOfChaCha20:
+    """ResultOfChaCha20"""
+
     def __init__(self, data: str):
         """
         :param data: Encrypted/decrypted data. Encoded with `base64`
@@ -2667,7 +3168,9 @@ class ResultOfChaCha20(object):
         self.data = data
 
 
-class RegisteredSigningBox(object):
+class RegisteredSigningBox:
+    """RegisteredSigningBox"""
+
     def __init__(self, handle: 'SigningBoxHandle'):
         """
         :param handle: Handle of the signing box
@@ -2676,19 +3179,23 @@ class RegisteredSigningBox(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'handle': self.handle}
 
 
 class ParamsOfAppSigningBox:
+    """ParamsOfAppSigningBox"""
+
     class GetPublicKey(BaseTypedType):
-        """ Get signing box public key """
+        """Get signing box public key"""
 
         def __init__(self):
             super(ParamsOfAppSigningBox.GetPublicKey, self).__init__(
-                type='GetPublicKey')
+                type='GetPublicKey'
+            )
 
     class Sign(BaseTypedType):
-        """ Sign data """
+        """Sign data"""
 
         def __init__(self, unsigned: str):
             """
@@ -2701,36 +3208,40 @@ class ParamsOfAppSigningBox:
         def dict(self):
             return {
                 **super(ParamsOfAppSigningBox.Sign, self).dict,
-                'unsigned': self.unsigned
+                'unsigned': self.unsigned,
             }
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> 'ParamsOfAppSigningBoxType':
+        """Object from dict"""
         kwargs = {k: v for k, v in data.items() if k != 'type'}
         return getattr(ParamsOfAppSigningBox, data['type'])(**kwargs)
 
 
 class ResultOfAppSigningBox:
+    """ResultOfAppSigningBox"""
+
     class GetPublicKey(BaseTypedType):
-        """ Result of getting public key """
+        """Result of getting public key"""
 
         def __init__(self, public_key: str):
             """
             :param public_key: Signing box public key
             """
             super(ResultOfAppSigningBox.GetPublicKey, self).__init__(
-                type='GetPublicKey')
+                type='GetPublicKey'
+            )
             self.public_key = public_key
 
         @property
         def dict(self):
             return {
                 **super(ResultOfAppSigningBox.GetPublicKey, self).dict,
-                'public_key': self.public_key
+                'public_key': self.public_key,
             }
 
     class Sign(BaseTypedType):
-        """ Result of signing data """
+        """Result of signing data"""
 
         def __init__(self, signature: str):
             """
@@ -2743,11 +3254,13 @@ class ResultOfAppSigningBox:
         def dict(self):
             return {
                 **super(ResultOfAppSigningBox.Sign, self).dict,
-                'signature': self.signature
+                'signature': self.signature,
             }
 
 
-class ResultOfSigningBoxGetPublicKey(object):
+class ResultOfSigningBoxGetPublicKey:
+    """ResultOfSigningBoxGetPublicKey"""
+
     def __init__(self, pubkey: str):
         """
         :param pubkey: Public key of signing box
@@ -2755,7 +3268,9 @@ class ResultOfSigningBoxGetPublicKey(object):
         self.pubkey = pubkey
 
 
-class ParamsOfSigningBoxSign(object):
+class ParamsOfSigningBoxSign:
+    """ParamsOfSigningBoxSign"""
+
     def __init__(self, signing_box: 'SigningBoxHandle', unsigned: str):
         """
         :param signing_box: Signing Box handle
@@ -2766,10 +3281,13 @@ class ParamsOfSigningBoxSign(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'signing_box': self.signing_box, 'unsigned': self.unsigned}
 
 
-class ResultOfSigningBoxSign(object):
+class ResultOfSigningBoxSign:
+    """ResultOfSigningBoxSign"""
+
     def __init__(self, signature: str):
         """
         :param signature: Data signature. Encoded with `base64`
@@ -2777,7 +3295,9 @@ class ResultOfSigningBoxSign(object):
         self.signature = signature
 
 
-class ParamsOfNaclSignDetachedVerify(object):
+class ParamsOfNaclSignDetachedVerify:
+    """ParamsOfNaclSignDetachedVerify"""
+
     def __init__(self, unsigned: str, signature: str, public: str):
         """
         :param unsigned: Unsigned data that must be verified.
@@ -2792,14 +3312,17 @@ class ParamsOfNaclSignDetachedVerify(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'unsigned': self.unsigned,
             'signature': self.signature,
-            'public': self.public
+            'public': self.public,
         }
 
 
-class ResultOfNaclSignDetachedVerify(object):
+class ResultOfNaclSignDetachedVerify:
+    """ResultOfNaclSignDetachedVerify"""
+
     def __init__(self, succeeded: bool):
         """
         :param succeeded: true if verification succeeded or false if it failed
@@ -2807,12 +3330,16 @@ class ResultOfNaclSignDetachedVerify(object):
         self.succeeded = succeeded
 
 
-class EncryptionBoxInfo(object):
-    """ Encryption box information """
+class EncryptionBoxInfo:
+    """Encryption box information"""
 
     def __init__(
-            self, hdpath: str = None, algorithm: str = None,
-            options: Any = None, public: Any = None):
+        self,
+        hdpath: str = None,
+        algorithm: str = None,
+        options: Any = None,
+        public: Any = None,
+    ):
         """
         :param hdpath: Derivation path, for instance "m/44'/396'/0'/0/0"
         :param algorithm: Cryptographic algorithm, used by this encryption box
@@ -2827,15 +3354,18 @@ class EncryptionBoxInfo(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'hdpath': self.hdpath,
             'algorithm': self.algorithm,
             'options': self.options,
-            'public': self.public
+            'public': self.public,
         }
 
 
-class RegisteredEncryptionBox(object):
+class RegisteredEncryptionBox:
+    """RegisteredEncryptionBox"""
+
     def __init__(self, handle: 'EncryptionBoxHandle'):
         """
         :param handle: Handle of the encryption box
@@ -2844,124 +3374,140 @@ class RegisteredEncryptionBox(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'handle': self.handle}
 
 
 class ParamsOfAppEncryptionBox:
-    """ Encryption box callbacks """
+    """Encryption box callbacks"""
 
     class GetInfo(BaseTypedType):
+        """ParamsOfAppEncryptionBox.GetInfo"""
+
         def __init__(self):
-            super(ParamsOfAppEncryptionBox.GetInfo, self).__init__(
-                type='GetInfo')
+            super(ParamsOfAppEncryptionBox.GetInfo, self).__init__(type='GetInfo')
 
     class Encrypt(BaseTypedType):
+        """ParamsOfAppEncryptionBox.Encrypt"""
+
         def __init__(self, data: str):
             """
             :param data: Data, encoded in `base64`
             """
-            super(ParamsOfAppEncryptionBox.Encrypt, self).__init__(
-                type='Encrypt')
+            super(ParamsOfAppEncryptionBox.Encrypt, self).__init__(type='Encrypt')
             self.data = data
 
         @property
         def dict(self):
             return {
                 **super(ParamsOfAppEncryptionBox.Encrypt, self).dict,
-                'data': self.data
+                'data': self.data,
             }
 
     class Decrypt(BaseTypedType):
+        """ParamsOfAppEncryptionBox.Decrypt"""
+
         def __init__(self, data: str):
             """
             :param data: Data, encoded in `base64`
             """
-            super(ParamsOfAppEncryptionBox.Decrypt, self).__init__(
-                type='Decrypt')
+            super(ParamsOfAppEncryptionBox.Decrypt, self).__init__(type='Decrypt')
             self.data = data
 
         @property
         def dict(self):
             return {
                 **super(ParamsOfAppEncryptionBox.Decrypt, self).dict,
-                'data': self.data
+                'data': self.data,
             }
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> 'ParamsOfAppEncryptionBoxType':
+        """Object from dict"""
         kwargs = {k: v for k, v in data.items() if k != 'type'}
         return getattr(ParamsOfAppEncryptionBox, data['type'])(**kwargs)
 
 
 class ResultOfAppEncryptionBox:
-    """ Returning values from signing box callbacks """
+    """Returning values from signing box callbacks"""
 
     class GetInfo(BaseTypedType):
+        """ResultOfAppEncryptionBox.GetInfo"""
+
         def __init__(self, info: 'EncryptionBoxInfo'):
-            super(ResultOfAppEncryptionBox.GetInfo, self).__init__(
-                type='GetInfo')
+            super(ResultOfAppEncryptionBox.GetInfo, self).__init__(type='GetInfo')
             self.info = info
 
         @property
         def dict(self):
             return {
                 **super(ResultOfAppEncryptionBox.GetInfo, self).dict,
-                'info': self.info.dict
+                'info': self.info.dict,
             }
 
     class Encrypt(BaseTypedType):
+        """ResultOfAppEncryptionBox.Encrypt"""
+
         def __init__(self, data: str):
             """
             :param data: Encrypted data, encoded in `base64`
             """
-            super(ResultOfAppEncryptionBox.Encrypt, self).__init__(
-                type='Encrypt')
+            super(ResultOfAppEncryptionBox.Encrypt, self).__init__(type='Encrypt')
             self.data = data
 
         @property
         def dict(self):
             return {
                 **super(ResultOfAppEncryptionBox.Encrypt, self).dict,
-                'data': self.data
+                'data': self.data,
             }
 
     class Decrypt(BaseTypedType):
+        """ResultOfAppEncryptionBox.Decrypt"""
+
         def __init__(self, data: str):
             """
             :param data: Decrypted data, encoded in `base64`
             """
-            super(ResultOfAppEncryptionBox.Decrypt, self).__init__(
-                type='Decrypt')
+            super(ResultOfAppEncryptionBox.Decrypt, self).__init__(type='Decrypt')
             self.data = data
 
         @property
         def dict(self):
             return {
                 **super(ResultOfAppEncryptionBox.Decrypt, self).dict,
-                'data': self.data
+                'data': self.data,
             }
 
 
-class ParamsOfEncryptionBoxGetInfo(object):
+class ParamsOfEncryptionBoxGetInfo:
+    """ParamsOfEncryptionBoxGetInfo"""
+
     def __init__(self, encryption_box: 'EncryptionBoxHandle'):
         self.encryption_box = encryption_box
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'encryption_box': self.encryption_box}
 
 
-class ResultOfEncryptionBoxGetInfo(object):
+class ResultOfEncryptionBoxGetInfo:
+    """ResultOfEncryptionBoxGetInfo"""
+
     def __init__(self, info: 'EncryptionBoxInfo'):
         self.info = info
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> 'ResultOfEncryptionBoxGetInfo':
+        """Object from dict"""
         data['info'] = EncryptionBoxInfo(**data['info'])
         return ResultOfEncryptionBoxGetInfo(**data)
 
 
-class ParamsOfEncryptionBoxEncrypt(object):
+class ParamsOfEncryptionBoxEncrypt:
+    """ParamsOfEncryptionBoxEncrypt"""
+
     def __init__(self, encryption_box: 'EncryptionBoxHandle', data: str):
         """
         :param encryption_box: Encryption box handle
@@ -2972,10 +3518,13 @@ class ParamsOfEncryptionBoxEncrypt(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'encryption_box': self.encryption_box, 'data': self.data}
 
 
-class ResultOfEncryptionBoxEncrypt(object):
+class ResultOfEncryptionBoxEncrypt:
+    """ResultOfEncryptionBoxEncrypt"""
+
     def __init__(self, data: str):
         """
         :param data: Encrypted data, encoded in `base64`
@@ -2983,7 +3532,9 @@ class ResultOfEncryptionBoxEncrypt(object):
         self.data = data
 
 
-class ParamsOfEncryptionBoxDecrypt(object):
+class ParamsOfEncryptionBoxDecrypt:
+    """ParamsOfEncryptionBoxDecrypt"""
+
     def __init__(self, encryption_box: 'EncryptionBoxHandle', data: str):
         """
         :param encryption_box: Encryption box handle
@@ -2994,10 +3545,13 @@ class ParamsOfEncryptionBoxDecrypt(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'encryption_box': self.encryption_box, 'data': self.data}
 
 
-class ResultOfEncryptionBoxDecrypt(object):
+class ResultOfEncryptionBoxDecrypt:
+    """ResultOfEncryptionBoxDecrypt"""
+
     def __init__(self, data: str):
         """
         :param data: Decrypted data, encoded in `base64`
@@ -3006,6 +3560,8 @@ class ResultOfEncryptionBoxDecrypt(object):
 
 
 class CipherMode(str, Enum):
+    """Cipher mode types"""
+
     CBC = 'CBC'
     CFB = 'CFB'
     CTR = 'CTR'
@@ -3014,7 +3570,11 @@ class CipherMode(str, Enum):
 
 
 class EncryptionAlgorithm:
+    """EncryptionAlgorithm"""
+
     class Aes(BaseTypedType):
+        """EncryptionAlgorithm.Aes"""
+
         def __init__(self, mode: 'CipherMode', key: str, iv: str = None):
             super(EncryptionAlgorithm.Aes, self).__init__(type='AES')
             self.mode = mode
@@ -3025,20 +3585,20 @@ class EncryptionAlgorithm:
         def dict(self):
             return {
                 **super(EncryptionAlgorithm.Aes, self).dict,
-                'value': {
-                    'mode': self.mode,
-                    'key': self.key,
-                    'iv': self.iv
-                }
+                'value': {'mode': self.mode, 'key': self.key, 'iv': self.iv},
             }
 
-    class AesInfo(object):
+    class AesInfo:
+        """EncryptionAlgorithm.AesInfo"""
+
         def __init__(self, cipher: 'CipherMode', iv: str = None):
             self.cipher = cipher
             self.iv = iv
 
 
-class ParamsOfCreateEncryptionBox(object):
+class ParamsOfCreateEncryptionBox:
+    """ParamsOfCreateEncryptionBox"""
+
     def __init__(self, algorithm: 'EncryptionAlgorithmType'):
         """
         :param algorithm: Encryption algorithm specifier including
@@ -3048,11 +3608,14 @@ class ParamsOfCreateEncryptionBox(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'algorithm': self.algorithm.dict}
 
 
 # NET module
 class NetErrorCode(int, Enum):
+    """Net module error codes"""
+
     QUERY_FAILED = 601
     SUBSCRIBE_FAILED = 602
     WAIT_FOR_FAILED = 603
@@ -3070,11 +3633,15 @@ class NetErrorCode(int, Enum):
 
 
 class SortDirection(str, Enum):
+    """Sord direction types"""
+
     ASC = 'ASC'
     DESC = 'DESC'
 
 
-class OrderBy(object):
+class OrderBy:
+    """OrderBy"""
+
     def __init__(self, path: str, direction: 'SortDirection'):
         """
         :param path:
@@ -3085,10 +3652,13 @@ class OrderBy(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'path': self.path, 'direction': self.direction}
 
 
-class ParamsOfQuery(object):
+class ParamsOfQuery:
+    """ParamsOfQuery"""
+
     def __init__(self, query: str, variables: Dict[str, Any] = None):
         """
         :param query: GraphQL query text
@@ -3100,10 +3670,13 @@ class ParamsOfQuery(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'query': self.query, 'variables': self.variables}
 
 
-class ResultOfQuery(object):
+class ResultOfQuery:
+    """ResultOfQuery"""
+
     def __init__(self, result: Any):
         """
         :param result: Result provided by DAppServer
@@ -3111,10 +3684,17 @@ class ResultOfQuery(object):
         self.result = result
 
 
-class ParamsOfQueryCollection(object):
+class ParamsOfQueryCollection:
+    """ParamsOfQueryCollection"""
+
     def __init__(
-            self, collection: str, result: str, filter: Dict[str, Any] = None,
-            order: List['OrderBy'] = None, limit: int = None):
+        self,
+        collection: str,
+        result: str,
+        filter: Dict[str, Any] = None,
+        order: List['OrderBy'] = None,
+        limit: int = None,
+    ):
         """
         :param collection: Collection name (accounts, blocks, transactions,
                 messages, block_signatures)
@@ -3131,16 +3711,19 @@ class ParamsOfQueryCollection(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'collection': self.collection,
             'result': self.result,
             'filter': self.filter,
             'order': [o.dict for o in self.order],
-            'limit': self.limit
+            'limit': self.limit,
         }
 
 
-class ResultOfQueryCollection(object):
+class ResultOfQueryCollection:
+    """ResultOfQueryCollection"""
+
     def __init__(self, result: List[Any]):
         """
         :param result: Objects that match the provided criteria
@@ -3148,10 +3731,16 @@ class ResultOfQueryCollection(object):
         self.result = result
 
 
-class ParamsOfWaitForCollection(object):
+class ParamsOfWaitForCollection:
+    """ParamsOfWaitForCollection"""
+
     def __init__(
-            self, collection: str, result: str, filter: Dict[str, Any] = None,
-            timeout: int = None):
+        self,
+        collection: str,
+        result: str,
+        filter: Dict[str, Any] = None,
+        timeout: int = None,
+    ):
         """
         :param collection: Collection name (accounts, blocks, transactions,
                 messages, block_signatures)
@@ -3166,15 +3755,18 @@ class ParamsOfWaitForCollection(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'collection': self.collection,
             'result': self.result,
             'filter': self.filter,
-            'timeout': self.timeout
+            'timeout': self.timeout,
         }
 
 
-class ResultOfWaitForCollection(object):
+class ResultOfWaitForCollection:
+    """ResultOfWaitForCollection"""
+
     def __init__(self, result: Any):
         """
         :param result: First found object that matches the provided criteria
@@ -3182,9 +3774,28 @@ class ResultOfWaitForCollection(object):
         self.result = result
 
 
-class ParamsOfSubscribeCollection(object):
-    def __init__(
-            self, collection: str, result: str, filter: Dict[str, Any] = None):
+class ParamsOfSubscribe:
+    """ParamsOfSubscribe"""
+
+    def __init__(self, subscription: str, variables: Dict[str, Any] = None):
+        """
+        :param subscription: GraphQL subscription text
+        :param variables: Variables used in subscription.
+                Must be a map with named values that can be used in query.
+        """
+        self.subscription = subscription
+        self.variables = variables
+
+    @property
+    def dict(self):
+        """Dict from object"""
+        return {'subscription': self.subscription, 'variables': self.variables}
+
+
+class ParamsOfSubscribeCollection:
+    """ParamsOfSubscribeCollection"""
+
+    def __init__(self, collection: str, result: str, filter: Dict[str, Any] = None):
         """
         :param collection: Collection name (accounts, blocks, transactions,
                 messages, block_signatures)
@@ -3197,14 +3808,17 @@ class ParamsOfSubscribeCollection(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'collection': self.collection,
             'result': self.result,
-            'filter': self.filter
+            'filter': self.filter,
         }
 
 
-class ResultOfSubscribeCollection(object):
+class ResultOfSubscribeCollection:
+    """ResultOfSubscribeCollection"""
+
     def __init__(self, handle: int):
         """
         :param handle: Subscription handle. Must be closed with `unsubscribe`
@@ -3213,15 +3827,20 @@ class ResultOfSubscribeCollection(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'handle': self.handle}
 
 
 class SubscriptionResponseType(int, Enum):
+    """Subscription response types"""
+
     OK = 100
     ERROR = 101
 
 
-class ResultOfSubscription(object):
+class ResultOfSubscription:
+    """ResultOfSubscription"""
+
     def __init__(self, result: Dict[str, Any]):
         """
         :param result: First appeared object that matches the provided criteria
@@ -3229,7 +3848,9 @@ class ResultOfSubscription(object):
         self.result = result
 
 
-class ParamsOfFindLastShardBlock(object):
+class ParamsOfFindLastShardBlock:
+    """ParamsOfFindLastShardBlock"""
+
     def __init__(self, address: str):
         """
         :param address: Account address
@@ -3238,10 +3859,13 @@ class ParamsOfFindLastShardBlock(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'address': self.address}
 
 
-class ResultOfFindLastShardBlock(object):
+class ResultOfFindLastShardBlock:
+    """ResultOfFindLastShardBlock"""
+
     def __init__(self, block_id: str):
         """
         :param block_id: Account shard last block ID
@@ -3249,7 +3873,9 @@ class ResultOfFindLastShardBlock(object):
         self.block_id = block_id
 
 
-class EndpointsSet(object):
+class EndpointsSet:
+    """EndpointsSet"""
+
     def __init__(self, endpoints: List[str]):
         """
         :param endpoints: List of endpoints provided by server
@@ -3258,10 +3884,13 @@ class EndpointsSet(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'endpoints': self.endpoints}
 
 
 class AggregationFn(str, Enum):
+    """Aggregate functions"""
+
     COUNT = 'COUNT'
     MIN = 'MIN'
     MAX = 'MAX'
@@ -3269,7 +3898,9 @@ class AggregationFn(str, Enum):
     AVERAGE = 'AVERAGE'
 
 
-class FieldAggregation(object):
+class FieldAggregation:
+    """FieldAggregation"""
+
     def __init__(self, field: str, fn: 'AggregationFn'):
         """
         :param field: Dot separated path to the field
@@ -3280,13 +3911,19 @@ class FieldAggregation(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'field': self.field, 'fn': self.fn}
 
 
-class ParamsOfAggregateCollection(object):
+class ParamsOfAggregateCollection:
+    """ParamsOfAggregateCollection"""
+
     def __init__(
-            self, collection: str, filter: Dict[str, Any] = None,
-            fields: List['FieldAggregation'] = None):
+        self,
+        collection: str,
+        filter: Dict[str, Any] = None,
+        fields: List['FieldAggregation'] = None,
+    ):
         """
         :param collection: Collection name (accounts, blocks, transactions,
                 messages, block_signatures)
@@ -3299,14 +3936,17 @@ class ParamsOfAggregateCollection(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'collection': self.collection,
             'filter': self.filter,
-            'fields': [f.dict for f in self.fields]
+            'fields': [f.dict for f in self.fields],
         }
 
 
-class ResultOfAggregateCollection(object):
+class ResultOfAggregateCollection:
+    """ResultOfAggregateCollection"""
+
     def __init__(self, values: List[str]):
         """
         :param values: Values for requested fields.
@@ -3318,72 +3958,88 @@ class ResultOfAggregateCollection(object):
 
 
 class ParamsOfQueryOperation:
+    """ParamsOfQueryOperation"""
+
     class QueryCollection(BaseTypedType):
+        """ParamsOfQueryOperation.QueryCollection"""
+
         def __init__(self, params: 'ParamsOfQueryCollection'):
             """
             :param params: ParamsOfQueryCollection
             """
             super(ParamsOfQueryOperation.QueryCollection, self).__init__(
-                type='QueryCollection')
+                type='QueryCollection'
+            )
             self.params = params
 
         @property
         def dict(self):
             return {
                 **super(ParamsOfQueryOperation.QueryCollection, self).dict,
-                **self.params.dict
+                **self.params.dict,
             }
 
     class WaitForCollection(BaseTypedType):
+        """ParamsOfQueryOperation.WaitForCollection"""
+
         def __init__(self, params: 'ParamsOfWaitForCollection'):
             """
             :param params: ParamsOfWaitForCollection
             """
             super(ParamsOfQueryOperation.WaitForCollection, self).__init__(
-                type='WaitForCollection')
+                type='WaitForCollection'
+            )
             self.params = params
 
         @property
         def dict(self):
             return {
                 **super(ParamsOfQueryOperation.WaitForCollection, self).dict,
-                **self.params.dict
+                **self.params.dict,
             }
 
     class AggregateCollection(BaseTypedType):
+        """ParamsOfQueryOperation.AggregateCollection"""
+
         def __init__(self, params: 'ParamsOfAggregateCollection'):
             """
             :param params: ParamsOfAggregateCollection
             """
             super(ParamsOfQueryOperation.AggregateCollection, self).__init__(
-                type='AggregateCollection')
+                type='AggregateCollection'
+            )
             self.params = params
 
         @property
         def dict(self):
             return {
                 **super(ParamsOfQueryOperation.AggregateCollection, self).dict,
-                **self.params.dict
+                **self.params.dict,
             }
 
     class QueryCounterparties(BaseTypedType):
+        """ParamsOfQueryOperation.QueryCounterparties"""
+
         def __init__(self, params: 'ParamsOfQueryCounterparties'):
             """
             :param params: ParamsOfQueryCounterparties
             """
             super(ParamsOfQueryOperation.QueryCounterparties, self).__init__(
-                type='QueryCounterparties')
+                type='QueryCounterparties'
+            )
             self.params = params
 
         @property
         def dict(self):
             return {
                 **super(ParamsOfQueryOperation.QueryCounterparties, self).dict,
-                **self.params.dict
+                **self.params.dict,
             }
 
 
-class ParamsOfBatchQuery(object):
+class ParamsOfBatchQuery:
+    """ParamsOfBatchQuery"""
+
     def __init__(self, operations: List['ParamsOfQueryOperationType']):
         """
         :param operations: List of query operations that must be performed
@@ -3393,10 +4049,13 @@ class ParamsOfBatchQuery(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'operations': [o.dict for o in self.operations]}
 
 
-class ResultOfBatchQuery(object):
+class ResultOfBatchQuery:
+    """ResultOfBatchQuery"""
+
     def __init__(self, results: List[Any]):
         """
         :param results: Result values for batched queries. Returns an array
@@ -3405,10 +4064,10 @@ class ResultOfBatchQuery(object):
         self.results = results
 
 
-class ParamsOfQueryCounterparties(object):
-    def __init__(
-            self, account: str, result: str, first: int = None,
-            after: str = None):
+class ParamsOfQueryCounterparties:
+    """ParamsOfQueryCounterparties"""
+
+    def __init__(self, account: str, result: str, first: int = None, after: str = None):
         """
         :param account: Account address
         :param result: Projection (result) string
@@ -3422,15 +4081,18 @@ class ParamsOfQueryCounterparties(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'account': self.account,
             'result': self.result,
             'first': self.first,
-            'after': self.after
+            'after': self.after,
         }
 
 
-class ResultOfGetEndpoints(object):
+class ResultOfGetEndpoints:
+    """ResultOfGetEndpoints"""
+
     def __init__(self, query: str, endpoints: List[str]):
         """
         :param query: Current query endpoint
@@ -3440,11 +4102,20 @@ class ResultOfGetEndpoints(object):
         self.endpoints = endpoints
 
 
-class MessageNode(object):
+class MessageNode:
+    """MessageNode"""
+
     def __init__(
-            self, id: str, bounce: bool, src_transaction_id: str = None,
-            dst_transaction_id: str = None, src: str = None, dst: str = None,
-            value: str = None, decoded_body: 'DecodedMessageBody' = None):
+        self,
+        id: str,
+        bounce: bool,
+        src_transaction_id: str = None,
+        dst_transaction_id: str = None,
+        src: str = None,
+        dst: str = None,
+        value: str = None,
+        decoded_body: 'DecodedMessageBody' = None,
+    ):
         """
         :param id: Message id
         :param bounce: Bounce flag
@@ -3470,17 +4141,28 @@ class MessageNode(object):
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> 'MessageNode':
+        """Object from dict"""
         if data['decoded_body']:
-            data['decoded_body'] = \
-                DecodedMessageBody.from_dict(data=data['decoded_body'])
+            data['decoded_body'] = DecodedMessageBody.from_dict(
+                data=data['decoded_body']
+            )
 
         return MessageNode(**data)
 
 
-class TransactionNode(object):
+class TransactionNode:
+    """TransactionNode"""
+
     def __init__(
-            self, id: str, in_msg: str, out_msgs: List[str], account_addr: str,
-            total_fees: str, aborted: bool, exit_code: int = None):
+        self,
+        id: str,
+        in_msg: str,
+        out_msgs: List[str],
+        account_addr: str,
+        total_fees: str,
+        aborted: bool,
+        exit_code: int = None,
+    ):
         """
         :param id: Transaction id
         :param in_msg: In message id
@@ -3499,10 +4181,12 @@ class TransactionNode(object):
         self.exit_code = exit_code
 
 
-class ParamsOfQueryTransactionTree(object):
+class ParamsOfQueryTransactionTree:
+    """ParamsOfQueryTransactionTree"""
+
     def __init__(
-            self, in_msg: str, abi_registry: List['AbiType'] = None,
-            timeout: int = None):
+        self, in_msg: str, abi_registry: List['AbiType'] = None, timeout: int = None
+    ):
         """
         :param in_msg: Input message id
         :param abi_registry:  List of contract ABIs that will be used to
@@ -3519,20 +4203,26 @@ class ParamsOfQueryTransactionTree(object):
 
     @property
     def dict(self):
-        abi_registry = [abi.dict for abi in self.abi_registry] \
-            if self.abi_registry else self.abi_registry
+        """Dict from object"""
+        abi_registry = (
+            [abi.dict for abi in self.abi_registry]
+            if self.abi_registry
+            else self.abi_registry
+        )
 
         return {
             'in_msg': self.in_msg,
             'abi_registry': abi_registry,
-            'timeout': self.timeout
+            'timeout': self.timeout,
         }
 
 
-class ResultOfQueryTransactionTree(object):
+class ResultOfQueryTransactionTree:
+    """ResultOfQueryTransactionTree"""
+
     def __init__(
-            self, messages: List['MessageNode'],
-            transactions: List['TransactionNode']):
+        self, messages: List['MessageNode'], transactions: List['TransactionNode']
+    ):
         """
         :param messages: Messages
         :param transactions: Transactions
@@ -3542,17 +4232,16 @@ class ResultOfQueryTransactionTree(object):
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> 'ResultOfQueryTransactionTree':
-        data['messages'] = [
-            MessageNode.from_dict(msg) for msg in data['messages']
-        ]
-        data['transactions'] = [
-            TransactionNode(**tx) for tx in data['transactions']
-        ]
+        """Object from dict"""
+        data['messages'] = [MessageNode.from_dict(msg) for msg in data['messages']]
+        data['transactions'] = [TransactionNode(**tx) for tx in data['transactions']]
 
         return ResultOfQueryTransactionTree(**data)
 
 
-class RegisteredIterator(object):
+class RegisteredIterator:
+    """RegisteredIterator"""
+
     def __init__(self, handle: int):
         """
         :param handle: Iterator handle. Must be removed using remove_iterator
@@ -3562,13 +4251,20 @@ class RegisteredIterator(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'handle': self.handle}
 
 
-class ParamsOfCreateBlockIterator(object):
+class ParamsOfCreateBlockIterator:
+    """ParamsOfCreateBlockIterator"""
+
     def __init__(
-            self, start_time: int = None, end_time: int = None,
-            shard_filter: List[str] = None, result: str = None):
+        self,
+        start_time: int = None,
+        end_time: int = None,
+        shard_filter: List[str] = None,
+        result: str = None,
+    ):
         """
         :param start_time: Starting time to iterate from.
                 If the application specifies this parameter then the iteration
@@ -3602,15 +4298,18 @@ class ParamsOfCreateBlockIterator(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'start_time': self.start_time,
             'end_time': self.end_time,
             'shard_filter': self.shard_filter,
-            'result': self.result
+            'result': self.result,
         }
 
 
-class ParamsOfResumeBlockIterator(object):
+class ParamsOfResumeBlockIterator:
+    """ParamsOfResumeBlockIterator"""
+
     def __init__(self, resume_state: Any):
         """
         :param resume_state: Iterator state from which to resume.
@@ -3620,14 +4319,22 @@ class ParamsOfResumeBlockIterator(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'resume_state': self.resume_state}
 
 
-class ParamsOfCreateTransactionIterator(object):
+class ParamsOfCreateTransactionIterator:
+    """ParamsOfCreateTransactionIterator"""
+
     def __init__(
-            self, start_time: int = None, end_time: int = None,
-            shard_filter: List[str] = None, accounts_filter: List[str] = None,
-            result: str = None, include_transfers: bool = None):
+        self,
+        start_time: int = None,
+        end_time: int = None,
+        shard_filter: List[str] = None,
+        accounts_filter: List[str] = None,
+        result: str = None,
+        include_transfers: bool = None,
+    ):
         """
         :param start_time: Starting time to iterate from.
                 If the application specifies this parameter then the iteration
@@ -3674,19 +4381,19 @@ class ParamsOfCreateTransactionIterator(object):
 
                 Each transfer is calculated from the particular message
                 related to the transaction and has the following structure:
-                    * message – source message identifier;
-                    * isBounced – indicates that the transaction is bounced,
+                    * message source message identifier;
+                    * isBounced indicates that the transaction is bounced,
                             which means the value will be returned back to the
                             sender;
-                    * isDeposit – indicates that this transfer is the
+                    * isDeposit indicates that this transfer is the
                             deposit (true) or withdraw (false);
-                    * counterparty – account address of the transfer source or
+                    * counterparty account address of the transfer source or
                             destination depending on isDeposit;
-                    * value – amount of nano tokens transferred.
+                    * value amount of nano tokens transferred.
                             The value is represented as a decimal string
                             because the actual value can be more precise than
                             the JSON number can represent. Application must
-                            use this string carefully – conversion to number
+                            use this string carefully conversion to number
                             can follow to loose of precision.
         """
         self.start_time = start_time
@@ -3698,17 +4405,20 @@ class ParamsOfCreateTransactionIterator(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'start_time': self.start_time,
             'end_time': self.end_time,
             'shard_filter': self.shard_filter,
             'accounts_filter': self.accounts_filter,
             'result': self.result,
-            'include_transfers': self.include_transfers
+            'include_transfers': self.include_transfers,
         }
 
 
-class ParamsOfResumeTransactionIterator(object):
+class ParamsOfResumeTransactionIterator:
+    """ParamsOfResumeTransactionIterator"""
+
     def __init__(self, resume_state: Any, accounts_filter: List[str] = None):
         """
         :param resume_state:  Iterator state from which to resume.
@@ -3729,16 +4439,19 @@ class ParamsOfResumeTransactionIterator(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'resume_state': self.resume_state,
-            'accounts_filter': self.accounts_filter
+            'accounts_filter': self.accounts_filter,
         }
 
 
-class ParamsOfIteratorNext(object):
+class ParamsOfIteratorNext:
+    """ParamsOfIteratorNext"""
+
     def __init__(
-            self, iterator: int, limit: int = None,
-            return_resume_state: bool = None):
+        self, iterator: int, limit: int = None, return_resume_state: bool = None
+    ):
         """
         :param iterator: Iterator handle
         :param limit: Maximum count of the returned items.
@@ -3752,16 +4465,18 @@ class ParamsOfIteratorNext(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'iterator': self.iterator,
             'limit': self.limit,
-            'return_resume_state': self.return_resume_state
+            'return_resume_state': self.return_resume_state,
         }
 
 
-class ResultOfIteratorNext(object):
-    def __init__(
-            self, items: List[Any], has_more: bool, resume_state: Any = None):
+class ResultOfIteratorNext:
+    """ResultOfIteratorNext"""
+
+    def __init__(self, items: List[Any], has_more: bool, resume_state: Any = None):
         """
         :param items: Next available items.
                 Note that `iterator_next` can return an empty items and
@@ -3784,6 +4499,8 @@ class ResultOfIteratorNext(object):
 
 # PROCESSING module
 class ProcessingErrorCode(int, Enum):
+    """Processing module error codes"""
+
     MESSAGE_ALREADY_EXPIRED = 501
     MESSAGE_HAS_NO_DESTINATION_ADDRESS = 502
     CANNOT_BUILD_MESSAGE_CELL = 503
@@ -3800,6 +4517,8 @@ class ProcessingErrorCode(int, Enum):
 
 
 class ProcessingEvent:
+    """ProcessingEvent"""
+
     class WillFetchFirstBlock(BaseTypedType):
         """
         Notifies the application that the account's current shard block
@@ -3811,7 +4530,8 @@ class ProcessingEvent:
 
         def __init__(self):
             super(ProcessingEvent.WillFetchFirstBlock, self).__init__(
-                type='WillFetchFirstBlock')
+                type='WillFetchFirstBlock'
+            )
 
     class FetchFirstBlockFailed(BaseTypedType):
         """
@@ -3828,7 +4548,8 @@ class ProcessingEvent:
             :param error:
             """
             super(ProcessingEvent.FetchFirstBlockFailed, self).__init__(
-                type='FetchFirstBlockFailed')
+                type='FetchFirstBlockFailed'
+            )
             self.error = error
 
     class WillSend(BaseTypedType):
@@ -3839,8 +4560,7 @@ class ProcessingEvent:
         (`abi.encode_message` function was executed successfully)
         """
 
-        def __init__(
-                self, shard_block_id: str, message_id: str, message: str):
+        def __init__(self, shard_block_id: str, message_id: str, message: str):
             """
             :param shard_block_id:
             :param message_id:
@@ -3864,8 +4584,7 @@ class ProcessingEvent:
         crucial for processing
         """
 
-        def __init__(
-                self, shard_block_id: str, message_id: str, message: str):
+        def __init__(self, shard_block_id: str, message_id: str, message: str):
             """
             :param shard_block_id:
             :param message_id:
@@ -3891,8 +4610,12 @@ class ProcessingEvent:
         """
 
         def __init__(
-                self, shard_block_id: str, message_id: str, message: str,
-                error: 'ClientError'):
+            self,
+            shard_block_id: str,
+            message_id: str,
+            message: str,
+            error: 'ClientError',
+        ):
             """
             :param shard_block_id:
             :param message_id:
@@ -3925,7 +4648,8 @@ class ProcessingEvent:
             :param message:
             """
             super(ProcessingEvent.WillFetchNextBlock, self).__init__(
-                type='WillFetchNextBlock')
+                type='WillFetchNextBlock'
+            )
             self.shard_block_id = shard_block_id
             self.message_id = message_id
             self.message = message
@@ -3946,8 +4670,12 @@ class ProcessingEvent:
         """
 
         def __init__(
-                self, shard_block_id: str, message_id: str, message: str,
-                error: 'ClientError'):
+            self,
+            shard_block_id: str,
+            message_id: str,
+            message: str,
+            error: 'ClientError',
+        ):
             """
             :param shard_block_id:
             :param message_id:
@@ -3955,7 +4683,8 @@ class ProcessingEvent:
             :param error:
             """
             super(ProcessingEvent.FetchNextBlockFailed, self).__init__(
-                type='FetchNextBlockFailed')
+                type='FetchNextBlockFailed'
+            )
             self.shard_block_id = shard_block_id
             self.message_id = message_id
             self.message = message
@@ -3975,33 +4704,40 @@ class ProcessingEvent:
         All the processing events will be repeated
         """
 
-        def __init__(
-                self, message_id: str, message: str, error: 'ClientError'):
+        def __init__(self, message_id: str, message: str, error: 'ClientError'):
             """
             :param message_id:
             :param message:
             :param error:
             """
-            super(ProcessingEvent.MessageExpired, self).__init__(
-                type='MessageExpired')
+            super(ProcessingEvent.MessageExpired, self).__init__(type='MessageExpired')
             self.message_id = message_id
             self.message = message
             self.error = error
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> 'ProcessingEventType':
+        """Object from dict"""
         kwargs = {k: v for k, v in data.items() if k != 'type'}
         return getattr(ProcessingEvent, data['type'])(**kwargs)
 
 
 class ProcessingResponseType(int, Enum):
+    """Processing response types"""
+
     PROCESSING_EVENT = 100
 
 
-class ResultOfProcessMessage(object):
+class ResultOfProcessMessage:
+    """ResultOfProcessMessage"""
+
     def __init__(
-            self, transaction: Dict[str, Any], out_messages: List[str],
-            fees: 'TransactionFees', decoded: 'DecodedOutput' = None):
+        self,
+        transaction: Dict[str, Any],
+        out_messages: List[str],
+        fees: 'TransactionFees',
+        decoded: 'DecodedOutput' = None,
+    ):
         """
         :param transaction: Parsed transaction. In addition to the regular
                 transaction fields there is a boc field encoded with `base64`
@@ -4018,6 +4754,7 @@ class ResultOfProcessMessage(object):
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> 'ResultOfProcessMessage':
+        """Object from dict"""
         data['fees'] = TransactionFees(**data['fees'])
         if data['decoded']:
             data['decoded'] = DecodedOutput.from_dict(data=data['decoded'])
@@ -4025,10 +4762,12 @@ class ResultOfProcessMessage(object):
         return ResultOfProcessMessage(**data)
 
 
-class DecodedOutput(object):
+class DecodedOutput:
+    """DecodedOutput"""
+
     def __init__(
-            self, out_messages: List[Union['DecodedMessageBody', None]],
-            output: Any = None):
+        self, out_messages: List[Union['DecodedMessageBody', None]], output: Any = None
+    ):
         """
         :param out_messages: Decoded bodies of the out messages. If the
                 message can't be decoded, then None will be stored in the
@@ -4040,6 +4779,7 @@ class DecodedOutput(object):
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> 'DecodedOutput':
+        """Object from dict"""
         if data['out_messages']:
             data['out_messages'] = [
                 DecodedMessageBody.from_dict(data=m) if m else None
@@ -4049,7 +4789,9 @@ class DecodedOutput(object):
         return DecodedOutput(**data)
 
 
-class ParamsOfSendMessage(object):
+class ParamsOfSendMessage:
+    """ParamsOfSendMessage"""
+
     def __init__(self, message: str, send_events: bool, abi: 'AbiType' = None):
         """
         :param message: Message BOC
@@ -4068,15 +4810,14 @@ class ParamsOfSendMessage(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         abi = self.abi.dict if self.abi else self.abi
-        return {
-            'message': self.message,
-            'send_events': self.send_events,
-            'abi': abi
-        }
+        return {'message': self.message, 'send_events': self.send_events, 'abi': abi}
 
 
-class ResultOfSendMessage(object):
+class ResultOfSendMessage:
+    """ResultOfSendMessage"""
+
     def __init__(self, shard_block_id: str, sending_endpoints: List[str]):
         """
         :param shard_block_id: The last generated shard block of the message
@@ -4090,10 +4831,17 @@ class ResultOfSendMessage(object):
         self.sending_endpoints = sending_endpoints
 
 
-class ParamsOfWaitForTransaction(object):
+class ParamsOfWaitForTransaction:
+    """ParamsOfWaitForTransaction"""
+
     def __init__(
-            self, message: str, shard_block_id: str, send_events: bool,
-            abi: 'AbiType' = None, sending_endpoints: List[str] = None):
+        self,
+        message: str,
+        shard_block_id: str,
+        send_events: bool,
+        abi: 'AbiType' = None,
+        sending_endpoints: List[str] = None,
+    ):
         """
         :param message: Message BOC. Encoded with base64
         :param shard_block_id: The last generated block id of the destination
@@ -4116,20 +4864,23 @@ class ParamsOfWaitForTransaction(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         abi = self.abi.dict if self.abi else self.abi
         return {
             'message': self.message,
             'shard_block_id': self.shard_block_id,
             'send_events': self.send_events,
             'abi': abi,
-            'sending_endpoints': self.sending_endpoints
+            'sending_endpoints': self.sending_endpoints,
         }
 
 
-class ParamsOfProcessMessage(object):
+class ParamsOfProcessMessage:
+    """ParamsOfProcessMessage"""
+
     def __init__(
-            self, message_encode_params: 'ParamsOfEncodeMessage',
-            send_events: bool):
+        self, message_encode_params: 'ParamsOfEncodeMessage', send_events: bool
+    ):
         """
         :param message_encode_params: Message encode parameters
         :param send_events: Flag for requesting events sending
@@ -4139,14 +4890,17 @@ class ParamsOfProcessMessage(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'message_encode_params': self.message_encode_params.dict,
-            'send_events': self.send_events
+            'send_events': self.send_events,
         }
 
 
 # TVM module
 class TvmErrorCode(int, Enum):
+    """TVM module error codes"""
+
     CANNOT_READ_TRANSACTION = 401
     CANNOT_READ_BLOCKCHAIN_CONFIG = 402
     TRANSACTION_ABORTED = 403
@@ -4163,10 +4917,18 @@ class TvmErrorCode(int, Enum):
     CONTRACT_EXECUTION_ERROR = 414
 
 
-class TransactionFees(object):
+class TransactionFees:
+    """TransactionFees"""
+
     def __init__(
-            self, in_msg_fwd_fee: int, storage_fee: int, gas_fee: int,
-            out_msgs_fwd_fee: int, total_account_fees: int, total_output: int):
+        self,
+        in_msg_fwd_fee: int,
+        storage_fee: int,
+        gas_fee: int,
+        out_msgs_fwd_fee: int,
+        total_account_fees: int,
+        total_output: int,
+    ):
         """
         :param in_msg_fwd_fee:
         :param storage_fee:
@@ -4183,10 +4945,16 @@ class TransactionFees(object):
         self.total_output = total_output
 
 
-class ExecutionOptions(object):
+class ExecutionOptions:
+    """ExecutionOptions"""
+
     def __init__(
-            self, blockchain_config: str = None, block_time: int = None,
-            block_lt: int = None, transaction_lt: int = None):
+        self,
+        blockchain_config: str = None,
+        block_time: int = None,
+        block_lt: int = None,
+        transaction_lt: int = None,
+    ):
         """
         :param blockchain_config: boc with config
         :param block_time: time that is used as transaction time
@@ -4200,15 +4968,18 @@ class ExecutionOptions(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'blockchain_config': self.blockchain_config,
             'block_time': self.block_time,
             'block_lt': self.block_lt,
-            'transaction_lt': self.transaction_lt
+            'transaction_lt': self.transaction_lt,
         }
 
 
 class AccountForExecutor:
+    """AccountForExecutor"""
+
     class NoAccount(BaseTypedType):
         """
         Non-existing account to run a creation internal message.
@@ -4221,12 +4992,14 @@ class AccountForExecutor:
             super(AccountForExecutor.NoAccount, self).__init__(type='None')
 
     class Uninit(BaseTypedType):
-        """ Emulate uninitialized account to run deploy message """
+        """Emulate uninitialized account to run deploy message"""
 
         def __init__(self):
             super(AccountForExecutor.Uninit, self).__init__(type='Uninit')
 
     class Account(BaseTypedType):
+        """AccountForExecutor.Account"""
+
         def __init__(self, boc: str, unlimited_balance: bool = None):
             """
             :param boc: Account BOC. Encoded as `base64`
@@ -4243,17 +5016,23 @@ class AccountForExecutor:
             return {
                 **super(AccountForExecutor.Account, self).dict,
                 'boc': self.boc,
-                'unlimited_balance': self.unlimited_balance
+                'unlimited_balance': self.unlimited_balance,
             }
 
 
-class ParamsOfRunExecutor(object):
+class ParamsOfRunExecutor:
+    """ParamsOfRunExecutor"""
+
     def __init__(
-            self, message: str, account: 'AccountForExecutorType',
-            execution_options: 'ExecutionOptions' = None,
-            abi: 'AbiType' = None, skip_transaction_check: bool = None,
-            boc_cache: 'BocCacheTypeType' = None,
-            return_updated_account: bool = None):
+        self,
+        message: str,
+        account: 'AccountForExecutorType',
+        execution_options: 'ExecutionOptions' = None,
+        abi: 'AbiType' = None,
+        skip_transaction_check: bool = None,
+        boc_cache: 'BocCacheTypeType' = None,
+        return_updated_account: bool = None,
+    ):
         """
         :param message: Input message BOC. Must be encoded as `base64`
         :param account: Account to run on executor
@@ -4275,8 +5054,12 @@ class ParamsOfRunExecutor(object):
 
     @property
     def dict(self):
-        execution_options = self.execution_options.dict \
-            if self.execution_options else self.execution_options
+        """Dict from object"""
+        execution_options = (
+            self.execution_options.dict
+            if self.execution_options
+            else self.execution_options
+        )
         abi = self.abi.dict if self.abi else self.abi
         boc_cache = self.boc_cache.dict if self.boc_cache else self.boc_cache
 
@@ -4287,15 +5070,21 @@ class ParamsOfRunExecutor(object):
             'abi': abi,
             'skip_transaction_check': self.skip_transaction_check,
             'boc_cache': boc_cache,
-            'return_updated_account': self.return_updated_account
+            'return_updated_account': self.return_updated_account,
         }
 
 
-class ResultOfRunExecutor(object):
+class ResultOfRunExecutor:
+    """ResultOfRunExecutor"""
+
     def __init__(
-            self, transaction: Dict[str, Any], out_messages: List[str],
-            account: str, fees: 'TransactionFees',
-            decoded: 'DecodedOutput' = None):
+        self,
+        transaction: Dict[str, Any],
+        out_messages: List[str],
+        account: str,
+        fees: 'TransactionFees',
+        decoded: 'DecodedOutput' = None,
+    ):
         """
         :param transaction: Parsed transaction. In addition to the regular
                 transaction fields there is a boc field encoded with `base64`
@@ -4314,6 +5103,7 @@ class ResultOfRunExecutor(object):
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> 'ResultOfRunExecutor':
+        """Object from dict"""
         data['fees'] = TransactionFees(**data['fees'])
         if data['decoded']:
             data['decoded'] = DecodedOutput.from_dict(data=data['decoded'])
@@ -4321,12 +5111,18 @@ class ResultOfRunExecutor(object):
         return ResultOfRunExecutor(**data)
 
 
-class ParamsOfRunTvm(object):
+class ParamsOfRunTvm:
+    """ParamsOfRunTvm"""
+
     def __init__(
-            self, message: str, account: str, abi: 'AbiType' = None,
-            execution_options: 'ExecutionOptions' = None,
-            boc_cache: 'BocCacheTypeType' = None,
-            return_updated_account: bool = None):
+        self,
+        message: str,
+        account: str,
+        abi: 'AbiType' = None,
+        execution_options: 'ExecutionOptions' = None,
+        boc_cache: 'BocCacheTypeType' = None,
+        return_updated_account: bool = None,
+    ):
         """
         :param message: Input message BOC. Must be encoded as `base64`
         :param account: Account BOC. Must be encoded as `base64`
@@ -4346,8 +5142,12 @@ class ParamsOfRunTvm(object):
 
     @property
     def dict(self):
-        execution_options = self.execution_options.dict \
-            if self.execution_options else self.execution_options
+        """Dict from object"""
+        execution_options = (
+            self.execution_options.dict
+            if self.execution_options
+            else self.execution_options
+        )
         abi = self.abi.dict if self.abi else self.abi
         boc_cache = self.boc_cache.dict if self.boc_cache else self.boc_cache
 
@@ -4357,14 +5157,16 @@ class ParamsOfRunTvm(object):
             'execution_options': execution_options,
             'abi': abi,
             'boc_cache': boc_cache,
-            'return_updated_account': self.return_updated_account
+            'return_updated_account': self.return_updated_account,
         }
 
 
-class ResultOfRunTvm(object):
+class ResultOfRunTvm:
+    """ResultOfRunTvm"""
+
     def __init__(
-            self, out_messages: List[str], account: str,
-            decoded: 'DecodedOutput' = None):
+        self, out_messages: List[str], account: str, decoded: 'DecodedOutput' = None
+    ):
         """
         :param out_messages: List of output messages' BOCs. Encoded as `base64`
         :param account: Updated account state BOC. Encoded as `base64`.
@@ -4378,17 +5180,24 @@ class ResultOfRunTvm(object):
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> 'ResultOfRunTvm':
+        """Object from dict"""
         if data['decoded']:
             data['decoded'] = DecodedOutput.from_dict(data=data['decoded'])
 
         return ResultOfRunTvm(**data)
 
 
-class ParamsOfRunGet(object):
+class ParamsOfRunGet:
+    """ParamsOfRunGet"""
+
     def __init__(
-            self, account: str, function_name: str, input: Any = None,
-            execution_options: 'ExecutionOptions' = None,
-            tuple_list_as_array: bool = None):
+        self,
+        account: str,
+        function_name: str,
+        input: Any = None,
+        execution_options: 'ExecutionOptions' = None,
+        tuple_list_as_array: bool = None,
+    ):
         """
         :param account: Account BOC in `base64`
         :param function_name: Function name
@@ -4410,19 +5219,25 @@ class ParamsOfRunGet(object):
 
     @property
     def dict(self):
-        execution_options = self.execution_options.dict \
-            if self.execution_options else self.execution_options
+        """Dict from object"""
+        execution_options = (
+            self.execution_options.dict
+            if self.execution_options
+            else self.execution_options
+        )
 
         return {
             'account': self.account,
             'function_name': self.function_name,
             'input': self.input,
             'execution_options': execution_options,
-            'tuple_list_as_array': self.tuple_list_as_array
+            'tuple_list_as_array': self.tuple_list_as_array,
         }
 
 
-class ResultOfRunGet(object):
+class ResultOfRunGet:
+    """ResultOfRunGet"""
+
     def __init__(self, output: Any):
         """
         :param output: Values returned by getmethod on stack
@@ -4432,23 +5247,33 @@ class ResultOfRunGet(object):
 
 # UTILS module
 class AccountAddressType(str, Enum):
+    """Account address types"""
+
     ACCOUNT_ID = 'AccountId'
     HEX = 'Hex'
     BASE64 = 'Base64'
 
 
 class AddressStringFormat:
+    """AddressStringFormat"""
+
     class AccountId(BaseTypedType):
+        """AddressStringFormat.AccountId"""
+
         def __init__(self):
             super(AddressStringFormat.AccountId, self).__init__(
-                type=AccountAddressType.ACCOUNT_ID)
+                type=AccountAddressType.ACCOUNT_ID
+            )
 
     class Hex(BaseTypedType):
+        """AddressStringFormat.Hex"""
+
         def __init__(self):
-            super(AddressStringFormat.Hex, self).__init__(
-                type=AccountAddressType.HEX)
+            super(AddressStringFormat.Hex, self).__init__(type=AccountAddressType.HEX)
 
     class Base64(BaseTypedType):
+        """AddressStringFormat.Base64"""
+
         def __init__(self, url: bool, test: bool, bounce: bool):
             """
             :param url:
@@ -4456,7 +5281,8 @@ class AddressStringFormat:
             :param bounce:
             """
             super(AddressStringFormat.Base64, self).__init__(
-                type=AccountAddressType.BASE64)
+                type=AccountAddressType.BASE64
+            )
             self.url = url
             self.test = test
             self.bounce = bounce
@@ -4467,11 +5293,13 @@ class AddressStringFormat:
                 **super(AddressStringFormat.Base64, self).dict,
                 'url': self.url,
                 'test': self.test,
-                'bounce': self.bounce
+                'bounce': self.bounce,
             }
 
 
-class ParamsOfConvertAddress(object):
+class ParamsOfConvertAddress:
+    """ParamsOfConvertAddress"""
+
     def __init__(self, address: str, output_format: 'AddressStringFormatType'):
         """
         :param address: Account address in any TON format
@@ -4482,13 +5310,13 @@ class ParamsOfConvertAddress(object):
 
     @property
     def dict(self):
-        return {
-            'address': self.address,
-            'output_format': self.output_format.dict
-        }
+        """Dict from object"""
+        return {'address': self.address, 'output_format': self.output_format.dict}
 
 
-class ResultOfConvertAddress(object):
+class ResultOfConvertAddress:
+    """ResultOfConvertAddress"""
+
     def __init__(self, address: str):
         """
         :param address: Address in the specified format
@@ -4496,7 +5324,9 @@ class ResultOfConvertAddress(object):
         self.address = address
 
 
-class ParamsOfCalcStorageFee(object):
+class ParamsOfCalcStorageFee:
+    """ParamsOfCalcStorageFee"""
+
     def __init__(self, account: str, period: int):
         """
         :param account:
@@ -4507,10 +5337,13 @@ class ParamsOfCalcStorageFee(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'account': self.account, 'period': self.period}
 
 
-class ResultOfCalcStorageFee(object):
+class ResultOfCalcStorageFee:
+    """ResultOfCalcStorageFee"""
+
     def __init__(self, fee: str):
         """
         :param fee:
@@ -4518,7 +5351,9 @@ class ResultOfCalcStorageFee(object):
         self.fee = fee
 
 
-class ParamsOfCompressZstd(object):
+class ParamsOfCompressZstd:
+    """ParamsOfCompressZstd"""
+
     def __init__(self, uncompressed: str, level: int = None):
         """
         :param uncompressed: Uncompressed data. Must be encoded as `base64`
@@ -4534,10 +5369,13 @@ class ParamsOfCompressZstd(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'uncompressed': self.uncompressed, 'level': self.level}
 
 
-class ResultOfCompressZstd(object):
+class ResultOfCompressZstd:
+    """ResultOfCompressZstd"""
+
     def __init__(self, compressed: str):
         """
         :param compressed: Compressed data. Encoded as `base64`
@@ -4545,7 +5383,9 @@ class ResultOfCompressZstd(object):
         self.compressed = compressed
 
 
-class ParamsOfDecompressZstd(object):
+class ParamsOfDecompressZstd:
+    """ParamsOfDecompressZstd"""
+
     def __init__(self, compressed: str):
         """
         :param compressed: Compressed data. Must be encoded as `base64`
@@ -4554,10 +5394,13 @@ class ParamsOfDecompressZstd(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'compressed': self.compressed}
 
 
-class ResultOfDecompressZstd(object):
+class ResultOfDecompressZstd:
+    """ResultOfDecompressZstd"""
+
     def __init__(self, decompressed: str):
         """
         :param decompressed: Decompressed data. Encoded as `base64`
@@ -4565,7 +5408,9 @@ class ResultOfDecompressZstd(object):
         self.decompressed = decompressed
 
 
-class ParamsOfGetAddressType(object):
+class ParamsOfGetAddressType:
+    """ParamsOfGetAddressType"""
+
     def __init__(self, address: str):
         """
         :param address: Account address in any TON format
@@ -4574,10 +5419,13 @@ class ParamsOfGetAddressType(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'address': self.address}
 
 
-class ResultOfGetAddressType(object):
+class ResultOfGetAddressType:
+    """ResultOfGetAddressType"""
+
     def __init__(self, address_type: 'AccountAddressType'):
         """
         :param address_type: Account address type
@@ -4590,6 +5438,8 @@ DebotHandle = int
 
 
 class DebotErrorCode(int, Enum):
+    """DeBot module error codes"""
+
     DEBOT_START_FAILED = 801
     DEBOT_FETCH_FAILED = 802
     DEBOT_EXECUTION_FAILED = 803
@@ -4604,10 +5454,18 @@ class DebotErrorCode(int, Enum):
     DEBOT_OPERATION_REJECTED = 812
 
 
-class DebotAction(object):
+class DebotAction:
+    """DebotAction"""
+
     def __init__(
-            self, description: str, name: str, action_type: int, to: int,
-            attributes: str, misc: str):
+        self,
+        description: str,
+        name: str,
+        action_type: int,
+        to: int,
+        attributes: str,
+        misc: str,
+    ):
         """
         :param description: A short action description. Should be used by
                 Debot Browser as name of menu item
@@ -4628,25 +5486,37 @@ class DebotAction(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'description': self.description,
             'name': self.name,
             'action_type': self.action_type,
             'to': self.to,
             'attributes': self.attributes,
-            'misc': self.misc
+            'misc': self.misc,
         }
 
     def __str__(self):
         return self.description
 
 
-class DebotInfo(object):
+class DebotInfo:
+    """DebotInfo"""
+
     def __init__(
-            self, interfaces: List[str], name: str = None, version: str = None,
-            publisher: str = None, caption: str = None, author: str = None,
-            support: str = None, hello: str = None, language: str = None,
-            dabi: str = None, icon: str = None):
+        self,
+        interfaces: List[str],
+        name: str = None,
+        version: str = None,
+        publisher: str = None,
+        caption: str = None,
+        author: str = None,
+        support: str = None,
+        hello: str = None,
+        language: str = None,
+        dabi: str = None,
+        icon: str = None,
+    ):
         """
         :param interfaces: Vector with IDs of DInterfaces used by DeBot
         :param name: DeBot short name
@@ -4674,6 +5544,7 @@ class DebotInfo(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'interfaces': self.interfaces,
             'name': self.name,
@@ -4685,17 +5556,26 @@ class DebotInfo(object):
             'hello': self.hello,
             'language': self.language,
             'dabi': self.dabi,
-            'icon': self.icon
+            'icon': self.icon,
         }
 
 
 class DebotActivity:
-    """ Describes the operation that the DeBot wants to perform """
+    """Describes the operation that the DeBot wants to perform"""
 
     class Transaction(BaseTypedType):
+        """DebotActivity.Transaction"""
+
         def __init__(
-                self, msg: str, dst: str, out: List['Spending'], fee: int,
-                setcode: bool, signkey: str, signing_box_handle: int):
+            self,
+            msg: str,
+            dst: str,
+            out: List['Spending'],
+            fee: int,
+            setcode: bool,
+            signkey: str,
+            signing_box_handle: int,
+        ):
             """
             :param msg: External inbound message BOC
             :param dst: Target smart contract address
@@ -4718,13 +5598,16 @@ class DebotActivity:
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> 'DebotActivityType':
+        """Object from dict"""
         if data.get('out'):
             data['out'] = [Spending(**item) for item in data['out']]
         kwargs = {k: v for k, v in data.items() if k != 'type'}
         return getattr(DebotActivity, data['type'])(**kwargs)
 
 
-class Spending(object):
+class Spending:
+    """Spending"""
+
     def __init__(self, amount: int, dst: str):
         """
         Describes how much funds will be debited from the target contract
@@ -4736,8 +5619,8 @@ class Spending(object):
         self.dst = dst
 
 
-class ParamsOfInit(object):
-    """ Parameters to init DeBot """
+class ParamsOfInit:
+    """Parameters to init DeBot"""
 
     def __init__(self, address: str):
         """
@@ -4747,18 +5630,17 @@ class ParamsOfInit(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'address': self.address}
 
 
-class RegisteredDebot(object):
+class RegisteredDebot:
     """
     Structure for storing debot handle returned from `start` and `fetch`
     functions
     """
 
-    def __init__(
-            self, debot_handle: 'DebotHandle', debot_abi: str,
-            info: 'DebotInfo'):
+    def __init__(self, debot_handle: 'DebotHandle', debot_abi: str, info: 'DebotInfo'):
         """
         :param debot_handle: Debot handle which references an instance of
                 debot engine
@@ -4771,10 +5653,11 @@ class RegisteredDebot(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {
             'debot_handle': self.debot_handle,
             'debot_abi': self.debot_abi,
-            'info': self.info.dict
+            'info': self.info.dict,
         }
 
 
@@ -4785,7 +5668,7 @@ class ParamsOfAppDebotBrowser:
     """
 
     class Log(BaseTypedType):
-        """ Print message to user """
+        """Print message to user"""
 
         def __init__(self, msg: str):
             """
@@ -4795,7 +5678,7 @@ class ParamsOfAppDebotBrowser:
             self.msg = msg
 
     class Switch(BaseTypedType):
-        """ Switch debot to another context (menu) """
+        """Switch debot to another context (menu)"""
 
         def __init__(self, context_id: int):
             """
@@ -4805,11 +5688,12 @@ class ParamsOfAppDebotBrowser:
             self.context_id = context_id
 
     class SwitchCompleted(BaseTypedType):
-        """ Notify browser that all context actions are shown """
+        """Notify browser that all context actions are shown"""
 
         def __init__(self):
             super(ParamsOfAppDebotBrowser.SwitchCompleted, self).__init__(
-                type='SwitchCompleted')
+                type='SwitchCompleted'
+            )
 
     class ShowAction(BaseTypedType):
         """
@@ -4823,12 +5707,11 @@ class ParamsOfAppDebotBrowser:
                     item. At least description property must be shown from
                     `DebotAction` structure
             """
-            super(ParamsOfAppDebotBrowser.ShowAction, self).__init__(
-                type='ShowAction')
+            super(ParamsOfAppDebotBrowser.ShowAction, self).__init__(type='ShowAction')
             self.action = action
 
     class Input(BaseTypedType):
-        """ Request user input """
+        """Request user input"""
 
         def __init__(self, prompt: str):
             """
@@ -4846,10 +5729,11 @@ class ParamsOfAppDebotBrowser:
 
         def __init__(self):
             super(ParamsOfAppDebotBrowser.GetSigningBox, self).__init__(
-                type='GetSigningBox')
+                type='GetSigningBox'
+            )
 
     class InvokeDebot(BaseTypedType):
-        """ Execute action of another debot """
+        """Execute action of another debot"""
 
         def __init__(self, debot_addr: str, action: 'DebotAction'):
             """
@@ -4857,12 +5741,13 @@ class ParamsOfAppDebotBrowser:
             :param action: Debot action to execute
             """
             super(ParamsOfAppDebotBrowser.InvokeDebot, self).__init__(
-                type='InvokeDebot')
+                type='InvokeDebot'
+            )
             self.debot_addr = debot_addr
             self.action = action
 
     class Send(BaseTypedType):
-        """ Used by Debot to call DInterface implemented by Debot Browser """
+        """Used by Debot to call DInterface implemented by Debot Browser"""
 
         def __init__(self, message: str):
             """
@@ -4881,12 +5766,12 @@ class ParamsOfAppDebotBrowser:
             """
             :param activity: DeBot activity details
             """
-            super(ParamsOfAppDebotBrowser.Approve, self).__init__(
-                type='Approve')
+            super(ParamsOfAppDebotBrowser.Approve, self).__init__(type='Approve')
             self.activity = activity
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> 'ParamsOfAppDebotBrowserType':
+        """Object from dict"""
         if data.get('action'):
             data['action'] = DebotAction(**data['action'])
         if data.get('activity'):
@@ -4895,11 +5780,11 @@ class ParamsOfAppDebotBrowser:
         return getattr(ParamsOfAppDebotBrowser, data['type'])(**kwargs)
 
 
-class ResultOfAppDebotBrowser(object):
-    """ Returning values from Debot Browser callbacks """
+class ResultOfAppDebotBrowser:
+    """Returning values from Debot Browser callbacks"""
 
     class Input(BaseTypedType):
-        """ Result of user input """
+        """Result of user input"""
 
         def __init__(self, value: str):
             """
@@ -4912,11 +5797,11 @@ class ResultOfAppDebotBrowser(object):
         def dict(self):
             return {
                 **super(ResultOfAppDebotBrowser.Input, self).dict,
-                'value': self.value
+                'value': self.value,
             }
 
     class GetSigningBox(BaseTypedType):
-        """ Result of getting signing box """
+        """Result of getting signing box"""
 
         def __init__(self, signing_box: 'SigningBoxHandle'):
             """
@@ -4925,45 +5810,46 @@ class ResultOfAppDebotBrowser(object):
                     engine
             """
             super(ResultOfAppDebotBrowser.GetSigningBox, self).__init__(
-                type='GetSigningBox')
+                type='GetSigningBox'
+            )
             self.signing_box = signing_box
 
         @property
         def dict(self):
             return {
                 **super(ResultOfAppDebotBrowser.GetSigningBox, self).dict,
-                'signing_box': self.signing_box
+                'signing_box': self.signing_box,
             }
 
     class InvokeDebot(BaseTypedType):
-        """ Result of debot invoking """
+        """Result of debot invoking"""
 
         def __init__(self):
             super(ResultOfAppDebotBrowser.InvokeDebot, self).__init__(
-                type='InvokeDebot')
+                type='InvokeDebot'
+            )
 
     class Approve(BaseTypedType):
-        """ Result of approve callback """
+        """Result of approve callback"""
 
         def __init__(self, approved: bool):
             """
             :param approved: Indicates whether the DeBot is allowed to
                     perform the specified operation
             """
-            super(ResultOfAppDebotBrowser.Approve, self).__init__(
-                type='Approve')
+            super(ResultOfAppDebotBrowser.Approve, self).__init__(type='Approve')
             self.approved = approved
 
         @property
         def dict(self):
             return {
                 **super(ResultOfAppDebotBrowser.Approve, self).dict,
-                'approved': self.approved
+                'approved': self.approved,
             }
 
 
-class ParamsOfStart(object):
-    """ Parameters to start debot """
+class ParamsOfStart:
+    """Parameters to start debot"""
 
     def __init__(self, debot_handle: 'DebotHandle'):
         """
@@ -4974,11 +5860,12 @@ class ParamsOfStart(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'debot_handle': self.debot_handle}
 
 
-class ParamsOfFetch(object):
-    """ Parameters to fetch debot """
+class ParamsOfFetch:
+    """Parameters to fetch debot"""
 
     def __init__(self, address: str):
         """
@@ -4988,10 +5875,13 @@ class ParamsOfFetch(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'address': self.address}
 
 
-class ResultOfFetch(object):
+class ResultOfFetch:
+    """ResultOfFetch"""
+
     def __init__(self, info: 'DebotInfo'):
         """
         :param info: Debot metadata
@@ -4999,8 +5889,8 @@ class ResultOfFetch(object):
         self.info = info
 
 
-class ParamsOfExecute(object):
-    """ Parameters for executing debot action """
+class ParamsOfExecute:
+    """Parameters for executing debot action"""
 
     def __init__(self, debot_handle: 'DebotHandle', action: 'DebotAction'):
         """
@@ -5013,11 +5903,12 @@ class ParamsOfExecute(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'debot_handle': self.debot_handle, 'action': self.action.dict}
 
 
-class ParamsOfSend(object):
-    """ Parameters of send function """
+class ParamsOfSend:
+    """Parameters of send function"""
 
     def __init__(self, debot_handle: 'DebotHandle', message: str):
         """
@@ -5030,13 +5921,13 @@ class ParamsOfSend(object):
 
     @property
     def dict(self):
-        return {
-            'debot_handle': self.debot_handle,
-            'message': self.message
-        }
+        """Dict from object"""
+        return {'debot_handle': self.debot_handle, 'message': self.message}
 
 
-class ParamsOfRemove(object):
+class ParamsOfRemove:
+    """ParamsOfRemove"""
+
     def __init__(self, debot_handle: 'DebotHandle'):
         """
         :param debot_handle: Debot handle which references an instance of
@@ -5046,10 +5937,13 @@ class ParamsOfRemove(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'debot_handle': self.debot_handle}
 
 
 class DebotState(int, Enum):
+    """Debot state types"""
+
     ZERO = 0
     CURRENT = 253
     PREV = 254
@@ -5058,13 +5952,17 @@ class DebotState(int, Enum):
 
 # PROOFS module
 class ProofsErrorCode(int, Enum):
+    """Proofs module error codes"""
+
     INVALID_DATA = 901
     PROOF_CHECK_FAILED = 902
     INTERNAL_ERROR = 903
     DATA_DIFFERS_FROM_PROVEN = 904
 
 
-class ParamsOfProofBlockData(object):
+class ParamsOfProofBlockData:
+    """ParamsOfProofBlockData"""
+
     def __init__(self, block: Dict[str, Any]):
         """
         :param block: Single block's data, retrieved from TONOS API,
@@ -5075,10 +5973,13 @@ class ParamsOfProofBlockData(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'block': self.block}
 
 
-class ParamsOfProofTransactionData(object):
+class ParamsOfProofTransactionData:
+    """ParamsOfProofTransactionData"""
+
     def __init__(self, transaction: Dict[str, Any]):
         """
         :param transaction: Single transaction's data as queried from DApp
@@ -5091,10 +5992,13 @@ class ParamsOfProofTransactionData(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'transaction': self.transaction}
 
 
-class ParamsOfProofMessageData(object):
+class ParamsOfProofMessageData:
+    """ParamsOfProofMessageData"""
+
     def __init__(self, message: Dict[str, Any]):
         """
         :param message: Single message's data as queried from DApp server,
@@ -5108,56 +6012,66 @@ class ParamsOfProofMessageData(object):
 
     @property
     def dict(self):
+        """Dict from object"""
         return {'message': self.message}
 
 
 # Aggregated types
 AbiType = Union[Abi.Contract, Abi.Json, Abi.Handle, Abi.Serialized]
-SignerType = Union[
-    Signer.NoSigner, Signer.External, Signer.Keys, Signer.SigningBox
-]
+SignerType = Union[Signer.NoSigner, Signer.External, Signer.Keys, Signer.SigningBox]
 AppRequestResultType = Union[AppRequestResult.Ok, AppRequestResult.Error]
 MessageSourceType = Union[MessageSource.Encoded, MessageSource.EncodingParams]
 StateInitSourceType = Union[
     StateInitSource.Message, StateInitSource.StateInit, StateInitSource.Tvc
 ]
 ProcessingEventType = Union[
-    ProcessingEvent.WillFetchFirstBlock, ProcessingEvent.FetchNextBlockFailed,
-    ProcessingEvent.WillSend, ProcessingEvent.DidSend,
-    ProcessingEvent.SendFailed, ProcessingEvent.WillFetchNextBlock,
-    ProcessingEvent.FetchNextBlockFailed, ProcessingEvent.MessageExpired
+    ProcessingEvent.WillFetchFirstBlock,
+    ProcessingEvent.FetchNextBlockFailed,
+    ProcessingEvent.WillSend,
+    ProcessingEvent.DidSend,
+    ProcessingEvent.SendFailed,
+    ProcessingEvent.WillFetchNextBlock,
+    ProcessingEvent.FetchNextBlockFailed,
+    ProcessingEvent.MessageExpired,
 ]
 AccountForExecutorType = Union[
-    AccountForExecutor.NoAccount, AccountForExecutor.Uninit,
-    AccountForExecutor.Account
+    AccountForExecutor.NoAccount, AccountForExecutor.Uninit, AccountForExecutor.Account
 ]
 AddressStringFormatType = Union[
-    AddressStringFormat.AccountId, AddressStringFormat.Hex,
-    AddressStringFormat.Base64
+    AddressStringFormat.AccountId, AddressStringFormat.Hex, AddressStringFormat.Base64
 ]
-DebotActivityType = Union[DebotActivity.Transaction]
+DebotActivityType = DebotActivity.Transaction
 ParamsOfAppDebotBrowserType = Union[
-    ParamsOfAppDebotBrowser.Log, ParamsOfAppDebotBrowser.Switch,
+    ParamsOfAppDebotBrowser.Log,
+    ParamsOfAppDebotBrowser.Switch,
     ParamsOfAppDebotBrowser.SwitchCompleted,
-    ParamsOfAppDebotBrowser.ShowAction, ParamsOfAppDebotBrowser.Input,
-    ParamsOfAppDebotBrowser.GetSigningBox, ParamsOfAppDebotBrowser.InvokeDebot,
-    ParamsOfAppDebotBrowser.Send, ParamsOfAppDebotBrowser.Approve
+    ParamsOfAppDebotBrowser.ShowAction,
+    ParamsOfAppDebotBrowser.Input,
+    ParamsOfAppDebotBrowser.GetSigningBox,
+    ParamsOfAppDebotBrowser.InvokeDebot,
+    ParamsOfAppDebotBrowser.Send,
+    ParamsOfAppDebotBrowser.Approve,
 ]
 ParamsOfQueryOperationType = Union[
     ParamsOfQueryOperation.QueryCollection,
     ParamsOfQueryOperation.WaitForCollection,
     ParamsOfQueryOperation.AggregateCollection,
-    ParamsOfQueryOperation.QueryCounterparties
+    ParamsOfQueryOperation.QueryCounterparties,
 ]
 BocCacheTypeType = Union[BocCacheType.Pinned, BocCacheType.Unpinned]
 BuilderOpType = Union[
-    BuilderOp.Integer, BuilderOp.BitString, BuilderOp.Cell, BuilderOp.CellBoc
+    BuilderOp.Integer,
+    BuilderOp.BitString,
+    BuilderOp.Cell,
+    BuilderOp.CellBoc,
+    BuilderOp.Address,
 ]
 ParamsOfAppSigningBoxType = Union[
     ParamsOfAppSigningBox.GetPublicKey, ParamsOfAppSigningBox.Sign
 ]
 ParamsOfAppEncryptionBoxType = Union[
-    ParamsOfAppEncryptionBox.GetInfo, ParamsOfAppEncryptionBox.Encrypt,
-    ParamsOfAppEncryptionBox.Decrypt
+    ParamsOfAppEncryptionBox.GetInfo,
+    ParamsOfAppEncryptionBox.Encrypt,
+    ParamsOfAppEncryptionBox.Decrypt,
 ]
-EncryptionAlgorithmType = Union[EncryptionAlgorithm.Aes]
+EncryptionAlgorithmType = EncryptionAlgorithm.Aes

@@ -1,17 +1,26 @@
+"""Utils module methods"""
 from typing import Union, Awaitable
 
 from tonclient.module import TonModule
-from tonclient.types import ParamsOfConvertAddress, ResultOfConvertAddress, \
-    ParamsOfCalcStorageFee, ResultOfCalcStorageFee, ParamsOfCompressZstd, \
-    ResultOfCompressZstd, ParamsOfDecompressZstd, ResultOfDecompressZstd, \
-    ParamsOfGetAddressType, ResultOfGetAddressType
+from tonclient.types import (
+    ParamsOfConvertAddress,
+    ResultOfConvertAddress,
+    ParamsOfCalcStorageFee,
+    ResultOfCalcStorageFee,
+    ParamsOfCompressZstd,
+    ResultOfCompressZstd,
+    ParamsOfDecompressZstd,
+    ResultOfDecompressZstd,
+    ParamsOfGetAddressType,
+    ResultOfGetAddressType,
+)
 
 
 class TonUtils(TonModule):
-    """ Free TON utils SDK API implementation """
+    """Free TON utils SDK API implementation"""
 
     def convert_address(
-            self, params: ParamsOfConvertAddress
+        self, params: ParamsOfConvertAddress
     ) -> Union[ResultOfConvertAddress, Awaitable[ResultOfConvertAddress]]:
         """
         Converts address from any TON format to any TON format
@@ -20,11 +29,10 @@ class TonUtils(TonModule):
         :return: See `types.ResultOfConvertAddress`
         """
         response = self.request(method='utils.convert_address', **params.dict)
-        return self.response(
-            classname=ResultOfConvertAddress, response=response)
+        return self.response(classname=ResultOfConvertAddress, response=response)
 
     def calc_storage_fee(
-            self, params: ParamsOfCalcStorageFee
+        self, params: ParamsOfCalcStorageFee
     ) -> Union[ResultOfCalcStorageFee, Awaitable[ResultOfCalcStorageFee]]:
         """
         Calculates storage fee for an account over a specified time period
@@ -33,11 +41,10 @@ class TonUtils(TonModule):
         :return: See `types.ResultOfCalcStorageFee`
         """
         response = self.request(method='utils.calc_storage_fee', **params.dict)
-        return self.response(
-            classname=ResultOfCalcStorageFee, response=response)
+        return self.response(classname=ResultOfCalcStorageFee, response=response)
 
     def compress_zstd(
-            self, params: ParamsOfCompressZstd
+        self, params: ParamsOfCompressZstd
     ) -> Union[ResultOfCompressZstd, Awaitable[ResultOfCompressZstd]]:
         """
         Compresses data using Zstandard algorithm
@@ -49,7 +56,7 @@ class TonUtils(TonModule):
         return self.response(classname=ResultOfCompressZstd, response=response)
 
     def decompress_zstd(
-            self, params: ParamsOfDecompressZstd
+        self, params: ParamsOfDecompressZstd
     ) -> Union[ResultOfDecompressZstd, Awaitable[ResultOfDecompressZstd]]:
         """
         Decompresses data using Zstandard algorithm
@@ -58,11 +65,10 @@ class TonUtils(TonModule):
         :return: See `types.ResultOfDecompressZstd`
         """
         response = self.request(method='utils.decompress_zstd', **params.dict)
-        return self.response(
-            classname=ResultOfDecompressZstd, response=response)
+        return self.response(classname=ResultOfDecompressZstd, response=response)
 
     def get_address_type(
-            self, params: ParamsOfGetAddressType
+        self, params: ParamsOfGetAddressType
     ) -> Union[ResultOfGetAddressType, Awaitable[ResultOfGetAddressType]]:
         """
         Validates and returns the type of any TON address.
@@ -81,5 +87,4 @@ class TonUtils(TonModule):
         :return: See `types.ResultOfGetAddressType`
         """
         response = self.request(method='utils.get_address_type', **params.dict)
-        return self.response(
-            classname=ResultOfGetAddressType, response=response)
+        return self.response(classname=ResultOfGetAddressType, response=response)

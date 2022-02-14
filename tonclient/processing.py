@@ -1,17 +1,22 @@
+"""Processing module methods"""
 from typing import Union, Awaitable
 
 from tonclient.module import TonModule
-from tonclient.types import ParamsOfSendMessage, ResultOfSendMessage, \
-    ParamsOfWaitForTransaction, ResultOfProcessMessage, ResponseHandler, \
-    ParamsOfProcessMessage
+from tonclient.types import (
+    ParamsOfSendMessage,
+    ResultOfSendMessage,
+    ParamsOfWaitForTransaction,
+    ResultOfProcessMessage,
+    ResponseHandler,
+    ParamsOfProcessMessage,
+)
 
 
 class TonProcessing(TonModule):
-    """ Free TON processing SDK API implementation """
+    """Free TON processing SDK API implementation"""
 
     def process_message(
-            self, params: ParamsOfProcessMessage,
-            callback: ResponseHandler = None
+        self, params: ParamsOfProcessMessage, callback: ResponseHandler = None
     ) -> Union[ResultOfProcessMessage, Awaitable[ResultOfProcessMessage]]:
         """
         Creates message, sends it to the network and monitors its processing.
@@ -36,13 +41,12 @@ class TonProcessing(TonModule):
         :return: See `types.ResultOfProcessMessage`
         """
         response = self.request(
-            method='processing.process_message', callback=callback,
-            **params.dict)
-        return self.response(
-            classname=ResultOfProcessMessage, response=response)
+            method='processing.process_message', callback=callback, **params.dict
+        )
+        return self.response(classname=ResultOfProcessMessage, response=response)
 
     def send_message(
-            self, params: ParamsOfSendMessage, callback: ResponseHandler = None
+        self, params: ParamsOfSendMessage, callback: ResponseHandler = None
     ) -> Union[ResultOfSendMessage, Awaitable[ResultOfSendMessage]]:
         """
         Sends message to the network.
@@ -55,12 +59,12 @@ class TonProcessing(TonModule):
         :return: See `types.ResultOfSendMessage`
         """
         response = self.request(
-            method='processing.send_message', callback=callback, **params.dict)
+            method='processing.send_message', callback=callback, **params.dict
+        )
         return self.response(classname=ResultOfSendMessage, response=response)
 
     def wait_for_transaction(
-            self, params: ParamsOfWaitForTransaction,
-            callback: ResponseHandler = None
+        self, params: ParamsOfWaitForTransaction, callback: ResponseHandler = None
     ) -> Union[ResultOfProcessMessage, Awaitable[ResultOfProcessMessage]]:
         """
         Performs monitoring of the network for the result transaction of the
@@ -93,7 +97,6 @@ class TonProcessing(TonModule):
         :return: See `types.ResultOfProcessMessage`
         """
         response = self.request(
-            method='processing.wait_for_transaction', callback=callback,
-            **params.dict)
-        return self.response(
-            classname=ResultOfProcessMessage, response=response)
+            method='processing.wait_for_transaction', callback=callback, **params.dict
+        )
+        return self.response(classname=ResultOfProcessMessage, response=response)

@@ -130,4 +130,5 @@ dmypy.json
 
 # Custom
 .idea/
+.vscode/
 tonos/

@@ -4,7 +4,7 @@ from tonclient.client import TonClient, DEVNET_BASE_URLS
 from tonclient.types import ClientConfig
 
 
-LIB_VERSION = '1.27.0'
+LIB_VERSION = '1.30.0'
 
 
 class TestTonClientAsyncCore(unittest.TestCase):
@@ -31,7 +31,8 @@ class TestTonClientAsyncCore(unittest.TestCase):
 
 
 class TestTonClientSyncCore(unittest.TestCase):
-    """ Sync core is not recommended to use """
+    """Sync core is not recommended to use"""
+
     def setUp(self) -> None:
         config = ClientConfig()
         config.network.endpoints = DEVNET_BASE_URLS

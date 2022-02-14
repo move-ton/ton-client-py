@@ -1,3 +1,11 @@
+## Version 1.30.0.0
+  * Binaries updated to `1.30.0`;
+  * Changes `1.27.1` (https://github.com/tonlabs/TON-SDK/blob/master/CHANGELOG.md#1271--2021-12-09);
+  * Changes `1.28.0` (https://github.com/tonlabs/TON-SDK/blob/master/CHANGELOG.md#1280--2021-12-24);
+  * Changes `1.28.1` (https://github.com/tonlabs/TON-SDK/blob/master/CHANGELOG.md#1281--2022-01-25);
+  * Changes `1.29.0` (https://github.com/tonlabs/TON-SDK/blob/master/CHANGELOG.md#1290--2022-02-03);
+  * Changes `1.30.0` (https://github.com/tonlabs/TON-SDK/blob/master/CHANGELOG.md#1300--2022-02-04);
+
 ## Version 1.27.0.1
   * Internal refactor: methods' return types suggestion are correct and clear now;
 
@@ -46,11 +54,11 @@
 ## Version 1.19.0.0
   * Binaries updated to `1.19.0`;
   * Changes `1.19.0` (https://github.com/tonlabs/TON-SDK/blob/master/CHANGELOG.md#1190--2021-07-07);
-  * `TonException` object improved:  
-    - Now exception object has `client_error: ClientError` attribute. 
+  * `TonException` object improved:
+    - Now exception object has `client_error: ClientError` attribute.
       All `ClientError` attributes are available, e.g. `e.client_error.code`;
     - `module` attribute added to error `client_error` attribute.
-      You can check error module, e.g. `e.client_error.module == ClientErrorCode`.  
+      You can check error module, e.g. `e.client_error.module == ClientErrorCode`.
       All error modules names can be found in `tonclient.types.*ErrorCode`.
 
 ## Version 1.18.0.0
@@ -59,13 +67,13 @@
   * **Note: Possible breaking**
     ```python
     # tonclient/client.py
-    
+
     # DEVNET_BASE_URL = 'net.ton.dev' changed to
     DEVNET_BASE_URLS = [
         'https://net1.ton.dev/',
         'https://net5.ton.dev/'
     ]
-    
+
     # MAINNET_BASE_URL = 'main.ton.dev' changed to
     MAINNET_BASE_URLS = [
         'https://main2.ton.dev/',
@@ -73,17 +81,17 @@
         'https://main4.ton.dev/'
     ]
     ```
-    
-    If you are using `DEVNET_BASE_URL` or `MAINNET_BASE_URL` somewhere, please set/update 
+
+    If you are using `DEVNET_BASE_URL` or `MAINNET_BASE_URL` somewhere, please set/update
     your client `NetworkConfig.endpoints` with new set of urls.
 
 ## Version 1.17.0.1
   * Minimum `Python` version increased to `3.7`;
-  * `AppObject`, `AppSigningBox`, `AppEncryptionBox`, `AppDebotBrowser` interfaces implementation.  
-    Can be found in `tonclient.objects`.  
-    Now you can create child class from any of `AppObject` classes, implement required methods, 
-    create instance of resulting class and pass it's `dispatcher` method instead of raw `callback` 
-    for SDK methods which require `AppObject` as callback.  
+  * `AppObject`, `AppSigningBox`, `AppEncryptionBox`, `AppDebotBrowser` interfaces implementation.
+    Can be found in `tonclient.objects`.
+    Now you can create child class from any of `AppObject` classes, implement required methods,
+    create instance of resulting class and pass it's `dispatcher` method instead of raw `callback`
+    for SDK methods which require `AppObject` as callback.
     <br/>
     More info and usage examples can be found in `test/[test_crypto|test_async|test_debot]`
 
@@ -110,8 +118,8 @@
 
 ## Version 1.12.0.0
   * Binaries updated to `1.12.0`;
-  * Changes `1.12.0` (https://github.com/tonlabs/TON-SDK/blob/master/CHANGELOG.md#1120--2021-04-01)  
-    _**Has breaking changes in DeBot module**_ 
+  * Changes `1.12.0` (https://github.com/tonlabs/TON-SDK/blob/master/CHANGELOG.md#1120--2021-04-01)
+    _**Has breaking changes in DeBot module**_
 
 ## Version 1.11.0.0
   * Binaries updated to `1.11.0`;
@@ -129,33 +137,33 @@
 
 ## Version 1.5.2.0
   * Binaries updated to `1.5.2`;
-  * `net` module functions wait for `net.resume` call instead of returning error if 
+  * `net` module functions wait for `net.resume` call instead of returning error if
     called while the module is suspended.
 
 ## Version 1.5.1.0
-  * Binaries updated to `1.5.1`.  
+  * Binaries updated to `1.5.1`.
     See https://github.com/tonlabs/TON-SDK/blob/master/CHANGELOG.md for details.
 
 ## Version 1.5.0.0
   * `reconnect_timeout` parameter in `NetworkConfig`;
-  * `endpoints` parameter in `NetworkConfig`. It contains the list of available server 
-    addresses to connect. SDK will use one them with the least connect time. 
+  * `endpoints` parameter in `NetworkConfig`. It contains the list of available server
+    addresses to connect. SDK will use one them with the least connect time.
     `server_address` parameter is still supported but endpoints is prevailing;
   * `net.fetch_endpoints` function to receive available endpoints from the server;
   * `net.set_endpoints` function to set endpoints list for using on next reconnect;
   * `ErrorCode` type for each module. See `types.[MODULE]ErrorCode`.
 
 ## Version 1.4.0.1
-  * Core improvement: using `concurrent.future` along with `asyncio.future` for response 
+  * Core improvement: using `concurrent.future` along with `asyncio.future` for response
     resolving
 
 ## Version 1.4.0.0
-Fully reworked binding. Is breaking to previous versions.  
+Fully reworked binding. Is breaking to previous versions.
   * Response resolvers reimplemented (no while loops with responses);
-  * Generators removed, callbacks added.  
+  * Generators removed, callbacks added.
     Each callback receives `response_data`, `response_type`, `loop` arguments.
     `loop` argument is not none only when working with `asyncio`;
-  * Request params and responses are objects of core `types` now.  
+  * Request params and responses are objects of core `types` now.
     See https://github.com/tonlabs/TON-SDK/tree/master/docs and `tonclient.types` for more info;
   * Methods' docstrings updated;
   * Tests updated.

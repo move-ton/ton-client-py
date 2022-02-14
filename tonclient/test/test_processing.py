@@ -6,15 +6,26 @@ import unittest
 from tonclient.errors import TonException
 from tonclient.test.test_abi import SAMPLES_DIR
 from tonclient.test.helpers import send_grams, async_core_client
-from tonclient.types import Abi, DeploySet, CallSet, Signer, FunctionHeader, \
-    ParamsOfEncodeMessage, ParamsOfProcessMessage, ProcessingResponseType, \
-    ProcessingEvent, ParamsOfSendMessage, ParamsOfWaitForTransaction
+from tonclient.types import (
+    Abi,
+    DeploySet,
+    CallSet,
+    Signer,
+    FunctionHeader,
+    ParamsOfEncodeMessage,
+    ParamsOfProcessMessage,
+    ProcessingResponseType,
+    ProcessingEvent,
+    ParamsOfSendMessage,
+    ParamsOfWaitForTransaction,
+)
 
 
 class TestTonProcessingAsyncCore(unittest.TestCase):
     def setUp(self) -> None:
         self.events_abi = Abi.from_path(
-            path=os.path.join(SAMPLES_DIR, 'Events.abi.json'))
+            path=os.path.join(SAMPLES_DIR, 'Events.abi.json')
+        )
         with open(os.path.join(SAMPLES_DIR, 'Events.tvc'), 'rb') as fp:
             self.events_tvc = base64.b64encode(fp.read()).decode()
         self.deploy_set = DeploySet(tvc=self.events_tvc)
@@ -24,12 +35,15 @@ class TestTonProcessingAsyncCore(unittest.TestCase):
         keypair = async_core_client.crypto.generate_random_sign_keys()
         signer = Signer.Keys(keys=keypair)
         call_set = CallSet(
-            function_name='constructor',
-            header=FunctionHeader(pubkey=keypair.public))
+            function_name='constructor', header=FunctionHeader(pubkey=keypair.public)
+        )
         # Encode deployment message
         encode_params = ParamsOfEncodeMessage(
-            abi=self.events_abi, signer=signer, deploy_set=self.deploy_set,
-            call_set=call_set)
+            abi=self.events_abi,
+            signer=signer,
+            deploy_set=self.deploy_set,
+            call_set=call_set,
+        )
         encoded = async_core_client.abi.encode_message(params=encode_params)
 
         # Send grams
@@ -37,12 +51,11 @@ class TestTonProcessingAsyncCore(unittest.TestCase):
 
         # Deploy account
         process_params = ParamsOfProcessMessage(
-            message_encode_params=encode_params, send_events=False)
-        result = async_core_client.processing.process_message(
-            params=process_params)
+            message_encode_params=encode_params, send_events=False
+        )
+        result = async_core_client.processing.process_message(params=process_params)
 
-        self.assertEqual(
-            encoded.address, result.transaction['account_addr'])
+        self.assertEqual(encoded.address, result.transaction['account_addr'])
         self.assertEqual('finalized', result.transaction['status_name'])
         self.assertEqual(0, len(result.out_messages))
 
@@ -50,25 +63,31 @@ class TestTonProcessingAsyncCore(unittest.TestCase):
         with self.assertRaises(TonException):
             call_set = CallSet(function_name='returnValue', input={'id': -1})
             encode_params = ParamsOfEncodeMessage(
-                abi=self.events_abi, signer=signer, address=encoded.address,
-                call_set=call_set)
+                abi=self.events_abi,
+                signer=signer,
+                address=encoded.address,
+                call_set=call_set,
+            )
             process_params = ParamsOfProcessMessage(
-                message_encode_params=encode_params, send_events=False)
+                message_encode_params=encode_params, send_events=False
+            )
 
-            async_core_client.processing.process_message(
-                params=process_params)
+            async_core_client.processing.process_message(params=process_params)
 
     def test_process_message_with_events(self):
         # Prepare data for deployment message
         keypair = async_core_client.crypto.generate_random_sign_keys()
         signer = Signer.Keys(keys=keypair)
         call_set = CallSet(
-            function_name='constructor',
-            header=FunctionHeader(pubkey=keypair.public))
+            function_name='constructor', header=FunctionHeader(pubkey=keypair.public)
+        )
         # Encode deployment message
         encode_params = ParamsOfEncodeMessage(
-            abi=self.events_abi, signer=signer, deploy_set=self.deploy_set,
-            call_set=call_set)
+            abi=self.events_abi,
+            signer=signer,
+            deploy_set=self.deploy_set,
+            call_set=call_set,
+        )
         encoded = async_core_client.abi.encode_message(params=encode_params)
 
         # Send grams
@@ -78,18 +97,18 @@ class TestTonProcessingAsyncCore(unittest.TestCase):
         events = []
 
         def __callback(response_data, response_type, *args):
-            self.assertEqual(
-                ProcessingResponseType.PROCESSING_EVENT, response_type)
+            self.assertEqual(ProcessingResponseType.PROCESSING_EVENT, response_type)
             event = ProcessingEvent.from_dict(data=response_data)
             events.append(event)
 
         deploy_params = ParamsOfProcessMessage(
-            message_encode_params=encode_params, send_events=True)
+            message_encode_params=encode_params, send_events=True
+        )
         deploy = async_core_client.processing.process_message(
-            params=deploy_params, callback=__callback)
+            params=deploy_params, callback=__callback
+        )
 
-        self.assertEqual(
-            encoded.address, deploy.transaction['account_addr'])
+        self.assertEqual(encoded.address, deploy.transaction['account_addr'])
         self.assertEqual('finalized', deploy.transaction['status_name'])
         self.assertEqual(0, len(deploy.out_messages))
 
@@ -102,11 +121,14 @@ class TestTonProcessingAsyncCore(unittest.TestCase):
         keypair = async_core_client.crypto.generate_random_sign_keys()
         signer = Signer.Keys(keys=keypair)
         call_set = CallSet(
-            function_name='constructor',
-            header=FunctionHeader(pubkey=keypair.public))
+            function_name='constructor', header=FunctionHeader(pubkey=keypair.public)
+        )
         encode_params = ParamsOfEncodeMessage(
-            abi=self.events_abi, signer=signer, deploy_set=self.deploy_set,
-            call_set=call_set)
+            abi=self.events_abi,
+            signer=signer,
+            deploy_set=self.deploy_set,
+            call_set=call_set,
+        )
         encoded = async_core_client.abi.encode_message(params=encode_params)
 
         # Send grams
@@ -114,17 +136,19 @@ class TestTonProcessingAsyncCore(unittest.TestCase):
 
         # Send message
         send_params = ParamsOfSendMessage(
-            message=encoded.message, send_events=False, abi=self.events_abi)
-        send = async_core_client.processing.send_message(
-            params=send_params)
+            message=encoded.message, send_events=False, abi=self.events_abi
+        )
+        send = async_core_client.processing.send_message(params=send_params)
 
         # Wait for transaction
         wait_params = ParamsOfWaitForTransaction(
-            message=encoded.message, shard_block_id=send.shard_block_id,
-            send_events=False, abi=self.events_abi,
-            sending_endpoints=send.sending_endpoints)
-        wait = async_core_client.processing.wait_for_transaction(
-            params=wait_params)
+            message=encoded.message,
+            shard_block_id=send.shard_block_id,
+            send_events=False,
+            abi=self.events_abi,
+            sending_endpoints=send.sending_endpoints,
+        )
+        wait = async_core_client.processing.wait_for_transaction(params=wait_params)
         self.assertEqual([], wait.out_messages)
         self.assertEqual([], wait.decoded.out_messages)
         self.assertIsNone(wait.decoded.output)
@@ -134,11 +158,14 @@ class TestTonProcessingAsyncCore(unittest.TestCase):
         keypair = async_core_client.crypto.generate_random_sign_keys()
         signer = Signer.Keys(keys=keypair)
         call_set = CallSet(
-            function_name='constructor',
-            header=FunctionHeader(pubkey=keypair.public))
+            function_name='constructor', header=FunctionHeader(pubkey=keypair.public)
+        )
         encode_params = ParamsOfEncodeMessage(
-            abi=self.events_abi, signer=signer, deploy_set=self.deploy_set,
-            call_set=call_set)
+            abi=self.events_abi,
+            signer=signer,
+            deploy_set=self.deploy_set,
+            call_set=call_set,
+        )
         encoded = async_core_client.abi.encode_message(params=encode_params)
 
         # Send grams
@@ -148,15 +175,16 @@ class TestTonProcessingAsyncCore(unittest.TestCase):
         events = []
 
         def __callback(response_data, response_type, *args):
-            self.assertEqual(
-                ProcessingResponseType.PROCESSING_EVENT, response_type)
+            self.assertEqual(ProcessingResponseType.PROCESSING_EVENT, response_type)
             event = ProcessingEvent.from_dict(data=response_data)
             events.append(event)
 
         send_params = ParamsOfSendMessage(
-            message=encoded.message, send_events=True, abi=self.events_abi)
+            message=encoded.message, send_events=True, abi=self.events_abi
+        )
         send = async_core_client.processing.send_message(
-            params=send_params, callback=__callback)
+            params=send_params, callback=__callback
+        )
 
         logging.info('Send message events:')
         for e in events:
@@ -166,11 +194,15 @@ class TestTonProcessingAsyncCore(unittest.TestCase):
         # Wait for transaction
         events.clear()
         wait_params = ParamsOfWaitForTransaction(
-            message=encoded.message, shard_block_id=send.shard_block_id,
-            send_events=True, abi=self.events_abi,
-            sending_endpoints=send.sending_endpoints)
+            message=encoded.message,
+            shard_block_id=send.shard_block_id,
+            send_events=True,
+            abi=self.events_abi,
+            sending_endpoints=send.sending_endpoints,
+        )
         wait = async_core_client.processing.wait_for_transaction(
-            params=wait_params, callback=__callback)
+            params=wait_params, callback=__callback
+        )
 
         self.assertEqual([], wait.out_messages)
         self.assertEqual([], wait.decoded.out_messages)

@@ -1,16 +1,25 @@
+"""DeBot module methods"""
 from typing import Union, Awaitable
 
 from tonclient.module import TonModule
-from tonclient.types import ParamsOfStart, RegisteredDebot, ParamsOfFetch, \
-    ParamsOfExecute, ParamsOfSend, ResponseHandler, ParamsOfInit, \
-    ResultOfFetch, ParamsOfRemove
+from tonclient.types import (
+    ParamsOfStart,
+    RegisteredDebot,
+    ParamsOfFetch,
+    ParamsOfExecute,
+    ParamsOfSend,
+    ResponseHandler,
+    ParamsOfInit,
+    ResultOfFetch,
+    ParamsOfRemove,
+)
 
 
 class TonDebot(TonModule):
-    """ Free TON debot SDK API implementation """
+    """Free TON debot SDK API implementation"""
 
     def init(
-            self, params: ParamsOfInit, callback: ResponseHandler
+        self, params: ParamsOfInit, callback: ResponseHandler
     ) -> Union[RegisteredDebot, Awaitable[RegisteredDebot]]:
         """
         Creates and instance of DeBot.
@@ -21,8 +30,7 @@ class TonDebot(TonModule):
         :param callback: Callback for debot events
         :return: See `types.RegisteredDebot`
         """
-        response = self.request(
-            method='debot.init', callback=callback, **params.dict)
+        response = self.request(method='debot.init', callback=callback, **params.dict)
         return self.response(classname=RegisteredDebot, response=response)
 
     def start(self, params: ParamsOfStart) -> Union[None, Awaitable[None]]:
@@ -45,7 +53,7 @@ class TonDebot(TonModule):
         return self.request(method='debot.start', **params.dict)
 
     def fetch(
-            self, params: ParamsOfFetch
+        self, params: ParamsOfFetch
     ) -> Union[ResultOfFetch, Awaitable[ResultOfFetch]]:
         """
         Fetches DeBot metadata from blockchain.

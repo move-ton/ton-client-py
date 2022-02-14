@@ -1,26 +1,44 @@
+"""Net module methods"""
 from typing import Union, Awaitable
 
 from tonclient.module import TonModule
-from tonclient.types import ParamsOfQuery, ResultOfQuery, \
-    ParamsOfQueryCollection, ResultOfQueryCollection, \
-    ParamsOfWaitForCollection, ResultOfWaitForCollection, \
-    ResultOfSubscribeCollection, ParamsOfSubscribeCollection, \
-    ParamsOfFindLastShardBlock, ResultOfFindLastShardBlock, EndpointsSet, \
-    ParamsOfAggregateCollection, ResultOfAggregateCollection, \
-    ParamsOfBatchQuery, ResultOfBatchQuery, ResponseHandler, \
-    ParamsOfQueryCounterparties, ResultOfGetEndpoints, \
-    ParamsOfQueryTransactionTree, ResultOfQueryTransactionTree, \
-    ParamsOfCreateBlockIterator, RegisteredIterator, \
-    ParamsOfResumeBlockIterator, ParamsOfCreateTransactionIterator, \
-    ParamsOfResumeTransactionIterator, ParamsOfIteratorNext, \
-    ResultOfIteratorNext
+from tonclient.types import (
+    ParamsOfQuery,
+    ResultOfQuery,
+    ParamsOfQueryCollection,
+    ResultOfQueryCollection,
+    ParamsOfWaitForCollection,
+    ResultOfWaitForCollection,
+    ResultOfSubscribeCollection,
+    ParamsOfSubscribeCollection,
+    ParamsOfFindLastShardBlock,
+    ResultOfFindLastShardBlock,
+    EndpointsSet,
+    ParamsOfAggregateCollection,
+    ResultOfAggregateCollection,
+    ParamsOfBatchQuery,
+    ResultOfBatchQuery,
+    ResponseHandler,
+    ParamsOfQueryCounterparties,
+    ResultOfGetEndpoints,
+    ParamsOfQueryTransactionTree,
+    ResultOfQueryTransactionTree,
+    ParamsOfCreateBlockIterator,
+    RegisteredIterator,
+    ParamsOfResumeBlockIterator,
+    ParamsOfCreateTransactionIterator,
+    ParamsOfResumeTransactionIterator,
+    ParamsOfIteratorNext,
+    ResultOfIteratorNext,
+    ParamsOfSubscribe,
+)
 
 
 class TonNet(TonModule):
-    """ Free TON net SDK API implementation """
+    """Free TON net SDK API implementation"""
 
     def query_collection(
-            self, params: ParamsOfQueryCollection
+        self, params: ParamsOfQueryCollection
     ) -> Union[ResultOfQueryCollection, Awaitable[ResultOfQueryCollection]]:
         """
         Queries collection data.
@@ -32,15 +50,11 @@ class TonNet(TonModule):
         :return: See `types.ResultOfQueryCollection`
         """
         response = self.request(method='net.query_collection', **params.dict)
-        return self.response(
-            classname=ResultOfQueryCollection, response=response)
+        return self.response(classname=ResultOfQueryCollection, response=response)
 
     def wait_for_collection(
-            self, params: ParamsOfWaitForCollection
-    ) -> Union[
-        ResultOfWaitForCollection,
-        Awaitable[ResultOfWaitForCollection]
-    ]:
+        self, params: ParamsOfWaitForCollection
+    ) -> Union[ResultOfWaitForCollection, Awaitable[ResultOfWaitForCollection]]:
         """
         Returns an object that fulfills the conditions or waits for its
         appearance. Triggers only once.
@@ -52,18 +66,57 @@ class TonNet(TonModule):
         :param params: See `types.ParamsOfWaitForCollection`
         :return: See `types.ResultOfWaitForCollection`
         """
+        response = self.request(method='net.wait_for_collection', **params.dict)
+        return self.response(classname=ResultOfWaitForCollection, response=response)
+
+    def subscribe(
+        self, params: ParamsOfSubscribe, callback: ResponseHandler = None
+    ) -> Union[ResultOfSubscribeCollection, Awaitable[ResultOfSubscribeCollection]]:
+        """
+        Creates a subscription.
+        The subscription is a persistent communication channel between client and
+        Everscale Network.
+
+        Important Notes on Subscriptions.
+        Unfortunately sometimes the connection with the network brakes down.
+        In this situation the library attempts to reconnect to the network.
+        This reconnection sequence can take significant time. All of this time
+        the client is disconnected from the network.
+
+        Bad news is that all changes that happened while the client was
+        disconnected are lost.
+
+        Good news is that the client report errors to the callback when it
+        loses and resumes connection.
+
+        So, if the lost changes are important to the application then the application
+        must handle these error reports.
+        Library reports errors with responseType == 101 and the error object passed
+        via params.
+
+        When the library has successfully reconnected the application receives callback
+        with responseType == 101 and params.code == 614 (NetworkModuleResumed).
+
+        Application can use several ways to handle this situation:
+            - If application monitors changes for the single object
+              (for example specific account): application can perform a query for this
+              object and handle actual data as a regular data from the subscription.
+            - If application monitors sequence of some objects (for example
+              transactions of the specific account): application must refresh all
+              cached (or visible to user) lists where this sequences presents.
+
+        :param params: See `types.ParamsOfSubscribe`
+        :param callback: Additional responses handler
+        :return: See `types.ResultOfSubscribeCollection`
+        """
         response = self.request(
-            method='net.wait_for_collection', **params.dict)
-        return self.response(
-            classname=ResultOfWaitForCollection, response=response)
+            method='net.subscribe', callback=callback, **params.dict
+        )
+        return self.response(classname=ResultOfSubscribeCollection, response=response)
 
     def subscribe_collection(
-            self, params: ParamsOfSubscribeCollection,
-            callback: ResponseHandler = None
-    ) -> Union[
-        ResultOfSubscribeCollection,
-        Awaitable[ResultOfSubscribeCollection]
-    ]:
+        self, params: ParamsOfSubscribeCollection, callback: ResponseHandler = None
+    ) -> Union[ResultOfSubscribeCollection, Awaitable[ResultOfSubscribeCollection]]:
         """
         Creates a subscription.
         Triggers for each insert/update of data that satisfies the `filter`
@@ -74,13 +127,12 @@ class TonNet(TonModule):
         :return:
         """
         response = self.request(
-            method='net.subscribe_collection', callback=callback,
-            **params.dict)
-        return self.response(
-            classname=ResultOfSubscribeCollection, response=response)
+            method='net.subscribe_collection', callback=callback, **params.dict
+        )
+        return self.response(classname=ResultOfSubscribeCollection, response=response)
 
     def unsubscribe(
-            self, params: ResultOfSubscribeCollection
+        self, params: ResultOfSubscribeCollection
     ) -> Union[None, Awaitable[None]]:
         """
         Cancels a subscription.
@@ -91,7 +143,7 @@ class TonNet(TonModule):
         return self.request(method='net.unsubscribe', **params.dict)
 
     def query(
-            self, params: ParamsOfQuery
+        self, params: ParamsOfQuery
     ) -> Union[ResultOfQuery, Awaitable[ResultOfQuery]]:
         """
         Performs DAppServer GraphQL query
@@ -103,27 +155,22 @@ class TonNet(TonModule):
         return self.response(classname=ResultOfQuery, response=response)
 
     def suspend(self) -> Union[None, Awaitable[None]]:
-        """ Suspends network module to stop any network activity """
+        """Suspends network module to stop any network activity"""
         return self.request(method='net.suspend')
 
     def resume(self) -> Union[None, Awaitable[None]]:
-        """ Resumes network module to enable network activity """
+        """Resumes network module to enable network activity"""
         return self.request(method='net.resume')
 
     def find_last_shard_block(
-            self, params: ParamsOfFindLastShardBlock
-    ) -> Union[
-        ResultOfFindLastShardBlock,
-        Awaitable[ResultOfFindLastShardBlock]
-    ]:
+        self, params: ParamsOfFindLastShardBlock
+    ) -> Union[ResultOfFindLastShardBlock, Awaitable[ResultOfFindLastShardBlock]]:
         """
         :param params: See `types.ParamsOfFindLastShardBlock`
         :return: See `types.ResultOfFindLastShardBlock`
         """
-        response = self.request(
-            method='net.find_last_shard_block', **params.dict)
-        return self.response(
-            classname=ResultOfFindLastShardBlock, response=response)
+        response = self.request(method='net.find_last_shard_block', **params.dict)
+        return self.response(classname=ResultOfFindLastShardBlock, response=response)
 
     def fetch_endpoints(self) -> Union[EndpointsSet, Awaitable[EndpointsSet]]:
         """
@@ -134,9 +181,7 @@ class TonNet(TonModule):
         response = self.request(method='net.fetch_endpoints')
         return self.response(classname=EndpointsSet, response=response)
 
-    def set_endpoints(
-            self, params: EndpointsSet
-    ) -> Union[None, Awaitable[None]]:
+    def set_endpoints(self, params: EndpointsSet) -> Union[None, Awaitable[None]]:
         """
         Sets the list of endpoints to use on re-init
 
@@ -145,10 +190,9 @@ class TonNet(TonModule):
         """
         return self.request(method='net.set_endpoints', **params.dict)
 
-    def get_endpoints(self) -> Union[
-        ResultOfGetEndpoints,
-        Awaitable[ResultOfGetEndpoints]
-    ]:
+    def get_endpoints(
+        self,
+    ) -> Union[ResultOfGetEndpoints, Awaitable[ResultOfGetEndpoints]]:
         """
         Requests the list of alternative endpoints from server
 
@@ -158,11 +202,8 @@ class TonNet(TonModule):
         return self.response(classname=ResultOfGetEndpoints, response=response)
 
     def aggregate_collection(
-            self, params: ParamsOfAggregateCollection
-    ) -> Union[
-        ResultOfAggregateCollection,
-        Awaitable[ResultOfAggregateCollection]
-    ]:
+        self, params: ParamsOfAggregateCollection
+    ) -> Union[ResultOfAggregateCollection, Awaitable[ResultOfAggregateCollection]]:
         """
         Aggregates collection data.
         Aggregates values from the specified `fields` for records that
@@ -171,13 +212,11 @@ class TonNet(TonModule):
         :param params: See `types.ParamsOfAggregateCollection`
         :return: See `types.ResultOfAggregateCollection`
         """
-        response = self.request(
-            method='net.aggregate_collection', **params.dict)
-        return self.response(
-            classname=ResultOfAggregateCollection, response=response)
+        response = self.request(method='net.aggregate_collection', **params.dict)
+        return self.response(classname=ResultOfAggregateCollection, response=response)
 
     def batch_query(
-            self, params: ParamsOfBatchQuery
+        self, params: ParamsOfBatchQuery
     ) -> Union[ResultOfBatchQuery, Awaitable[ResultOfBatchQuery]]:
         """
         Performs multiple queries per single fetch
@@ -189,7 +228,7 @@ class TonNet(TonModule):
         return self.response(classname=ResultOfBatchQuery, response=response)
 
     def query_counterparties(
-            self, params: ParamsOfQueryCounterparties
+        self, params: ParamsOfQueryCounterparties
     ) -> Union[ResultOfQueryCollection, Awaitable[ResultOfQueryCollection]]:
         """
         Allows query and paginate through the list of accounts that the
@@ -205,17 +244,12 @@ class TonNet(TonModule):
         :param params: See `types.ParamsOfQueryCounterparties`
         :return: See `types.ResultOfQueryCollection`
         """
-        response = self.request(
-            method='net.query_counterparties', **params.dict)
-        return self.response(
-            classname=ResultOfQueryCollection, response=response)
+        response = self.request(method='net.query_counterparties', **params.dict)
+        return self.response(classname=ResultOfQueryCollection, response=response)
 
     def query_transaction_tree(
-            self, params: ParamsOfQueryTransactionTree
-    ) -> Union[
-        ResultOfQueryTransactionTree,
-        Awaitable[ResultOfQueryTransactionTree]
-    ]:
+        self, params: ParamsOfQueryTransactionTree
+    ) -> Union[ResultOfQueryTransactionTree, Awaitable[ResultOfQueryTransactionTree]]:
         """
         Returns transactions tree for specific message.
         Performs recursive retrieval of the transactions tree produced by
@@ -234,13 +268,11 @@ class TonNet(TonModule):
         :param params: See `types.ParamsOfQueryTransactionTree`
         :return: See `types.ResultOfQueryTransactionTree`
         """
-        response = self.request(
-            method='net.query_transaction_tree', **params.dict)
-        return self.response(
-            classname=ResultOfQueryTransactionTree, response=response)
+        response = self.request(method='net.query_transaction_tree', **params.dict)
+        return self.response(classname=ResultOfQueryTransactionTree, response=response)
 
     def create_block_iterator(
-            self, params: ParamsOfCreateBlockIterator
+        self, params: ParamsOfCreateBlockIterator
     ) -> Union[RegisteredIterator, Awaitable[RegisteredIterator]]:
         """
         Creates block iterator.
@@ -270,12 +302,11 @@ class TonNet(TonModule):
         :param params: See `types.ParamsOfCreateBlockIterator`
         :return: See `types.RegisteredIterator`
         """
-        response = self.request(
-            method='net.create_block_iterator', **params.dict)
+        response = self.request(method='net.create_block_iterator', **params.dict)
         return self.response(classname=RegisteredIterator, response=response)
 
     def resume_block_iterator(
-            self, params: ParamsOfResumeBlockIterator
+        self, params: ParamsOfResumeBlockIterator
     ) -> Union[RegisteredIterator, Awaitable[RegisteredIterator]]:
         """
         Resumes block iterator.
@@ -287,12 +318,11 @@ class TonNet(TonModule):
         :param params: See `types.ParamsOfResumeBlockIterator`
         :return: See `types.RegisteredIterator`
         """
-        response = self.request(
-            method='net.resume_block_iterator', **params.dict)
+        response = self.request(method='net.resume_block_iterator', **params.dict)
         return self.response(classname=RegisteredIterator, response=response)
 
     def create_transaction_iterator(
-            self, params: ParamsOfCreateTransactionIterator
+        self, params: ParamsOfCreateTransactionIterator
     ) -> Union[RegisteredIterator, Awaitable[RegisteredIterator]]:
         """
         Creates transaction iterator.
@@ -328,12 +358,11 @@ class TonNet(TonModule):
         :param params: See `types.ParamsOfCreateTransactionIterator`
         :return: See `types.RegisteredIterator`
         """
-        response = self.request(
-            method='net.create_transaction_iterator', **params.dict)
+        response = self.request(method='net.create_transaction_iterator', **params.dict)
         return self.response(classname=RegisteredIterator, response=response)
 
     def resume_transaction_iterator(
-            self, params: ParamsOfResumeTransactionIterator
+        self, params: ParamsOfResumeTransactionIterator
     ) -> Union[RegisteredIterator, Awaitable[RegisteredIterator]]:
         """
         Resumes transaction iterator.
@@ -351,12 +380,11 @@ class TonNet(TonModule):
         :param params: See `types.ParamsOfResumeTransactionIterator`
         :return: See `types.RegisteredIterator`
         """
-        response = self.request(
-            method='net.resume_transaction_iterator', **params.dict)
+        response = self.request(method='net.resume_transaction_iterator', **params.dict)
         return self.response(classname=RegisteredIterator, response=response)
 
     def iterator_next(
-            self, params: ParamsOfIteratorNext
+        self, params: ParamsOfIteratorNext
     ) -> Union[ResultOfIteratorNext, Awaitable[ResultOfIteratorNext]]:
         """
         Returns next available items
@@ -368,7 +396,7 @@ class TonNet(TonModule):
         return self.response(classname=ResultOfIteratorNext, response=response)
 
     def remove_iterator(
-            self, params: RegisteredIterator
+        self, params: RegisteredIterator
     ) -> Union[None, Awaitable[None]]:
         """
         Removes an iterator.

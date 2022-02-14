@@ -8,42 +8,72 @@ import unittest
 
 from tonclient.client import TonClient
 from tonclient.errors import TonException
-from tonclient.test.helpers import async_core_client, sync_core_client, \
-    SAMPLES_DIR, send_grams, GIVER_ADDRESS, tonos_punch
-from tonclient.types import ParamsOfQueryCollection, OrderBy, SortDirection, \
-    ParamsOfWaitForCollection, ParamsOfQuery, ParamsOfSubscribeCollection, \
-    SubscriptionResponseType, ResultOfSubscription, ClientError, Abi, \
-    ParamsOfEncodeMessage, Signer, DeploySet, CallSet, ParamsOfProcessMessage,\
-    ParamsOfFindLastShardBlock, ParamsOfAggregateCollection, \
-    FieldAggregation, AggregationFn, ParamsOfBatchQuery, \
-    ParamsOfQueryOperation, ParamsOfQueryCounterparties, \
-    ParamsOfQueryTransactionTree, MessageNode, TransactionNode, \
-    ParamsOfCreateBlockIterator, ParamsOfIteratorNext, \
-    ParamsOfResumeBlockIterator
+from tonclient.test.helpers import (
+    async_core_client,
+    sync_core_client,
+    SAMPLES_DIR,
+    send_grams,
+    GIVER_ADDRESS,
+    tonos_punch,
+)
+from tonclient.types import (
+    ParamsOfQueryCollection,
+    OrderBy,
+    SortDirection,
+    ParamsOfWaitForCollection,
+    ParamsOfQuery,
+    ParamsOfSubscribeCollection,
+    SubscriptionResponseType,
+    ResultOfSubscription,
+    ClientError,
+    Abi,
+    ParamsOfEncodeMessage,
+    Signer,
+    DeploySet,
+    CallSet,
+    ParamsOfProcessMessage,
+    ParamsOfFindLastShardBlock,
+    ParamsOfAggregateCollection,
+    FieldAggregation,
+    AggregationFn,
+    ParamsOfBatchQuery,
+    ParamsOfQueryOperation,
+    ParamsOfQueryCounterparties,
+    ParamsOfQueryTransactionTree,
+    MessageNode,
+    TransactionNode,
+    ParamsOfCreateBlockIterator,
+    ParamsOfIteratorNext,
+    ParamsOfResumeBlockIterator,
+)
 
 
 class TestTonNetAsyncCore(unittest.TestCase):
     def test_query_collection(self):
-        q_params = ParamsOfQueryCollection(
-            collection='messages', result='id', limit=1)
+        q_params = ParamsOfQueryCollection(collection='messages', result='id', limit=1)
         result = async_core_client.net.query_collection(params=q_params)
         self.assertGreater(len(result.result), 0)
 
         q_params = ParamsOfQueryCollection(
-            collection='accounts', result='id balance', limit=5)
+            collection='accounts', result='id balance', limit=5
+        )
         result = async_core_client.net.query_collection(params=q_params)
         self.assertEqual(5, len(result.result))
 
         q_params = ParamsOfQueryCollection(
-            collection='messages', result='body created_at', limit=10,
+            collection='messages',
+            result='body created_at',
+            limit=10,
             filter={'created_at': {'gt': 1562342740}},
-            order=[OrderBy(path='created_at', direction=SortDirection.ASC)])
+            order=[OrderBy(path='created_at', direction=SortDirection.ASC)],
+        )
         result = async_core_client.net.query_collection(params=q_params)
         self.assertGreater(result.result[0]['created_at'], 1562342740)
 
         with self.assertRaises(TonException):
             q_params = ParamsOfQueryCollection(
-                collection='messages', result='id balance')
+                collection='messages', result='id balance'
+            )
             async_core_client.net.query_collection(params=q_params)
 
     def test_wait_for_collection(self):
@@ -51,14 +81,15 @@ class TestTonNetAsyncCore(unittest.TestCase):
         tonos_punch()
 
         q_params = ParamsOfWaitForCollection(
-            collection='transactions', result='id now',
-            filter={'now': {'gt': now}})
+            collection='transactions', result='id now', filter={'now': {'gt': now}}
+        )
         result = async_core_client.net.wait_for_collection(params=q_params)
         self.assertGreater(result.result['now'], now)
 
         with self.assertRaises(TonException):
             q_params = ParamsOfWaitForCollection(
-                collection='transactions', result='', timeout=1)
+                collection='transactions', result='', timeout=1
+            )
             async_core_client.net.wait_for_collection(params=q_params)
 
     def test_subscribe_collection(self):
@@ -73,10 +104,13 @@ class TestTonNetAsyncCore(unittest.TestCase):
 
         now = int(datetime.now().timestamp())
         q_params = ParamsOfSubscribeCollection(
-            collection='messages', result='created_at',
-            filter={'created_at': {'gt': now}})
+            collection='messages',
+            result='created_at',
+            filter={'created_at': {'gt': now}},
+        )
         subscription = async_core_client.net.subscribe_collection(
-            params=q_params, callback=__callback)
+            params=q_params, callback=__callback
+        )
 
         while True:
             if len(results) > 0 or int(datetime.now().timestamp()) > now + 30:
@@ -92,7 +126,8 @@ class TestTonNetAsyncCore(unittest.TestCase):
         tonos_punch()
         q_params = ParamsOfQuery(
             query='query($time: Float){messages(filter:{created_at:{ge:$time}}limit:5){id}}',
-            variables={'time': int(datetime.now().timestamp()) - 60})
+            variables={'time': int(datetime.now().timestamp()) - 60},
+        )
         result = async_core_client.net.query(params=q_params)
         self.assertGreater(len(result.result['data']['messages']), 0)
 
@@ -108,7 +143,8 @@ class TestTonNetAsyncCore(unittest.TestCase):
 
         # Prepare deployment params
         encode_params = ParamsOfEncodeMessage(
-            abi=abi, signer=signer, deploy_set=deploy_set, call_set=call_set)
+            abi=abi, signer=signer, deploy_set=deploy_set, call_set=call_set
+        )
         encode = async_core_client.abi.encode_message(params=encode_params)
 
         # Subscribe for address deploy transaction status
@@ -123,10 +159,16 @@ class TestTonNetAsyncCore(unittest.TestCase):
                 logging.info(ClientError(**response_data).__str__())
 
         subscribe_params = ParamsOfSubscribeCollection(
-            collection='transactions', result='id account_addr',
-            filter={'account_addr': {'eq': encode.address}, 'status_name': {'eq': 'Finalized'}})
+            collection='transactions',
+            result='id account_addr',
+            filter={
+                'account_addr': {'eq': encode.address},
+                'status_name': {'eq': 'Finalized'},
+            },
+        )
         subscribe = async_core_client.net.subscribe_collection(
-            params=subscribe_params, callback=__callback)
+            params=subscribe_params, callback=__callback
+        )
 
         # Send grams to new account to create first transaction
         send_grams(address=encode.address)
@@ -144,7 +186,8 @@ class TestTonNetAsyncCore(unittest.TestCase):
         second_client = TonClient(config=second_config)
 
         process_params = ParamsOfProcessMessage(
-            message_encode_params=encode_params, send_events=False)
+            message_encode_params=encode_params, send_events=False
+        )
         second_client.processing.process_message(params=process_params)
         second_client.destroy_context()
 
@@ -159,9 +202,11 @@ class TestTonNetAsyncCore(unittest.TestCase):
         # Run contract function to create third transaction
         call_set = CallSet(function_name='touch')
         encode_params = ParamsOfEncodeMessage(
-            abi=abi, signer=signer, address=encode.address, call_set=call_set)
+            abi=abi, signer=signer, address=encode.address, call_set=call_set
+        )
         process_params = ParamsOfProcessMessage(
-            message_encode_params=encode_params, send_events=False)
+            message_encode_params=encode_params, send_events=False
+        )
         async_core_client.processing.process_message(params=process_params)
 
         # Give some time for subscription to receive all data
@@ -176,8 +221,7 @@ class TestTonNetAsyncCore(unittest.TestCase):
 
     def test_find_last_shard_block(self):
         find_params = ParamsOfFindLastShardBlock(address=GIVER_ADDRESS)
-        result = async_core_client.net.find_last_shard_block(
-            params=find_params)
+        result = async_core_client.net.find_last_shard_block(params=find_params)
         self.assertIsInstance(result.block_id, str)
 
     # def test_endpoints(self):
@@ -197,11 +241,8 @@ class TestTonNetAsyncCore(unittest.TestCase):
         self.assertGreaterEqual(len(result.endpoints), 1)
 
     def test_aggregate_collection(self):
-        fields = [
-            FieldAggregation(field='', fn=AggregationFn.COUNT)
-        ]
-        params = ParamsOfAggregateCollection(
-            collection='accounts', fields=fields)
+        fields = [FieldAggregation(field='', fn=AggregationFn.COUNT)]
+        params = ParamsOfAggregateCollection(collection='accounts', fields=fields)
         result = async_core_client.net.aggregate_collection(params=params)
         count = int(result.values[0])
         self.assertGreater(count, 0)
@@ -215,17 +256,22 @@ class TestTonNetAsyncCore(unittest.TestCase):
         operations = [
             ParamsOfQueryOperation.QueryCollection(
                 params=ParamsOfQueryCollection(
-                    collection='blocks_signatures', result='id', limit=1)),
+                    collection='blocks_signatures', result='id', limit=1
+                )
+            ),
             ParamsOfQueryOperation.AggregateCollection(
                 params=ParamsOfAggregateCollection(
                     collection='accounts',
-                    fields=[
-                        FieldAggregation(field='', fn=AggregationFn.COUNT)
-                    ])),
+                    fields=[FieldAggregation(field='', fn=AggregationFn.COUNT)],
+                )
+            ),
             ParamsOfQueryOperation.WaitForCollection(
                 params=ParamsOfWaitForCollection(
-                    collection='transactions', filter={'now': {'gt': 20}},
-                    result='id now'))
+                    collection='transactions',
+                    filter={'now': {'gt': 20}},
+                    result='id now',
+                )
+            ),
         ]
         params = ParamsOfBatchQuery(operations=operations)
         result = async_core_client.net.batch_query(params=params)
@@ -247,20 +293,22 @@ class TestTonNetAsyncCore(unittest.TestCase):
 
     def test_query_transaction_tree(self):
         query_params = ParamsOfQueryCollection(
-            collection='messages', filter={'msg_type': {'eq': 1}}, limit=5,
-            result='id dst dst_transaction {id aborted out_messages {id dst msg_type_name dst_transaction {id aborted out_messages {id dst msg_type_name dst_transaction {id aborted}}}}}')
-        query_result = async_core_client.net.query_collection(
-            params=query_params)
+            collection='messages',
+            filter={'msg_type': {'eq': 1}},
+            limit=5,
+            result='id dst dst_transaction {id aborted out_messages {id dst msg_type_name dst_transaction {id aborted out_messages {id dst msg_type_name dst_transaction {id aborted}}}}}',
+        )
+        query_result = async_core_client.net.query_collection(params=query_params)
 
-        abi_registry = [
-            Abi.from_path(path=os.path.join(SAMPLES_DIR, 'Hello.abi.json'))
-        ]
+        abi_registry = [Abi.from_path(path=os.path.join(SAMPLES_DIR, 'Hello.abi.json'))]
 
         for message in query_result.result:
             tree_params = ParamsOfQueryTransactionTree(
-                in_msg=message['id'], abi_registry=abi_registry)
+                in_msg=message['id'], abi_registry=abi_registry
+            )
             tree_result = async_core_client.net.query_transaction_tree(
-                params=tree_params)
+                params=tree_params
+            )
 
             self.assertIsInstance(tree_result.messages, list)
             self.assertIsInstance(tree_result.messages[0], MessageNode)
@@ -295,29 +343,31 @@ class TestTonNetAsyncCore(unittest.TestCase):
 
 
 class TestTonNetSyncCore(unittest.TestCase):
-    """ Sync core is not recommended to use, so make just a couple of tests """
+    """Sync core is not recommended to use, so make just a couple of tests"""
 
     def test_query_collection(self):
-        q_params = ParamsOfQueryCollection(
-            collection='blocks', result='id', limit=1)
+        q_params = ParamsOfQueryCollection(collection='blocks', result='id', limit=1)
         result = sync_core_client.net.query_collection(params=q_params)
         self.assertGreater(len(result.result), 0)
 
         q_params = ParamsOfQueryCollection(
-            collection='accounts', result='id balance', limit=5)
+            collection='accounts', result='id balance', limit=5
+        )
         result = sync_core_client.net.query_collection(params=q_params)
         self.assertEqual(5, len(result.result))
 
         q_params = ParamsOfQueryCollection(
-            collection='messages', filter={'created_at': {'gt': 1562342740}},
-            result='body created_at', limit=10,
-            order=[OrderBy(path='created_at', direction=SortDirection.ASC)])
+            collection='messages',
+            filter={'created_at': {'gt': 1562342740}},
+            result='body created_at',
+            limit=10,
+            order=[OrderBy(path='created_at', direction=SortDirection.ASC)],
+        )
         result = sync_core_client.net.query_collection(params=q_params)
         self.assertGreater(result.result[0]['created_at'], 1562342740)
 
         with self.assertRaises(TonException):
-            q_params = ParamsOfQueryCollection(
-                collection='messages', result='')
+            q_params = ParamsOfQueryCollection(collection='messages', result='')
             sync_core_client.net.query_collection(params=q_params)
 
     def test_wait_for_collection(self):
@@ -325,13 +375,13 @@ class TestTonNetSyncCore(unittest.TestCase):
         tonos_punch()
 
         q_params = ParamsOfWaitForCollection(
-            collection='transactions', filter={'now': {'gt': now}},
-            result='id now')
+            collection='transactions', filter={'now': {'gt': now}}, result='id now'
+        )
         result = sync_core_client.net.wait_for_collection(params=q_params)
         self.assertGreater(result.result['now'], now)
 
         with self.assertRaises(TonException):
             q_params = ParamsOfWaitForCollection(
-                collection='transactions', filter={'now': {'gt': now}},
-                result='')
+                collection='transactions', filter={'now': {'gt': now}}, result=''
+            )
             sync_core_client.net.wait_for_collection(params=q_params)

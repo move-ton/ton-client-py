@@ -1,3 +1,4 @@
+"""Base bindings module"""
 import asyncio
 import inspect
 import logging
@@ -7,15 +8,23 @@ import json
 from concurrent.futures import Future
 from typing import Any, Dict, Union
 
-from tonclient.bindings.lib import tc_request, tc_request_sync, \
-    tc_read_string, tc_destroy_string
-from tonclient.bindings.types import TCStringData, TCResponseHandler, \
-    TCResponseType, TCSyncResponseData
+from tonclient.bindings.lib import (
+    tc_request,
+    tc_request_sync,
+    tc_read_string,
+    tc_destroy_string,
+)
+from tonclient.bindings.types import (
+    TCStringData,
+    TCResponseHandler,
+    TCResponseType,
+    TCSyncResponseData,
+)
 from tonclient.errors import TonException
 from tonclient.types import ClientError, ResponseHandler
 
 
-class TonModule(object):
+class TonModule:
     """
     Base TON Module class.
     All modules, such as 'crypto', 'contracts', etc. should be inherited
@@ -28,16 +37,16 @@ class TonModule(object):
         self._client = client
 
     def request(
-            self, method: str, callback: ResponseHandler = None,
-            params_or_str: Union[str, Dict[str, Any]] = None, **kwargs
+        self,
+        method: str,
+        callback: ResponseHandler = None,
+        params_or_str: Union[str, Dict[str, Any]] = None,
+        **kwargs,
     ) -> Any:
-        """ Perform core request """
+        """Perform core request"""
         # Prepare request params
         request_params = self._prepare_params(params_or_str, **kwargs)
-        kwargs = {
-            'method': method,
-            'request_params': request_params
-        }
+        kwargs = {'method': method, 'request_params': request_params}
 
         # Make sync or async core/client request
         if self._client.is_core_async:
@@ -48,15 +57,19 @@ class TonModule(object):
         return self._sync_core_request(**kwargs)
 
     def _sync_core_request(self, method: str, request_params: str) -> Any:
-        """ Perform core synchronous request """
+        """Perform core synchronous request"""
         # Make sync request, get response pointer and parse it
         response_ptr = tc_request_sync(
-            ctx=self._client.ctx, method=method, params_json=request_params)
+            ctx=self._client.ctx, method=method, params_json=request_params
+        )
         response = TCSyncResponseData(tc_read_string(string=response_ptr))
 
         # Copy response data and destroy response pointer
         is_success, result, error = (
-            response.is_success, response.result, response.error)
+            response.is_success,
+            response.result,
+            response.error,
+        )
         tc_destroy_string(string=response_ptr)
 
         if not is_success:
@@ -65,9 +78,9 @@ class TonModule(object):
         return result
 
     def _async_core_request(
-            self, method: str, request_params: str, callback: ResponseHandler
+        self, method: str, request_params: str, callback: ResponseHandler
     ) -> Any:
-        """ Perform core asynchronous request """
+        """Perform core asynchronous request"""
         # Generate request id
         request_id = self._generate_request_id()
 
@@ -78,14 +91,17 @@ class TonModule(object):
         self._async_response_map[request_id] = {
             'is_async': False,
             'callback': callback,
-            'future': future
+            'future': future,
         }
 
         # Execute core request
         tc_request(
-            ctx=self._client.ctx, method=method, request_id=request_id,
+            ctx=self._client.ctx,
+            method=method,
+            request_id=request_id,
             params_json=request_params,
-            response_handler=self._async_response_handler)
+            response_handler=self._async_response_handler,
+        )
 
         # Resolve future
         exception = future.exception()
@@ -94,8 +110,9 @@ class TonModule(object):
         return future.result()
 
     async def _async_core_request_future(
-            self, method: str, request_params: str, callback: ResponseHandler):
-        """ Perform core asynchronous request """
+        self, method: str, request_params: str, callback: ResponseHandler
+    ):
+        """Perform core asynchronous request"""
         # Generate request id
         request_id = self._generate_request_id()
 
@@ -108,14 +125,17 @@ class TonModule(object):
             'is_async': True,
             'callback': callback,
             'loop': loop,
-            'future': future
+            'future': future,
         }
 
         # Execute core request
         tc_request(
-            ctx=self._client.ctx, method=method, request_id=request_id,
+            ctx=self._client.ctx,
+            method=method,
+            request_id=request_id,
             params_json=request_params,
-            response_handler=self._async_response_handler)
+            response_handler=self._async_response_handler,
+        )
 
         return await future
 
@@ -128,7 +148,7 @@ class TonModule(object):
         """
         while True:
             request_id = int.from_bytes(os.urandom(size), 'big')
-            if request_id in list(self._async_response_map.keys()):
+            if request_id in self._async_response_map:
                 continue
             return request_id
 
@@ -139,17 +159,18 @@ class TonModule(object):
 
         :return: Awaitable if `response` is awaitable or `classname` instance
         """
+
         def _parse(result):
             if hasattr(classname, 'from_dict'):
                 return classname.from_dict(data=result)
             return classname(**result)
 
         def _sync_response():
-            """ Decorate synchronous request response """
+            """Decorate synchronous request response"""
             return _parse(result=response)
 
         async def _async_response():
-            """ Decorate asynchronous request response """
+            """Decorate asynchronous request response"""
             _fn_result = await response
             return _parse(result=_fn_result)
 
@@ -160,7 +181,7 @@ class TonModule(object):
 
     @staticmethod
     def _prepare_params(params_or_str, **kwargs) -> str:
-        """ Prepare params to pass to request """
+        """Prepare params to pass to request"""
         if isinstance(params_or_str, dict):
             params_or_str = {**params_or_str, **kwargs}
         elif params_or_str is None:
@@ -171,12 +192,16 @@ class TonModule(object):
     @staticmethod
     @TCResponseHandler
     def _async_response_handler(
-            request_id: int, response_data: TCStringData,
-            response_type: int, finished: bool):
-        """ Core response handler """
+        request_id: int, response_data: TCStringData, response_type: int, finished: bool
+    ):
+        """Core response handler"""
         logging.debug(
-            f'Request: {request_id}; Response: {response_data.json}; '
-            f'Response type: {response_type}; Finished: {finished}')
+            'Request: %s; Response: %r; Response type: %s; Finished: %s',
+            request_id,
+            response_data.json,
+            response_type,
+            finished,
+        )
 
         request = TonModule._async_response_map.get(request_id)
         if not request:
@@ -188,7 +213,8 @@ class TonModule(object):
             # Check if client is asyncio or common
             if request['is_async']:
                 request['loop'].call_soon_threadsafe(
-                    request['future'].set_result, response_data.json)
+                    request['future'].set_result, response_data.json
+                )
             else:
                 request['future'].set_result(response_data.json)
             return
@@ -198,7 +224,8 @@ class TonModule(object):
             # Check if client is asyncio or common
             if request['is_async']:
                 request['loop'].call_soon_threadsafe(
-                    request['future'].set_exception, exception)
+                    request['future'].set_exception, exception
+                )
             else:
                 request['future'].set_exception(exception)
             return
