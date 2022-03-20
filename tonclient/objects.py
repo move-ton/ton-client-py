@@ -5,7 +5,7 @@ import re
 from asyncio.selector_events import BaseSelectorEventLoop
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 from multiprocessing import get_context
-from typing import Dict, Any, Union, Coroutine
+from typing import Awaitable, Dict, Any, Union, Coroutine
 
 from tonclient.bindings.types import TCResponseType
 from tonclient.client import TonClient
@@ -25,6 +25,8 @@ from tonclient.types import (
     ParamsOfAppEncryptionBoxType,
     ParamsOfAppSigningBoxType,
     ParamsOfAppDebotBrowserType,
+    ParamsOfAppPasswordProvider,
+    ResultOfAppPasswordProvider,
 )
 
 
@@ -37,7 +39,6 @@ class AppObject:
         if not client.is_core_async:
             raise Exception('Only `async core` client is supported')
 
-        super(AppObject, self).__init__()
         self.client = client
         self._loop = None
 
@@ -82,7 +83,8 @@ class AppObject:
                 future = executor.submit(getattr(self, method), params)
                 exception = future.exception()
                 if exception:
-                    raise exception.__class__(exception)
+                    print(exception)
+                    raise exception
                 result = future.result()
 
             if app_request_id:
@@ -218,6 +220,41 @@ class AppEncryptionBox(AppObject):
 
     def _prepare_params(self, params: Dict[str, Any]) -> ParamsOfAppEncryptionBoxType:
         return ParamsOfAppEncryptionBox.from_dict(data=params)
+
+
+class AppPasswordProvider(AppObject):
+    """
+    Interface that provides a callback that returns an encrypted password,
+    used for cryptobox secret encryption.
+
+    To secure the password while passing it from application to the library,
+    the library generates a temporary key pair, passes the pubkey to the
+    passwordProvider, decrypts the received password with private key, and
+    deletes the key pair right away.
+
+    Application should generate a temporary `nacl_box_keypair` and encrypt the
+    password with naclbox function using `nacl_box_keypair.secret` and
+    encryption_public_key keys + nonce = 24-byte prefix of encryption_public_key
+    """
+
+    def get_password(
+        self, params: ParamsOfAppPasswordProvider.GetPassword
+    ) -> ResultOfAppPasswordProvider.GetPassword:
+        """Method is called by `dispatch`"""
+        return self._resolve_sync_async(method=self.perform_get_password, params=params)
+
+    def perform_get_password(
+        self, params: ParamsOfAppPasswordProvider.GetPassword
+    ) -> Union[ResultOfAppPasswordProvider, Awaitable[ResultOfAppPasswordProvider]]:
+        """
+        :param params:
+        """
+        raise NotImplementedError(
+            'AppPasswordProvider `perform_get_password` must be implemented'
+        )
+
+    def _prepare_params(self, params: Dict[str, Any]) -> object:
+        return ParamsOfAppPasswordProvider.from_dict(data=params)
 
 
 class AppDebotBrowser(AppObject):

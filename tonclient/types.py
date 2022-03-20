@@ -2249,6 +2249,8 @@ SigningBoxHandle = int
 
 EncryptionBoxHandle = int
 
+CryptoBoxHandle = int
+
 
 class CryptoErrorCode(int, Enum):
     """Crypto module error codes"""
@@ -2280,6 +2282,10 @@ class CryptoErrorCode(int, Enum):
     ENCRYPT_DATA_ERROR = 127
     DECRYPT_DATA_ERROR = 128
     IV_REQUIRED = 129
+    CRYPTO_BOX_NOT_REGISTERED = 130
+    INVALID_CRYPTO_BOX_TYPE = 131
+    CRYPTO_BOX_SECRET_SERIALIZATION_ERROR = 132
+    CRYPTO_BOX_SECRET_DESERIALIZATION_ERROR = 133
 
 
 class MnemonicDictionary(int, Enum):
@@ -3610,6 +3616,356 @@ class ParamsOfCreateEncryptionBox:
     def dict(self):
         """Dict from object"""
         return {'algorithm': self.algorithm.dict}
+
+
+class CryptoBoxSecret:
+    """CryptoBoxSecret types"""
+
+    class RandomSeedPhrase(BaseTypedType):
+        """
+        Creates Crypto Box from a random seed phrase.
+        This option can be used if a developer doesn't want the seed phrase
+        to leave the core library's memory, where it is stored encrypted.
+
+        This type should be used upon the first wallet initialization, all
+        further initializations should use `EncryptedSecret` type instead.
+
+        Get `encrypted_secret` with `get_crypto_box_info` function and store it
+        on your side.
+        """
+
+        def __init__(self, dictionary: 'MnemonicDictionary', wordcount: int):
+            super(CryptoBoxSecret.RandomSeedPhrase, self).__init__(
+                type='RandomSeedPhrase'
+            )
+            self.dictionary = dictionary
+            self.wordcount = wordcount
+
+        @property
+        def dict(self):
+            return {
+                **super(CryptoBoxSecret.RandomSeedPhrase, self).dict,
+                'dictionary': self.dictionary,
+                'wordcount': self.wordcount,
+            }
+
+    class PredefinedSeedPhrase(BaseTypedType):
+        """
+        Restores crypto box instance from an existing seed phrase.
+        This type should be used when Crypto Box is initialized from a seed
+        phrase, entered by a user.
+
+        This type should be used only upon the first wallet initialization, all
+        further initializations should use `EncryptedSecret` type instead.
+
+        Get `encrypted_secret` with `get_crypto_box_info` function and store it on
+        your side.
+        """
+
+        def __init__(
+            self, phrase: str, dictionary: 'MnemonicDictionary', wordcount: int
+        ):
+            super(CryptoBoxSecret.PredefinedSeedPhrase, self).__init__(
+                type='PredefinedSeedPhrase'
+            )
+            self.phrase = phrase
+            self.dictionary = dictionary
+            self.wordcount = wordcount
+
+        @property
+        def dict(self):
+            return {
+                **super(CryptoBoxSecret.PredefinedSeedPhrase, self).dict,
+                'phrase': self.phrase,
+                'dictionary': self.dictionary,
+                'wordcount': self.wordcount,
+            }
+
+    class EncryptedSecret(BaseTypedType):
+        """
+        Use this type for wallet reinitializations, when you already have
+        `encrypted_secret` on hands.
+        To get `encrypted_secret`, use `get_crypto_box_info` function after you
+        initialized your crypto box for the first time.
+
+        It is an object, containing seed phrase or private key
+        (now we support only seed phrase), encrypted with `secret_encryption_salt`
+        and password from `password_provider`.
+
+        Note that if you want to change salt or password provider, then you need
+        to reinitialize the wallet with `PredefinedSeedPhrase`, then get
+        `EncryptedSecret` via `get_crypto_box_info`, store it somewhere, and only
+        after that initialize the wallet with `EncryptedSecret` type.
+        """
+
+        def __init__(self, encrypted_secret: str):
+            super(CryptoBoxSecret.EncryptedSecret, self).__init__(
+                type='EncryptedSecret'
+            )
+            self.encrypted_secret = encrypted_secret
+
+        @property
+        def dict(self):
+            return {
+                **super(CryptoBoxSecret.EncryptedSecret, self).dict,
+                'encrypted_secret': self.encrypted_secret,
+            }
+
+
+class BoxEncryptionAlgorithm:
+    """BoxEncryptionAlgorithm types"""
+
+    class ChaCha20(BaseTypedType):
+        """BoxEncryptionAlgorithm.ChaCha20"""
+
+        def __init__(self, nonce: str):
+            """
+            :param nonce: 96-bit nonce. Must be encoded with `hex`
+            """
+            super(BoxEncryptionAlgorithm.ChaCha20, self).__init__(type='ChaCha20')
+            self.nonce = nonce
+
+        @property
+        def dict(self):
+            return {
+                **super(BoxEncryptionAlgorithm.ChaCha20, self).dict,
+                'value': {
+                    'nonce': self.nonce,
+                },
+            }
+
+    class NaclBox(BaseTypedType):
+        """BoxEncryptionAlgorithm.NaclBox"""
+
+        def __init__(self, their_public: str, nonce: str):
+            """
+            :param their_public: 256-bit key. Must be encoded with `hex`
+            :param nonce: 96-bit nonce. Must be encoded with `hex`
+            """
+            super(BoxEncryptionAlgorithm.NaclBox, self).__init__(type='NaclBox')
+            self.their_public = their_public
+            self.nonce = nonce
+
+        @property
+        def dict(self):
+            return {
+                **super(BoxEncryptionAlgorithm.NaclBox, self).dict,
+                'value': {
+                    'their_public': self.their_public,
+                    'nonce': self.nonce,
+                },
+            }
+
+    class NaclSecretBox(BaseTypedType):
+        """BoxEncryptionAlgorithm.NaclSecretBox"""
+
+        def __init__(self, nonce: str):
+            """
+            :param nonce: Nonce in `hex`
+            """
+            super(BoxEncryptionAlgorithm.NaclSecretBox, self).__init__(
+                type='NaclSecretBox'
+            )
+            self.nonce = nonce
+
+        @property
+        def dict(self):
+            return {
+                **super(BoxEncryptionAlgorithm.NaclSecretBox, self).dict,
+                'value': {
+                    'nonce': self.nonce,
+                },
+            }
+
+
+class RegisteredCryptoBox:
+    """RegisteredCryptoBox"""
+
+    def __init__(self, handle: 'CryptoBoxHandle'):
+        self.handle = handle
+
+    @property
+    def dict(self):
+        return {'handle': self.handle}
+
+
+class ParamsOfCreateCryptoBox:
+    """ParamsOfCreateCryptoBox"""
+
+    def __init__(self, secret_encryption_salt: str, secret: 'CryptoBoxSecretType'):
+        """
+        :param secret_encryption_salt: Salt used for secret encryption.
+                For example, a mobile device can use device ID as salt
+        :param secret: Cryptobox secret
+        """
+        self.secret_encryption_salt = secret_encryption_salt
+        self.secret = secret
+
+    @property
+    def dict(self):
+        return {
+            'secret_encryption_salt': self.secret_encryption_salt,
+            'secret': self.secret.dict,
+        }
+
+
+class ResultOfGetCryptoBoxInfo:
+    """ResultOfGetCryptoBoxInfo"""
+
+    def __init__(self, encrypted_secret: str):
+        """
+        :param encrypted_secret: Secret (seed phrase) encrypted
+                with salt and password
+        """
+        self.encrypted_secret = encrypted_secret
+
+
+class ResultOfGetCryptoBoxSeedPhrase:
+    """ResultOfGetCryptoBoxSeedPhrase"""
+
+    def __init__(self, phrase: str, dictionary: 'MnemonicDictionary', wordcount: int):
+        """
+        :param phrase:
+        :param dictionary:
+        :param wordcount:
+        """
+        self.phrase = phrase
+        self.dictionary = dictionary
+        self.wordcount = wordcount
+
+    @property
+    def dict(self):
+        return {
+            'phrase': self.phrase,
+            'dictionary': self.dictionary,
+            'wordcount': self.wordcount,
+        }
+
+
+class ParamsOfGetSigningBoxFromCryptoBox:
+    """ParamsOfGetSigningBoxFromCryptoBox"""
+
+    def __init__(
+        self, handle: 'CryptoBoxHandle', hdpath: str = None, secret_lifetime: int = None
+    ):
+        """
+        :param handle: Crypto Box Handle
+        :param hdpath: HD key derivation path.
+                By default, Everscale HD path is used
+        :param secret_lifetime: Store derived secret for this lifetime (in ms).
+                The timer starts after each signing box operation.
+                Secrets will be deleted immediately after each
+                signing box operation, if this value is not set
+        """
+        self.handle = handle
+        self.hdpath = hdpath
+        self.secret_lifetime = secret_lifetime
+
+    @property
+    def dict(self):
+        return {
+            'handle': self.handle,
+            'hdpath': self.hdpath,
+            'secret_lifetime': self.secret_lifetime,
+        }
+
+
+class ParamsOfGetEncryptionBoxFromCryptoBox:
+    """ParamsOfGetEncryptionBoxFromCryptoBox"""
+
+    def __init__(
+        self,
+        handle: 'CryptoBoxHandle',
+        algorithm: 'BoxEncryptionAlgorithmType',
+        hdpath: str = None,
+        secret_lifetime: int = None,
+    ):
+        """
+        :param handle: Crypto Box Handle
+        :param algorithm: Encryption algorithm
+        :param hdpath: HD key derivation path.
+                By default, Everscale HD path is used
+        :param secret_lifetime: Store derived secret for encryption algorithm
+                for this lifetime (in ms). The timer starts after each
+                encryption box operation. Secrets will be deleted
+                (overwritten with zeroes) after each encryption operation,
+                if this value is not set
+        """
+        self.handle = handle
+        self.algorithm = algorithm
+        self.hdpath = hdpath
+        self.secret_lifetime = secret_lifetime
+
+    @property
+    def dict(self):
+        return {
+            'handle': self.handle,
+            'algorithm': self.algorithm.dict,
+            'hdpath': self.hdpath,
+            'secret_lifetime': self.secret_lifetime,
+        }
+
+
+class ParamsOfAppPasswordProvider:
+    """AppPasswordProvided callbacks"""
+
+    class GetPassword(BaseTypedType):
+        """ParamsOfAppPasswordProvider.GetPassword"""
+
+        def __init__(self, encryption_public_key: str):
+            """
+            :param encryption_public_key: Temporary library pubkey, that is
+                    used on application side for password encryption, along
+                    with application temporary private key and nonce.
+                    Used for password decryption on library side
+            """
+            super(ParamsOfAppPasswordProvider.GetPassword, self).__init__(
+                type='GetPassword'
+            )
+            self.encryption_public_key = encryption_public_key
+
+        @property
+        def dict(self):
+            return {
+                **super(ParamsOfAppPasswordProvider.GetPassword, self).dict,
+                'encryption_public_key': self.encryption_public_key,
+            }
+
+    @staticmethod
+    def from_dict(data: Dict[str, Any]) -> 'ParamsOfAppPasswordProviderType':
+        """Object from dict"""
+        kwargs = {k: v for k, v in data.items() if k != 'type'}
+        return getattr(ParamsOfAppPasswordProvider, data['type'])(**kwargs)
+
+
+class ResultOfAppPasswordProvider:
+    """Returning values from AppPasswordProvider"""
+
+    class GetPassword(BaseTypedType):
+        """ResultOfAppPasswordProvider.GetPassword"""
+
+        def __init__(self, encrypted_password: str, app_encryption_pubkey: str):
+            """
+            :param encrypted_password: Password, encrypted and encoded to `base64`.
+                    Crypto box uses this password to decrypt its secret (seed phrase)
+            :param app_encryption_pubkey: Hex encoded public key of a temporary
+                    key pair, used for password encryption on application side.
+                    Used together with `encryption_public_key` to decode
+                    `encrypted_password`.
+            """
+            super(ResultOfAppPasswordProvider.GetPassword, self).__init__(
+                type='GetPassword'
+            )
+            self.encrypted_password = encrypted_password
+            self.app_encryption_pubkey = app_encryption_pubkey
+
+        @property
+        def dict(self):
+            return {
+                **super(ResultOfAppPasswordProvider.GetPassword, self).dict,
+                'encrypted_password': self.encrypted_password,
+                'app_encryption_pubkey': self.app_encryption_pubkey,
+            }
 
 
 # NET module
@@ -6075,3 +6431,14 @@ ParamsOfAppEncryptionBoxType = Union[
     ParamsOfAppEncryptionBox.Decrypt,
 ]
 EncryptionAlgorithmType = EncryptionAlgorithm.Aes
+ParamsOfAppPasswordProviderType = ParamsOfAppPasswordProvider.GetPassword
+CryptoBoxSecretType = Union[
+    CryptoBoxSecret.RandomSeedPhrase,
+    CryptoBoxSecret.PredefinedSeedPhrase,
+    CryptoBoxSecret.EncryptedSecret,
+]
+BoxEncryptionAlgorithmType = Union[
+    BoxEncryptionAlgorithm.ChaCha20,
+    BoxEncryptionAlgorithm.NaclBox,
+    BoxEncryptionAlgorithm.NaclSecretBox,
+]

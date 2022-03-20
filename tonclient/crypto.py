@@ -4,9 +4,15 @@ from typing import Union, Awaitable
 from tonclient.module import TonModule
 from tonclient.types import (
     KeyPair,
+    ParamsOfCreateCryptoBox,
     ParamsOfFactorize,
+    ParamsOfGetEncryptionBoxFromCryptoBox,
+    ParamsOfGetSigningBoxFromCryptoBox,
+    RegisteredCryptoBox,
     ResultOfFactorize,
     ParamsOfModularPower,
+    ResultOfGetCryptoBoxInfo,
+    ResultOfGetCryptoBoxSeedPhrase,
     ResultOfModularPower,
     ParamsOfTonCrc16,
     ResultOfTonCrc16,
@@ -651,3 +657,122 @@ class TonCrypto(TonModule):
         """
         response = self.request(method='crypto.create_encryption_box', **params.dict)
         return self.response(classname=RegisteredEncryptionBox, response=response)
+
+    def create_crypto_box(
+        self, params: ParamsOfCreateCryptoBox, callback: ResponseHandler
+    ) -> Union[RegisteredCryptoBox, Awaitable[RegisteredCryptoBox]]:
+        """
+        Creates a Crypto Box instance.
+
+        Crypto Box is a root crypto object, that encapsulates some
+        secret (seed phrase usually) in encrypted form and acts as a
+        factory for all crypto primitives used in SDK: keys for signing
+        and encryption, derived from this secret.
+
+        Crypto Box encrypts original Seed Phrase with salt and password
+        that is retrieved from `password_provider` callback, implemented
+        on Application side.
+
+        When used, decrypted secret shows up in core library's memory for a
+        very short period of time and then is immediately overwritten
+        with zeroes
+
+        :param params: See `types.ParamsOfCreateCryptoBox`
+        :param callback: Callback to send events to
+        :return: See `types.RegisteredCryptoBox`
+        """
+        response = self.request(
+            method='crypto.create_crypto_box', **params.dict, callback=callback
+        )
+        return self.response(classname=RegisteredCryptoBox, response=response)
+
+    def remove_crypto_box(
+        self, params: RegisteredCryptoBox
+    ) -> Union[None, Awaitable[None]]:
+        """
+        Removes Crypto Box. Clears all secret data.
+
+        :param params: See `types.RegisteredCryptoBox`
+        """
+        return self.request(method='crypto.remove_crypto_box', **params.dict)
+
+    def get_crypto_box_info(
+        self, params: RegisteredCryptoBox
+    ) -> Union[ResultOfGetCryptoBoxInfo, Awaitable[ResultOfGetCryptoBoxInfo]]:
+        """
+        Get Crypto Box Info.
+        Used to get `encrypted_secret` that should be used for all
+        the cryptobox initializations except the first one
+
+        :param params: See `types.RegisteredCryptoBox`
+        :return: See `types.ResultOfGetCryptoBoxInfo`
+        """
+        response = self.request(method='crypto.get_crypto_box_info', **params.dict)
+        return self.response(classname=ResultOfGetCryptoBoxInfo, response=response)
+
+    def get_crypto_box_seed_phrase(
+        self, params: RegisteredCryptoBox
+    ) -> Union[
+        ResultOfGetCryptoBoxSeedPhrase, Awaitable[ResultOfGetCryptoBoxSeedPhrase]
+    ]:
+        """
+        Get Crypto Box Seed Phrase.
+
+        Attention! Store this data in your application for a very
+        short period of time and overwrite it with zeroes ASAP
+
+        :param params: See `types.RegisteredCryptoBox`
+        :return: See `types.ResultOfGetCryptoBoxSeedPhrase`
+        """
+        response = self.request(
+            method='crypto.get_crypto_box_seed_phrase', **params.dict
+        )
+        return self.response(
+            classname=ResultOfGetCryptoBoxSeedPhrase, response=response
+        )
+
+    def get_signing_box_from_crypto_box(
+        self, params: ParamsOfGetSigningBoxFromCryptoBox
+    ) -> Union[RegisteredSigningBox, Awaitable[RegisteredSigningBox]]:
+        """
+        Get handle of Signing Box derived from Crypto Box
+
+        :param params: See `types.ParamsOfGetSigningBoxFromCryptoBox`
+        :return: See `types.RegisteredSigningBox`
+        """
+        response = self.request(
+            method='crypto.get_signing_box_from_crypto_box', **params.dict
+        )
+        return self.response(classname=RegisteredSigningBox, response=response)
+
+    def get_encryption_box_from_crypto_box(
+        self, params: ParamsOfGetEncryptionBoxFromCryptoBox
+    ) -> Union[RegisteredEncryptionBox, Awaitable[RegisteredEncryptionBox]]:
+        """
+        Gets Encryption Box from Crypto Box.
+        Derives encryption keypair from cryptobox secret and hdpath and
+        stores it in cache for secret_lifetime or until explicitly cleared
+        by `clear_crypto_box_secret_cache` method.
+        If `secret_lifetime` is not specified - overwrites encryption secret
+        with zeroes immediately after encryption operation.
+
+        :param params: See `types.ParamsOfGetEncryptionBoxFromCryptoBox`
+        :return: See `types.RegisteredEncryptionBox`
+        """
+        response = self.request(
+            method='crypto.get_encryption_box_from_crypto_box', **params.dict
+        )
+        return self.response(classname=RegisteredEncryptionBox, response=response)
+
+    def clear_crypto_box_secret_cache(
+        self, params: RegisteredCryptoBox
+    ) -> Union[None, Awaitable[None]]:
+        """
+        Removes cached secrets (overwrites with zeroes) from all
+        signing and encryption boxes, derived from crypto box
+
+        :param params: See `types.RegisteredCryptoBox`
+        """
+        return self.request(
+            method='crypto.clear_crypto_box_secret_cache', **params.dict
+        )

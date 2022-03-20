@@ -1,14 +1,22 @@
 import base64
 import os
+from typing import Awaitable, Union
 
 import unittest
+from tonclient.client import TonClient
 
 from tonclient.errors import TonException
-from tonclient.objects import AppSigningBox, AppEncryptionBox
+from tonclient.objects import AppPasswordProvider, AppSigningBox, AppEncryptionBox
 from tonclient.test.helpers import async_core_client, sync_core_client, SAMPLES_DIR
 from tonclient.types import (
+    BoxEncryptionAlgorithm,
+    CryptoBoxSecret,
     KeyPair,
     MnemonicDictionary,
+    ParamsOfAppPasswordProvider,
+    ParamsOfCreateCryptoBox,
+    ParamsOfGetEncryptionBoxFromCryptoBox,
+    ParamsOfGetSigningBoxFromCryptoBox,
     ParamsOfHash,
     ParamsOfHDKeyXPrvFromMnemonic,
     ParamsOfHDKeySecretFromXPrv,
@@ -41,6 +49,7 @@ from tonclient.types import (
     ParamsOfAppRequest,
     ParamsOfAppSigningBox,
     ParamsOfResolveAppRequest,
+    ResultOfAppPasswordProvider,
     ResultOfAppSigningBox,
     AppRequestResult,
     ParamsOfNaclSignDetachedVerify,
@@ -889,6 +898,288 @@ class TestTonCryptoAsyncCore(unittest.TestCase):
 
         # Remove encryption box
         async_core_client.crypto.remove_encryption_box(params=box)
+
+    def test_crypto_box_app_object(self):
+        class TestAppPasswordProvider(AppPasswordProvider):
+            def perform_get_password(
+                self, params: ParamsOfAppPasswordProvider.GetPassword
+            ) -> Union[
+                ResultOfAppPasswordProvider, Awaitable[ResultOfAppPasswordProvider]
+            ]:
+                # Create nacl box keypair
+                nacl_box_keypair = async_core_client.crypto.nacl_box_keypair()
+                # Encode decrypted password to base64 for future encryption
+                password = base64.b64encode(bytes.fromhex(password_hash)).decode()
+                # Encrypt password
+                nacl_box_params = ParamsOfNaclBox(
+                    decrypted=password,
+                    nonce=params.encryption_public_key[:48],
+                    their_public=params.encryption_public_key,
+                    secret=nacl_box_keypair.secret,
+                )
+                nacl_box = async_core_client.crypto.nacl_box(nacl_box_params)
+
+                return ResultOfAppPasswordProvider.GetPassword(
+                    encrypted_password=nacl_box.encrypted,
+                    app_encryption_pubkey=nacl_box_keypair.public,
+                )
+
+        password_hash = (
+            '1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF'
+        )
+        salt = '123123123'
+
+        # Create password provider app object and crypto box
+        password_provider = TestAppPasswordProvider(client=async_core_client)
+        crypto_box_params = ParamsOfCreateCryptoBox(
+            secret_encryption_salt=salt,
+            secret=CryptoBoxSecret.RandomSeedPhrase(
+                dictionary=MnemonicDictionary.ENGLISH, wordcount=12
+            ),
+        )
+        crypto_box = async_core_client.crypto.create_crypto_box(
+            params=crypto_box_params, callback=password_provider.dispatcher
+        )
+
+        # Get crypto box seed phrase and validate
+        seed_phrase = async_core_client.crypto.get_crypto_box_seed_phrase(crypto_box)
+        params = ParamsOfMnemonicVerify(
+            phrase=seed_phrase.phrase,
+            dictionary=MnemonicDictionary.ENGLISH,
+            word_count=12,
+        )
+        result = async_core_client.crypto.mnemonic_verify(params)
+        self.assertTrue(result.valid)
+
+        # Get crypto box info
+        crypto_box_info = async_core_client.crypto.get_crypto_box_info(crypto_box)
+
+        # Create second crypto box with EncryptedSecret from prev box
+        crypto_box_params = ParamsOfCreateCryptoBox(
+            secret_encryption_salt=salt,
+            secret=CryptoBoxSecret.EncryptedSecret(
+                encrypted_secret=crypto_box_info.encrypted_secret
+            ),
+        )
+        crypto_box = async_core_client.crypto.create_crypto_box(
+            params=crypto_box_params, callback=password_provider.dispatcher
+        )
+
+        # Get seed phrase of second crypto box
+        seed_phrase_2 = async_core_client.crypto.get_crypto_box_seed_phrase(crypto_box)
+        self.assertEqual(seed_phrase.phrase, seed_phrase_2.phrase)
+
+        # Create third crypto box with PredefinedSeedPhrase
+        crypto_box_params = ParamsOfCreateCryptoBox(
+            secret_encryption_salt=salt,
+            secret=CryptoBoxSecret.PredefinedSeedPhrase(
+                phrase=seed_phrase.phrase,
+                dictionary=seed_phrase.dictionary,
+                wordcount=seed_phrase.wordcount,
+            ),
+        )
+        crypto_box = async_core_client.crypto.create_crypto_box(
+            params=crypto_box_params, callback=password_provider.dispatcher
+        )
+
+        # Get seed phrase of third crypto box
+        seed_phrase_3 = async_core_client.crypto.get_crypto_box_seed_phrase(crypto_box)
+        self.assertEqual(seed_phrase.phrase, seed_phrase_3.phrase)
+
+    def test_crypto_box_signing_box(self):
+        class TestAppPasswordProvider(AppPasswordProvider):
+            def __init__(self, client: TonClient):
+                super().__init__(client)
+                self.callback_calls_counter = 0
+
+            def get_password(
+                self, params: ParamsOfAppPasswordProvider.GetPassword
+            ) -> ResultOfAppPasswordProvider.GetPassword:
+                self.callback_calls_counter += 1
+                return super().get_password(params)
+
+            def perform_get_password(
+                self, params: ParamsOfAppPasswordProvider.GetPassword
+            ) -> Union[
+                ResultOfAppPasswordProvider, Awaitable[ResultOfAppPasswordProvider]
+            ]:
+                # Create nacl box keypair
+                nacl_box_keypair = async_core_client.crypto.nacl_box_keypair()
+                # Encode decrypted password to base64 for future encryption
+                password = base64.b64encode(bytes.fromhex(password_hash)).decode()
+                # Encrypt password
+                nacl_box_params = ParamsOfNaclBox(
+                    decrypted=password,
+                    nonce=params.encryption_public_key[:48],
+                    their_public=params.encryption_public_key,
+                    secret=nacl_box_keypair.secret,
+                )
+                nacl_box = async_core_client.crypto.nacl_box(nacl_box_params)
+
+                return ResultOfAppPasswordProvider.GetPassword(
+                    encrypted_password=nacl_box.encrypted,
+                    app_encryption_pubkey=nacl_box_keypair.public,
+                )
+
+        password_hash = (
+            '1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF'
+        )
+        salt = '123123123'
+
+        # Create crypto box with RandomSeedPhrase
+        password_provider = TestAppPasswordProvider(client=async_core_client)
+        params = ParamsOfCreateCryptoBox(
+            secret_encryption_salt=salt,
+            secret=CryptoBoxSecret.RandomSeedPhrase(
+                dictionary=MnemonicDictionary.ENGLISH, wordcount=12
+            ),
+        )
+        crypto_box = async_core_client.crypto.create_crypto_box(
+            params=params, callback=password_provider.dispatcher
+        )
+        self.assertEqual(1, password_provider.callback_calls_counter)
+
+        # Get signing box from crypto box
+        params = ParamsOfGetSigningBoxFromCryptoBox(handle=crypto_box.handle)
+        signing_box = async_core_client.crypto.get_signing_box_from_crypto_box(params)
+        self.assertEqual(1, password_provider.callback_calls_counter)
+
+        # Get signing box public key
+        result = async_core_client.crypto.signing_box_get_public_key(signing_box)
+        self.assertEqual(2, password_provider.callback_calls_counter)
+        self.assertEqual(64, len(result.pubkey))
+
+        # Get signing box public key one more time
+        async_core_client.crypto.signing_box_get_public_key(signing_box)
+        self.assertEqual(3, password_provider.callback_calls_counter)
+
+        # Get signing box with secret lifetime from secret box
+        params = ParamsOfGetSigningBoxFromCryptoBox(
+            handle=crypto_box.handle, secret_lifetime=1_000_000_000
+        )
+        signing_box = async_core_client.crypto.get_signing_box_from_crypto_box(params)
+        self.assertEqual(3, password_provider.callback_calls_counter)
+
+        # Get signing box public key multiple times to ensure that
+        # `callback_calls_counter` is incremented once
+        for _ in range(3):
+            async_core_client.crypto.signing_box_get_public_key(signing_box)
+            self.assertEqual(4, password_provider.callback_calls_counter)
+
+        # Clear crypto box secret cache
+        async_core_client.crypto.clear_crypto_box_secret_cache(crypto_box)
+        self.assertEqual(4, password_provider.callback_calls_counter)
+
+        # Get signing box public key multiple times to ensure that
+        # `callback_calls_counter` is incremented once
+        for _ in range(3):
+            async_core_client.crypto.signing_box_get_public_key(signing_box)
+            self.assertEqual(5, password_provider.callback_calls_counter)
+
+    def test_crypto_box_encryption_box(self):
+        class TestAppPasswordProvider(AppPasswordProvider):
+            def __init__(self, client: TonClient):
+                super().__init__(client)
+                self.callback_calls_counter = 0
+
+            def get_password(
+                self, params: ParamsOfAppPasswordProvider.GetPassword
+            ) -> ResultOfAppPasswordProvider.GetPassword:
+                self.callback_calls_counter += 1
+                return super().get_password(params)
+
+            def perform_get_password(
+                self, params: ParamsOfAppPasswordProvider.GetPassword
+            ) -> Union[
+                ResultOfAppPasswordProvider, Awaitable[ResultOfAppPasswordProvider]
+            ]:
+                # Create nacl box keypair
+                nacl_box_keypair = async_core_client.crypto.nacl_box_keypair()
+                # Encode decrypted password to base64 for future encryption
+                password = base64.b64encode(bytes.fromhex(password_hash)).decode()
+                # Encrypt password
+                nacl_box_params = ParamsOfNaclBox(
+                    decrypted=password,
+                    nonce=params.encryption_public_key[:48],
+                    their_public=params.encryption_public_key,
+                    secret=nacl_box_keypair.secret,
+                )
+                nacl_box = async_core_client.crypto.nacl_box(nacl_box_params)
+
+                return ResultOfAppPasswordProvider.GetPassword(
+                    encrypted_password=nacl_box.encrypted,
+                    app_encryption_pubkey=nacl_box_keypair.public,
+                )
+
+        password_hash = (
+            '1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF'
+        )
+        nonce = 'ff' * 12
+        salt = '123123123'
+
+        # Create crypto box with RandomSeedPhrase
+        password_provider = TestAppPasswordProvider(client=async_core_client)
+        params = ParamsOfCreateCryptoBox(
+            secret_encryption_salt=salt,
+            secret=CryptoBoxSecret.RandomSeedPhrase(
+                dictionary=MnemonicDictionary.ENGLISH, wordcount=12
+            ),
+        )
+        crypto_box = async_core_client.crypto.create_crypto_box(
+            params=params, callback=password_provider.dispatcher
+        )
+        self.assertEqual(1, password_provider.callback_calls_counter)
+
+        # Get encryption box from secret box
+        params = ParamsOfGetEncryptionBoxFromCryptoBox(
+            handle=crypto_box.handle,
+            algorithm=BoxEncryptionAlgorithm.ChaCha20(nonce=nonce),
+        )
+        encryption_box = async_core_client.crypto.get_encryption_box_from_crypto_box(
+            params
+        )
+        self.assertEqual(1, password_provider.callback_calls_counter)
+
+        # Get encryption box info
+        params = ParamsOfEncryptionBoxGetInfo(encryption_box=encryption_box.handle)
+        encryption_box_info = async_core_client.crypto.encryption_box_get_info(params)
+        encryption_box_info_test = EncryptionBoxInfo(
+            algorithm='ChaCha20', options={'nonce': nonce}
+        )
+        self.assertEqual(2, password_provider.callback_calls_counter)
+        self.assertEqual(encryption_box_info_test.dict, encryption_box_info.info.dict)
+
+        # Get encryption box info one more time
+        async_core_client.crypto.encryption_box_get_info(params)
+        self.assertEqual(3, password_provider.callback_calls_counter)
+
+        # Get encryption box with lifetime from secret box
+        params = ParamsOfGetEncryptionBoxFromCryptoBox(
+            handle=crypto_box.handle,
+            algorithm=BoxEncryptionAlgorithm.ChaCha20(nonce=nonce),
+            secret_lifetime=1_000_000_000,
+        )
+        encryption_box = async_core_client.crypto.get_encryption_box_from_crypto_box(
+            params
+        )
+        self.assertEqual(3, password_provider.callback_calls_counter)
+
+        # Get encryption box info multiple times to ensure that
+        # `callback_calls_counter` is incremented once
+        params = ParamsOfEncryptionBoxGetInfo(encryption_box=encryption_box.handle)
+        for _ in range(3):
+            async_core_client.crypto.encryption_box_get_info(params)
+            self.assertEqual(4, password_provider.callback_calls_counter)
+
+        # Clear crypto box secret cache
+        async_core_client.crypto.clear_crypto_box_secret_cache(crypto_box)
+        self.assertEqual(4, password_provider.callback_calls_counter)
+
+        # Get signing box public key multiple times to ensure that
+        # `callback_calls_counter` is incremented once
+        for _ in range(3):
+            async_core_client.crypto.encryption_box_get_info(params)
+            self.assertEqual(5, password_provider.callback_calls_counter)
 
 
 class TestTonCryptoSyncCore(unittest.TestCase):
