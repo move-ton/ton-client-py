@@ -68,6 +68,7 @@ class ClientErrorCode(int, Enum):
     CANNOT_PARSE_NUMBER = 32
     INTERNAL_ERROR = 33
     INVALID_HANDLE = 34
+    LOCAL_STORAGE_ERROR = 35
 
 
 class ClientError:
@@ -96,17 +97,27 @@ class ClientConfig:
         boc: 'BocConfig' = None,
         crypto: 'CryptoConfig' = None,
         abi: 'AbiConfig' = None,
+        proofs: 'ProofsConfig' = None,
+        local_storage_path: str = None,
     ):
         """
         :param network:
         :param crypto:
         :param abi:
         :param boc:
+        :param proofs:
+        :param local_storage_path: For file based storage is a folder name
+            where SDK will store its data. For browser based is a browser
+            async storage key prefix.
+            Default (recommended) value is "~/.tonclient" for native environments
+            and ".tonclient" for web-browser
         """
         self.network = network or NetworkConfig(server_address='http://localhost')
         self.crypto = crypto or CryptoConfig()
         self.abi = abi or AbiConfig()
         self.boc = boc or BocConfig()
+        self.proofs = proofs or ProofsConfig()
+        self.local_storage_path = local_storage_path
 
     @property
     def dict(self):
@@ -116,7 +127,20 @@ class ClientConfig:
             'crypto': self.crypto.dict,
             'abi': self.abi.dict,
             'boc': self.boc.dict,
+            'proofs': self.proofs.dict,
+            'local_storage_path': self.local_storage_path,
         }
+
+
+class NetworkQueriesProtocol(str, Enum):
+    """
+    Network protocol used to perform GraphQL queries
+        HTTP - Each GraphQL query uses separate HTTP request
+        WS - All GraphQL queries will be served using single web socket connection
+    """
+
+    HTTP = 'HTTP'
+    WS = 'WS'
 
 
 class NetworkConfig:
@@ -138,6 +162,7 @@ class NetworkConfig:
         access_key: str = None,
         latency_detection_interval: int = None,
         max_latency: int = None,
+        queries_protocol: 'NetworkQueriesProtocol' = None,
     ):
         """
         :param server_address: DApp Server public address. For instance,
@@ -193,6 +218,7 @@ class NetworkConfig:
                 the answer waiting time. If no answer received during the
                 timeout requests ends with error.
                 Must be specified in milliseconds. Default is 60000 (1 min)
+        :param queries_protocol: Queries protocol
         """
         self.server_address = server_address
         self.endpoints = endpoints
@@ -208,6 +234,7 @@ class NetworkConfig:
         self.latency_detection_interval = latency_detection_interval
         self.max_latency = max_latency
         self.query_timeout = query_timeout
+        self.queries_protocol = queries_protocol
 
     @property
     def dict(self):
@@ -227,6 +254,7 @@ class NetworkConfig:
             'latency_detection_interval': self.latency_detection_interval,
             'max_latency': self.max_latency,
             'query_timeout': self.query_timeout,
+            'queries_protocol': self.queries_protocol,
         }
 
 
@@ -310,6 +338,26 @@ class BocConfig:
     def dict(self):
         """Dict from object"""
         return {'cache_max_size': self.cache_max_size}
+
+
+class ProofsConfig:
+    """Proofs config object"""
+
+    def __init__(self, cache_in_local_storage: bool = None):
+        """
+        :param cache_in_local_storage: Cache proofs in the local storage.
+            Default is `true`. If this value is set to `true`, downloaded
+            proofs and master-chain BOCs are saved into the persistent
+            local storage (e.g. file system for native environments or browser's
+            IndexedDB for the web); otherwise all the data is cached only in memory
+            in current client's context and will be lost after destruction of the client
+        """
+        self.cache_in_local_storage = cache_in_local_storage
+
+    @property
+    def dict(self):
+        """Dict from object"""
+        return {'cache_in_local_storage': self.cache_in_local_storage}
 
 
 class BuildInfoDependency:

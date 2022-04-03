@@ -1,11 +1,11 @@
 # TON Client
 TON SDK Client library Python bindings.
-Works for Python 3.7+ 
- 
+Works for Python 3.7+
+
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ton-client-py?label=Python)
 ![PyPI](https://img.shields.io/pypi/v/ton-client-py?label=PyPI)
-![PyPI - Downloads](https://img.shields.io/pypi/dm/ton-client-py?label=PyPI%20Downloads)  
-![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/move-ton/ton-client-py/TonClient%20Tests/master?label=Test%20MacOS%7CUbuntu%7CWindows%20-%20Python%203.7%7C3.9)  
+![PyPI - Downloads](https://img.shields.io/pypi/dm/ton-client-py?label=PyPI%20Downloads)
+![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/move-ton/ton-client-py/TonClient%20Tests/master?label=Test%20MacOS%7CUbuntu%7CWindows%20-%20Python%203.7%7C3.9)
 [![Chat on Telegram RU](https://img.shields.io/badge/Chat%20on-Telegram%20RU-blue)](https://t.me/MOVETON_SDK_RU)
 [![Chat on Telegram EN](https://img.shields.io/badge/Chat%20on-Telegram%20EN-blue)](https://t.me/MOVETON_SDK_EN)
 
@@ -16,7 +16,7 @@ Check if Python 3.7+ is installed
 # Using pipenv
 pipenv install ton-client-py
 
-# Using pip  
+# Using pip
 pip install ton-client-py
 ```
 ##### Windows
@@ -24,14 +24,14 @@ pip install ton-client-py
 # Using pipenv
 py -m pipenv install ton-client-py
 
-# Using pip  
+# Using pip
 py -m pip install ton-client-py
 ```
 
 ## Tests
 * Clone repository
 ```
-# Clone repository 
+# Clone repository
 git clone https://github.com/move-ton/ton-client-py.git
 
 # Go to repo directory
@@ -82,8 +82,8 @@ py -m pytest -v
 py -m pytest -v -s --log-cli-level=INFO
 ```
 
-* Alternative running tests  
-If you have problems with installing `pytest` package you can simply run  
+* Alternative running tests
+If you have problems with installing `pytest` package you can simply run
 ```
 # For MacOS/Linux
 python -m unittest -v
@@ -93,8 +93,8 @@ py -m unittest -v
 ```
 
 ## Client
-Core client library has sync and async request modes.  
-Some core methods are available only in async request mode and 
+Core client library has sync and async request modes.
+Some core methods are available only in async request mode and
 this mode is more prefferable, so python client created with async core requests by default.
 
 Create client
@@ -110,7 +110,7 @@ client_sync_core = TonClient(config=ClientConfig(), is_core_async=False)
 
 Client created with default config
 ```python
-from tonclient.types import NetworkConfig, CryptoConfig, AbiConfig, BocConfig, ClientConfig
+from tonclient.types import NetworkConfig, CryptoConfig, AbiConfig, BocConfig, ProofsConfig, ClientConfig
 
 
 # Default network config is below.
@@ -129,37 +129,43 @@ from tonclient.types import NetworkConfig, CryptoConfig, AbiConfig, BocConfig, C
 #     `latency_detection_interval=60000`
 #     `max_latency=60000`
 #     `query_timeout=60000`
+#     `queries_protocol='HTTP'`
 network = NetworkConfig(
-    server_address='http://localhost', endpoints=None, network_retries_count=None, 
+    server_address='http://localhost', endpoints=None, network_retries_count=None,
     message_retries_count=None, message_processing_timeout=None, reconnect_timeout=None,
-    wait_for_timeout=None, out_of_sync_threshold=None, sending_endpoint_count=None, 
+    wait_for_timeout=None, out_of_sync_threshold=None, sending_endpoint_count=None,
     access_key=None, max_reconnect_timeout=None, latency_detection_interval=None,
-    max_latency=None, query_timeout=None)
+    max_latency=None, query_timeout=None, queries_protocol=None)
 
 # Default crypto config is below.
-# `None` attributes are filled by core with defaults values: 
-#     `mnemonic_dictionary=1` 
+# `None` attributes are filled by core with defaults values:
+#     `mnemonic_dictionary=1`
 #     `mnemonic_word_count=12`
 #     `hdkey_derivation_path="m/44'/396'/0'/0/0"`
 crypto = CryptoConfig(
     mnemonic_dictionary=None, mnemonic_word_count=None, hdkey_derivation_path=None)
 
 # Default abi config is below.
-# `None` attributes are filled by core with defaults values: 
-#     `workchain=0` 
+# `None` attributes are filled by core with defaults values:
+#     `workchain=0`
 #     `message_expiration_timeout=40000`
 #     `message_expiration_timeout_grow_factor=1.5`
 abi = AbiConfig(
-    workchain=None, message_expiration_timeout=None, 
+    workchain=None, message_expiration_timeout=None,
     message_expiration_timeout_grow_factor=None)
 
 # Default boc config is below.
-# `None` attributes are filled by core with defaults values: 
+# `None` attributes are filled by core with defaults values:
 #     `cache_max_size=10000` (10MB)
 boc = BocConfig(cache_max_size=None)
 
+# Default proofs config is below.
+# `None` attributes are filled by core with defaults values:
+#     `cache_in_local_storage=True`
+proofs = ProofsConfig(cache_in_local_storage=None)
+
 # Then `ClientConfig` is created
-config = ClientConfig(network=network, crypto=crypto, abi=abi, boc=boc)
+config = ClientConfig(network=network, crypto=crypto, abi=abi, boc=boc, proofs=proofs, local_storage_path=None)
 ```
 
 You can override initial config while creating a client
@@ -175,9 +181,9 @@ client = TonClient(config=config)
 version = client.version()
 ```
 
-Client contains all core modules and its methods.  
-You can get full list of modules and methods here: 
-https://github.com/tonlabs/TON-SDK/blob/master/docs/modules.md  
+Client contains all core modules and its methods.
+You can get full list of modules and methods here:
+https://github.com/tonlabs/TON-SDK/blob/master/docs/modules.md
 Module method called by template `client.[module].[method]`
 ```python
 from tonclient.types import ClientConfig, ParamsOfParse
@@ -197,8 +203,8 @@ result = client.boc.parse_account(params=parse_params)
 You always can get information about method and its arguments in method docstring.
 
 ### Methods with callbacks
-Some library methods accept `callback` argument to pass additional data to it.  
-E.g. `net.subscribe_collection`  
+Some library methods accept `callback` argument to pass additional data to it.
+E.g. `net.subscribe_collection`
 ```python
 import time
 from datetime import datetime
@@ -217,7 +223,7 @@ client = TonClient(config=config)
 def __callback(response_data, response_type, loop):
     """
     `loop` in args is just for example.
-    It will have value only with `asyncio` and may be replaced by `_` or `*args` 
+    It will have value only with `asyncio` and may be replaced by `_` or `*args`
     in synchronous requests
     """
     if response_type == SubscriptionResponseType.OK:
@@ -237,7 +243,7 @@ while True:
         break
     time.sleep(1)
 ```
-Please, dig in `tonclient/test/test_net.py`, `tonclient/test/test_processing.py`, 
+Please, dig in `tonclient/test/test_net.py`, `tonclient/test/test_processing.py`,
 `tonclient/test/test_crypto.py`, `tonclient/test/test_debot.py` to get more examples.
 
 ## Client and asyncio

@@ -1,3 +1,7 @@
+## Version 1.32.0.0
+  * Binaries updated to `1.32.0`;
+  * Changes `1.32.0` (https://github.com/tonlabs/TON-SDK/blob/master/CHANGELOG.md#1320--2022-03-22);
+
 ## Version 1.31.0.0
   * Binaries updated to `1.31.0`;
   * Changes `1.31.0` (https://github.com/tonlabs/TON-SDK/blob/master/CHANGELOG.md#1310--2022-03-09);

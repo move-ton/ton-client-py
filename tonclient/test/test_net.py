@@ -17,6 +17,8 @@ from tonclient.test.helpers import (
     tonos_punch,
 )
 from tonclient.types import (
+    ClientConfig,
+    NetworkQueriesProtocol,
     ParamsOfQueryCollection,
     OrderBy,
     SortDirection,
@@ -75,6 +77,38 @@ class TestTonNetAsyncCore(unittest.TestCase):
                 collection='messages', result='id balance'
             )
             async_core_client.net.query_collection(params=q_params)
+
+    def test_query_collection_ws(self):
+        config = ClientConfig()
+        config.network.endpoints = async_core_client.config.network.endpoints
+        config.network.queries_protocol = NetworkQueriesProtocol.WS
+        client_ws = TonClient(config=config)
+
+        q_params = ParamsOfQueryCollection(collection='messages', result='id', limit=1)
+        result = client_ws.net.query_collection(params=q_params)
+        self.assertGreater(len(result.result), 0)
+
+        q_params = ParamsOfQueryCollection(
+            collection='accounts', result='id balance', limit=5
+        )
+        result = client_ws.net.query_collection(params=q_params)
+        self.assertEqual(5, len(result.result))
+
+        q_params = ParamsOfQueryCollection(
+            collection='messages',
+            result='body created_at',
+            limit=10,
+            filter={'created_at': {'gt': 1562342740}},
+            order=[OrderBy(path='created_at', direction=SortDirection.ASC)],
+        )
+        result = client_ws.net.query_collection(params=q_params)
+        self.assertGreater(result.result[0]['created_at'], 1562342740)
+
+        with self.assertRaises(TonException):
+            q_params = ParamsOfQueryCollection(
+                collection='messages', result='id balance'
+            )
+            client_ws.net.query_collection(params=q_params)
 
     def test_wait_for_collection(self):
         now = int(datetime.now().timestamp())
