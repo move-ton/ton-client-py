@@ -678,7 +678,7 @@ class AbiData:
         self.key = key
         self.name = name
         self.type = type
-        self.components = components
+        self.components = components or []
 
     @property
     def dict(self):
