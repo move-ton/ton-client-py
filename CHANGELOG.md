@@ -1,3 +1,8 @@
+## Version 1.33.1.0
+  * Binaries updated to `1.33.1`;
+  * Changes `1.33.0` (https://github.com/tonlabs/ever-sdk/blob/master/CHANGELOG.md#1330--2022-05-02);
+  * Changes `1.33.1` (https://github.com/tonlabs/ever-sdk/blob/master/CHANGELOG.md#1331--2022-05-10);
+
 ## Version 1.32.0.1
   * Bug fix in `types.AbiData` by [PR#3](https://github.com/move-ton/ton-client-py/pull/3).
     Thanks to [@abionics](https://github.com/abionics)

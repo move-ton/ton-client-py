@@ -163,6 +163,8 @@ class NetworkConfig:
         latency_detection_interval: int = None,
         max_latency: int = None,
         queries_protocol: 'NetworkQueriesProtocol' = None,
+        first_remp_status_timeout: int = None,
+        next_remp_status_timeout: int = None,
     ):
         """
         :param server_address: DApp Server public address. For instance,
@@ -219,6 +221,12 @@ class NetworkConfig:
                 timeout requests ends with error.
                 Must be specified in milliseconds. Default is 60000 (1 min)
         :param queries_protocol: Queries protocol
+        :param first_remp_status_timeout: First REMP status awaiting timeout.
+                If no status recieved during the timeout than fallback transaction
+                scenario is activated
+        :param next_remp_status_timeout: Subsequent REMP status awaiting timeout.
+                If no status recieved during the timeout than fallback transaction
+                scenario is activated
         """
         self.server_address = server_address
         self.endpoints = endpoints
@@ -235,6 +243,8 @@ class NetworkConfig:
         self.max_latency = max_latency
         self.query_timeout = query_timeout
         self.queries_protocol = queries_protocol
+        self.first_remp_status_timeout = first_remp_status_timeout
+        self.next_remp_status_timeout = next_remp_status_timeout
 
     @property
     def dict(self):
@@ -255,6 +265,8 @@ class NetworkConfig:
             'max_latency': self.max_latency,
             'query_timeout': self.query_timeout,
             'queries_protocol': self.queries_protocol,
+            'first_remp_status_timeout': self.first_remp_status_timeout,
+            'next_remp_status_timeout': self.next_remp_status_timeout,
         }
 
 
@@ -1230,18 +1242,29 @@ class ResultOfAttachSignature:
 class ParamsOfDecodeMessage:
     """ParamsOfDecodeMessage"""
 
-    def __init__(self, abi: 'AbiType', message: str):
+    def __init__(self, abi: 'AbiType', message: str, allow_partial: bool = False):
         """
         :param abi: Contract ABI
         :param message: Message BOC
+        :param allow_partial: Flag allowing partial BOC decoding when ABI doesn't
+                describe the full body BOC. Controls decoder behaviour when after
+                decoding all described in ABI params there are some data left in BOC:
+                `true` - return decoded values
+                `false` - return error of incomplete BOC deserialization (default)
+
         """
         self.abi = abi
         self.message = message
+        self.allow_partial = allow_partial
 
     @property
     def dict(self):
         """Dict from object"""
-        return {'abi': self.abi.dict, 'message': self.message}
+        return {
+            'abi': self.abi.dict,
+            'message': self.message,
+            'allow_partial': self.allow_partial,
+        }
 
 
 class DecodedMessageBody:
@@ -1277,15 +1300,23 @@ class DecodedMessageBody:
 class ParamsOfDecodeMessageBody:
     """ParamsOfDecodeMessageBody"""
 
-    def __init__(self, abi: 'AbiType', body: str, is_internal: bool):
+    def __init__(
+        self, abi: 'AbiType', body: str, is_internal: bool, allow_partial: bool = False
+    ):
         """
         :param abi: Contract ABI used to decode
         :param body: Message body BOC encoded in `base64`
         :param is_internal: True if the body belongs to the internal message
+        :param allow_partial: Flag allowing partial BOC decoding when ABI doesn't
+                describe the full body BOC. Controls decoder behaviour when after
+                decoding all described in ABI params there are some data left in BOC:
+                `true` - return decoded values
+                `false` - return error of incomplete BOC deserialization (default)
         """
         self.abi = abi
         self.body = body
         self.is_internal = is_internal
+        self.allow_partial = allow_partial
 
     @property
     def dict(self):
@@ -1294,6 +1325,7 @@ class ParamsOfDecodeMessageBody:
             'abi': self.abi.dict,
             'body': self.body,
             'is_internal': self.is_internal,
+            'allow_partial': self.allow_partial,
         }
 
 
@@ -1422,18 +1454,28 @@ class ResultOfEncodeInternalMessage:
 class ParamsOfDecodeAccountData:
     """ParamsOfDecodeAccountData"""
 
-    def __init__(self, abi: 'AbiType', data: str):
+    def __init__(self, abi: 'AbiType', data: str, allow_partial: bool = False):
         """
         :param abi: Contract ABI
         :param data: Data BOC or BOC handle
+        :param allow_partial: Flag allowing partial BOC decoding when ABI doesn't
+                describe the full body BOC. Controls decoder behaviour when after
+                decoding all described in ABI params there are some data left in BOC:
+                `true` - return decoded values
+                `false` - return error of incomplete BOC deserialization (default)
         """
         self.abi = abi
         self.data = data
+        self.allow_partial = allow_partial
 
     @property
     def dict(self):
         """Dict from object"""
-        return {'abi': self.abi.dict, 'data': self.data}
+        return {
+            'abi': self.abi.dict,
+            'data': self.data,
+            'allow_partial': self.allow_partial,
+        }
 
 
 class ResultOfDecodeData:
@@ -1501,20 +1543,30 @@ class ResultOfUpdateInitialData:
 class ParamsOfDecodeInitialData:
     """ParamsOfDecodeInitialData"""
 
-    def __init__(self, data: str, abi: 'AbiType' = None):
+    def __init__(self, data: str, abi: 'AbiType' = None, allow_partial: bool = False):
         """
         :param data: Data BOC or BOC handle
         :param abi: Contract ABI.
                 Initial data is decoded if this parameter is provided
+        :param allow_partial: Flag allowing partial BOC decoding when ABI doesn't
+                describe the full body BOC. Controls decoder behaviour when after
+                decoding all described in ABI params there are some data left in BOC:
+                `true` - return decoded values
+                `false` - return error of incomplete BOC deserialization (default)
         """
         self.data = data
         self.abi = abi
+        self.allow_partial = allow_partial
 
     @property
     def dict(self):
         """Dict from object"""
         abi = self.abi.dict if self.abi else self.abi
-        return {'data': self.data, 'abi': abi}
+        return {
+            'data': self.data,
+            'abi': abi,
+            'allow_partial': self.allow_partial,
+        }
 
 
 class ParamsOfEncodeInitialData:
@@ -2334,6 +2386,7 @@ class CryptoErrorCode(int, Enum):
     INVALID_CRYPTO_BOX_TYPE = 131
     CRYPTO_BOX_SECRET_SERIALIZATION_ERROR = 132
     CRYPTO_BOX_SECRET_DESERIALIZATION_ERROR = 133
+    INVALID_NONCE_SIZE = 134
 
 
 class MnemonicDictionary(int, Enum):
@@ -4918,6 +4971,9 @@ class ProcessingErrorCode(int, Enum):
     BLOCK_NOT_FOUND = 511
     INVALID_DATA = 512
     EXTERNAL_SIGNER_MUST_NOT_BE_USED = 513
+    MESSAGE_REJECTED = 514
+    INVALID_REMP_STATUS = 515
+    NEXT_REMP_STATUS_TIMEOUT = 516
 
 
 class ProcessingEvent:
@@ -5117,6 +5173,95 @@ class ProcessingEvent:
             super(ProcessingEvent.MessageExpired, self).__init__(type='MessageExpired')
             self.message_id = message_id
             self.message = message
+            self.error = error
+
+    class RempSentToValidators(BaseTypedType):
+        """
+        Notifies the app that the message has been delivered to the thread's validators
+        """
+
+        def __init__(self, message_id: str, timestamp: int, json: Any):
+            """
+            :param message_id:
+            :param timestamp:
+            :param json:
+            """
+            super(ProcessingEvent.RempSentToValidators, self).__init__(
+                type='RempSentToValidators'
+            )
+            self.message_id = message_id
+            self.timestamp = timestamp
+            self.json = json
+
+    class RempIncludedIntoBlock(BaseTypedType):
+        """
+        Notifies the app that the message has been successfully included into a block
+        candidate by the thread's collator
+        """
+
+        def __init__(self, message_id: str, timestamp: int, json: Any):
+            """
+            :param message_id:
+            :param timestamp:
+            :param json:
+            """
+            super(ProcessingEvent.RempIncludedIntoBlock, self).__init__(
+                type='RempIncludedIntoBlock'
+            )
+            self.message_id = message_id
+            self.timestamp = timestamp
+            self.json = json
+
+    class RempIncludedIntoAcceptedBlock(BaseTypedType):
+        """
+        Notifies the app that the block candicate with the message has been
+        accepted by the thread's validators
+        """
+
+        def __init__(self, message_id: str, timestamp: int, json: Any):
+            """
+            :param message_id:
+            :param timestamp:
+            :param json:
+            """
+            super(ProcessingEvent.RempIncludedIntoAcceptedBlock, self).__init__(
+                type='RempIncludedIntoAcceptedBlock'
+            )
+            self.message_id = message_id
+            self.timestamp = timestamp
+            self.json = json
+
+    class RempOther(BaseTypedType):
+        """
+        Notifies the app about some other minor REMP statuses occurring during
+        message processing
+        """
+
+        def __init__(self, message_id: str, timestamp: int, json: Any):
+            """
+            :param message_id:
+            :param timestamp:
+            :param json:
+            """
+            super(ProcessingEvent.RempOther, self).__init__(type='RempOther')
+            self.message_id = message_id
+            self.timestamp = timestamp
+            self.json = json
+
+    class RempError(BaseTypedType):
+        """
+        Notifies the app about any problem that has occured in REMP
+        processing - in this case library switches to the fallback transaction awaiting
+        scenario (sequential block reading)
+        """
+
+        def __init__(self, error: 'ClientError'):
+            """
+            :param message_id:
+            :param timestamp:
+            :param json:
+            """
+            super(ProcessingEvent.RempError, self).__init__(type='RempError')
             self.error = error
 
     @staticmethod
