@@ -11,6 +11,7 @@ from tonclient.bindings.types import TCResponseType
 from tonclient.client import TonClient
 from tonclient.errors import TonException
 from tonclient.types import (
+    ClientConfig,
     ParamsOfAppRequest,
     AppRequestResult,
     ParamsOfResolveAppRequest,
@@ -336,9 +337,10 @@ class AppDebotBrowser(AppObject):
         # We should call `perform_invoke_debot` in `spawn` mode subprocess
         # for compatibility with `Unix` systems.
         # MacOS, Windows use `spawn` by default
+        config = self._resolve_sync_async(method=self.client.config)
         with ProcessPoolExecutor(mp_context=get_context('spawn')) as pool:
             future = pool.submit(
-                self.perform_invoke_debot, client=self.client, params=params
+                self.perform_invoke_debot, config=config, params=params
             )
             future.result()
 
@@ -346,7 +348,10 @@ class AppDebotBrowser(AppObject):
 
     @staticmethod
     def perform_invoke_debot(
-        client: TonClient, params: ParamsOfAppDebotBrowser.InvokeDebot, *args, **kwargs
+        config: ClientConfig,
+        params: ParamsOfAppDebotBrowser.InvokeDebot,
+        *args,
+        **kwargs,
     ):
         """Invoke debot method"""
         raise NotImplementedError(

@@ -80,7 +80,7 @@ class TestTonNetAsyncCore(unittest.TestCase):
 
     def test_query_collection_ws(self):
         config = ClientConfig()
-        config.network.endpoints = async_core_client.config.network.endpoints
+        config.network.endpoints = async_core_client.config().network.endpoints
         config.network.queries_protocol = NetworkQueriesProtocol.WS
         client_ws = TonClient(config=config)
 
@@ -216,7 +216,7 @@ class TestTonNetAsyncCore(unittest.TestCase):
         # Deploy to create second transaction.
         # Use another client, because of error: Fetch first block failed:
         # Can not use network module since it is suspended
-        second_config = async_core_client.config
+        second_config = async_core_client.config()
         second_client = TonClient(config=second_config)
 
         process_params = ParamsOfProcessMessage(

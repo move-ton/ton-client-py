@@ -9,6 +9,7 @@ from tonclient.client import TonClient
 from tonclient.errors import TonException
 from tonclient.objects import AppSigningBox, AppEncryptionBox
 from tonclient.types import (
+    ClientConfig,
     ParamsOfMnemonicFromRandom,
     ParamsOfAppRequest,
     ParamsOfAppSigningBox,
@@ -39,12 +40,19 @@ from tonclient.test.helpers import async_core_client, tonos_punch
 
 class TestTonClientAsync(unittest.TestCase):
     def setUp(self) -> None:
-        self.client = TonClient(config=async_core_client.config, is_async=True)
+        self.client = TonClient(config=async_core_client.config(), is_async=True)
 
     def test_version(self):  # Client
         async def __main():
             result = await self.client.version()
             self.assertEqual(LIB_VERSION, result.version)
+
+        asyncio.run(__main())
+
+    def test_config(self):
+        async def __main():
+            result = await self.client.config()
+            self.assertIsInstance(result, ClientConfig)
 
         asyncio.run(__main())
 

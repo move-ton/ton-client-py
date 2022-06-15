@@ -1,10 +1,19 @@
+import json
 import unittest
+from unittest import result
 
 from tonclient.client import TonClient, DEVNET_BASE_URLS
-from tonclient.types import ClientConfig
+from tonclient.types import (
+    AbiConfig,
+    BocConfig,
+    ClientConfig,
+    CryptoConfig,
+    NetworkConfig,
+    ProofsConfig,
+)
 
 
-LIB_VERSION = '1.33.1'
+LIB_VERSION = '1.34.2'
 
 
 class TestTonClientAsyncCore(unittest.TestCase):
@@ -28,6 +37,15 @@ class TestTonClientAsyncCore(unittest.TestCase):
 
     def test_destroy_context(self):
         self.client.destroy_context()
+
+    def test_config(self):
+        result = self.client.config()
+        self.assertIsInstance(result, ClientConfig)
+        self.assertIsInstance(result.network, NetworkConfig)
+        self.assertIsInstance(result.crypto, CryptoConfig)
+        self.assertIsInstance(result.abi, AbiConfig)
+        self.assertIsInstance(result.boc, BocConfig)
+        self.assertIsInstance(result.proofs, ProofsConfig)
 
 
 class TestTonClientSyncCore(unittest.TestCase):

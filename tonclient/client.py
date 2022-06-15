@@ -69,6 +69,11 @@ class TonClientBase(TonModule):
         """Resolves application request processing result"""
         return self.request(method='client.resolve_app_request', **params.dict)
 
+    def config(self) -> Union[ClientConfig, Awaitable[ClientConfig]]:
+        """Get client config"""
+        response = self.request(method='client.config')
+        return self.response(classname=ClientConfig, response=response)
+
 
 class TonClient:
     """Main client class to create object of"""
@@ -83,8 +88,7 @@ class TonClient:
         """
         super().__init__()
 
-        self._config = config
-        self._ctx = self.create_context(config=self._config)
+        self._ctx = self.create_context(config=config)
         self._is_core_async = is_core_async
         self._is_async = is_async
 
@@ -102,7 +106,7 @@ class TonClient:
     @property
     def config(self):
         """Client config"""
-        return self._config
+        return self.base.config
 
     @property
     def ctx(self):

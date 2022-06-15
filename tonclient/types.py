@@ -131,6 +131,18 @@ class ClientConfig:
             'local_storage_path': self.local_storage_path,
         }
 
+    @staticmethod
+    def from_dict(data: Dict[str, Any]) -> 'ClientConfig':
+        """Object from dict"""
+        return ClientConfig(
+            network=NetworkConfig(**data['network']),
+            crypto=CryptoConfig(**data['crypto']),
+            abi=AbiConfig(**data['abi']),
+            boc=BocConfig(**data['boc']),
+            proofs=ProofsConfig(**data['proofs']),
+            local_storage_path=data['local_storage_path'],
+        )
+
 
 class NetworkQueriesProtocol(str, Enum):
     """
@@ -5477,6 +5489,9 @@ class TransactionFees:
         out_msgs_fwd_fee: int,
         total_account_fees: int,
         total_output: int,
+        ext_in_msg_fee: int,
+        total_fwd_fees: int,
+        account_fees: int,
     ):
         """
         :param in_msg_fwd_fee:
@@ -5485,6 +5500,9 @@ class TransactionFees:
         :param out_msgs_fwd_fee:
         :param total_account_fees:
         :param total_output:
+        :param ext_in_msg_fee:
+        :param total_fwd_fees:
+        :param account_fees:
         """
         self.in_msg_fwd_fee = in_msg_fwd_fee
         self.storage_fee = storage_fee
@@ -5492,6 +5510,9 @@ class TransactionFees:
         self.out_msgs_fwd_fee = out_msgs_fwd_fee
         self.total_account_fees = total_account_fees
         self.total_output = total_output
+        self.ext_in_msg_fee = ext_in_msg_fee
+        self.total_fwd_fees = total_fwd_fees
+        self.account_fees = account_fees
 
 
 class ExecutionOptions:

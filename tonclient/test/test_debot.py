@@ -13,6 +13,7 @@ from tonclient.objects import AppDebotBrowser
 from tonclient.test.helpers import SAMPLES_DIR, async_core_client, send_grams
 from tonclient.types import (
     Abi,
+    ClientConfig,
     Signer,
     CallSet,
     DeploySet,
@@ -184,10 +185,11 @@ class DebotBrowser(object):
             self, params: ParamsOfAppDebotBrowser.InvokeDebot
         ) -> ResultOfAppDebotBrowser.InvokeDebot:
             """Method is called by `dispatch`"""
+            config = self.client.config()
             with ProcessPoolExecutor(mp_context=get_context('spawn')) as pool:
                 future = pool.submit(
                     self.perform_invoke_debot,
-                    client=self.client,
+                    config=config,
                     params=params,
                     browser=self.browser,
                 )
@@ -197,13 +199,14 @@ class DebotBrowser(object):
 
         @staticmethod
         def perform_invoke_debot(
-            client: TonClient,
+            config: ClientConfig,
             params: ParamsOfAppDebotBrowser.InvokeDebot,
             *args,
             **kwargs,
         ):
             logging.info(f'[INVOKE]\t{params.debot_addr}')
 
+            client = TonClient(config=config)
             browser = kwargs['browser']
             steps = browser.step['invokes']
 
@@ -402,10 +405,11 @@ class DebotBrowserAsync(object):
             self, params: ParamsOfAppDebotBrowser.InvokeDebot
         ) -> ResultOfAppDebotBrowser.InvokeDebot:
             """Method is called by `dispatch`"""
+            config = self._resolve_sync_async(self.client.config)
             with ProcessPoolExecutor(mp_context=get_context('spawn')) as pool:
                 loop = asyncio.new_event_loop()
                 future = loop.run_in_executor(
-                    pool, self.perform_invoke_debot, self.client, params, self.browser
+                    pool, self.perform_invoke_debot, config, params, self.browser
                 )
                 loop.run_until_complete(future)
                 loop.close()
@@ -414,7 +418,7 @@ class DebotBrowserAsync(object):
 
         @staticmethod
         def perform_invoke_debot(
-            client: TonClient,
+            config: ClientConfig,
             params: ParamsOfAppDebotBrowser.InvokeDebot,
             *args,
             **kwargs,
@@ -424,7 +428,7 @@ class DebotBrowserAsync(object):
             async def async_wrapper():
                 # Create new client instance for spawned process and
                 # destroy after invoke processed
-                _client = TonClient(config=client.config, is_async=True)
+                _client = TonClient(config=config, is_async=True)
 
                 _browser = DebotBrowserAsync(
                     client=_client,
@@ -909,7 +913,7 @@ class TestTonDebotAsyncCore(unittest.TestCase):
         browser.execute()
 
     def test_invoke_async(self):
-        client = TonClient(config=async_core_client.config, is_async=True)
+        client = TonClient(config=async_core_client.config(), is_async=True)
 
         debot_address, _ = self.__init_debot(keypair=self.keypair)
         steps = [

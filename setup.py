@@ -6,10 +6,10 @@ with open("README.md", "r", encoding="utf8") as fh:
 
 setuptools.setup(
     name="ton-client-py",
-    version="1.33.1.0",
+    version="1.34.2.0",
     author="MoveTON",
     author_email="",
-    description="Python SDK for Free TON",
+    description="Python SDK for Everscale",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/move-ton/ton-client-py",
