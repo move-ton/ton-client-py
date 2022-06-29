@@ -9,6 +9,7 @@ from tonclient.types import (
     KeyPair,
     DeploySet,
     CallSet,
+    ParamsOfCalcFunctionId,
     Signer,
     MessageSource,
     StateInitSource,
@@ -457,6 +458,18 @@ class TestTonAbiAsyncCore(unittest.TestCase):
             'te6ccgEBAQEANAAAY5/mZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmAAAAAAAAAAAAAAAAACWtD4',
             encoded.boc,
         )
+
+    def test_calc_function_id(self):
+        abi = Abi.from_path(path=os.path.join(SAMPLES_DIR, 'Giver-v2.abi.json'))
+        params = ParamsOfCalcFunctionId(abi=abi, function_name='getMessages')
+        result = async_core_client.abi.calc_function_id(params)
+        self.assertEqual('0x7744c7e2', hex(result.function_id))
+
+        params = ParamsOfCalcFunctionId(
+            abi=abi, function_name='getMessages', output=True
+        )
+        result = async_core_client.abi.calc_function_id(params)
+        self.assertEqual('0xf744c7e2', hex(result.function_id))
 
 
 class TestTonAbiSyncCore(unittest.TestCase):

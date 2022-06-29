@@ -3,8 +3,10 @@ from typing import Union, Awaitable
 
 from tonclient.module import TonModule
 from tonclient.types import (
+    ParamsOfCalcFunctionId,
     ParamsOfEncodeMessageBody,
     DecodedMessageBody,
+    ResultOfCalcFunctionId,
     ResultOfEncodeMessageBody,
     ParamsOfAttachSignatureToMessageBody,
     ResultOfAttachSignatureToMessageBody,
@@ -277,3 +279,15 @@ class TonAbi(TonModule):
         """
         response = self.request(method="abi.encode_boc", **params.dict)
         return self.response(classname=ResultOfAbiEncodeBoc, response=response)
+
+    def calc_function_id(
+        self, params: ParamsOfCalcFunctionId
+    ) -> Union[ResultOfCalcFunctionId, Awaitable[ResultOfCalcFunctionId]]:
+        """
+        Calculates contract function ID by contract ABI
+
+        :param params: See `types.ParamsOfCalcFunctionId`
+        :return: See `types.ResultOfCalcFunctionId`
+        """
+        response = self.request(method="abi.calc_function_id", **params.dict)
+        return self.response(classname=ResultOfCalcFunctionId, response=response)

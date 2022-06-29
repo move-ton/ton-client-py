@@ -520,6 +520,7 @@ class AbiErrorCode(int, Enum):
     INVALID_FUNCTION_ID = 312
     INVALID_DATA = 313
     ENCODE_INITIAL_DATA_FAILED = 314
+    INVALID_FUNCTION_NAME = 315
 
 
 class Abi:
@@ -1710,6 +1711,40 @@ class ResultOfAbiEncodeBoc:
         :param boc: BOC encoded as `base64`
         """
         self.boc = boc
+
+
+class ParamsOfCalcFunctionId:
+    """ParamsOfCalcFunctionId"""
+
+    def __init__(self, abi: 'AbiType', function_name: str, output: bool = None):
+        """
+        :param abi: Contract ABI
+        :param function_name: Contract function name
+        :param output:  If set to `true` output function ID will be returned
+                which is used in contract response. Default is `false`
+        """
+        self.abi = abi
+        self.function_name = function_name
+        self.output = output
+
+    @property
+    def dict(self):
+        """Dict from object"""
+        return {
+            'abi': self.abi.dict,
+            'function_name': self.function_name,
+            'output': self.output,
+        }
+
+
+class ResultOfCalcFunctionId:
+    """ResultOfCalcFunctionId"""
+
+    def __init__(self, function_id: int):
+        """
+        :param function_id:  Contract function ID
+        """
+        self.function_id = function_id
 
 
 # BOC module
@@ -5524,17 +5559,21 @@ class ExecutionOptions:
         block_time: int = None,
         block_lt: int = None,
         transaction_lt: int = None,
+        chksig_always_succeed: bool = None,
     ):
         """
         :param blockchain_config: boc with config
         :param block_time: time that is used as transaction time
         :param block_lt: block logical time
         :param transaction_lt: transaction logical time
+        :param chksig_always_succeed: Overrides standard TVM behaviour.
+                If set to `true` then CHKSIG always will return `true`
         """
         self.blockchain_config = blockchain_config
         self.block_time = block_time
         self.block_lt = block_lt
         self.transaction_lt = transaction_lt
+        self.chksig_always_succeed = chksig_always_succeed
 
     @property
     def dict(self):
@@ -5544,6 +5583,7 @@ class ExecutionOptions:
             'block_time': self.block_time,
             'block_lt': self.block_lt,
             'transaction_lt': self.transaction_lt,
+            'chksig_always_succeed': self.chksig_always_succeed,
         }
 
 

@@ -1,6 +1,4 @@
-import json
 import unittest
-from unittest import result
 
 from tonclient.client import TonClient, DEVNET_BASE_URLS
 from tonclient.types import (
@@ -13,7 +11,7 @@ from tonclient.types import (
 )
 
 
-LIB_VERSION = '1.34.2'
+LIB_VERSION = '1.35.0'
 
 
 class TestTonClientAsyncCore(unittest.TestCase):
