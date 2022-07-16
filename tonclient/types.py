@@ -1056,6 +1056,7 @@ class ParamsOfEncodeMessageBody:
         is_internal: bool,
         signer: 'SignerType',
         processing_try_index: int = None,
+        address: str = None,
     ):
         """
         :param abi: Contract ABI
@@ -1068,12 +1069,18 @@ class ParamsOfEncodeMessageBody:
                 processing with retries. Encoder uses the provided try index
                 to calculate message expiration time. Expiration timeouts will
                 grow with every retry. Default value is 0
+        :param address: Destination address of the message.
+                Since ABI version 2.3 destination address of external inbound message
+                is used in message body signature calculation.
+                Should be provided when signed external inbound message body is created.
+                Otherwise can be omitted.
         """
         self.abi = abi
         self.call_set = call_set
         self.is_internal = is_internal
         self.signer = signer
         self.processing_try_index = processing_try_index
+        self.address = address
 
     @property
     def dict(self):
@@ -1084,6 +1091,7 @@ class ParamsOfEncodeMessageBody:
             'is_internal': self.is_internal,
             'signer': self.signer.dict,
             'processing_try_index': self.processing_try_index,
+            'address': self.address,
         }
 
 
