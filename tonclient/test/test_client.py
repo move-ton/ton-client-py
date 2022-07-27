@@ -11,7 +11,7 @@ from tonclient.types import (
 )
 
 
-LIB_VERSION = '1.36.0'
+LIB_VERSION = '1.36.1'
 
 
 class TestTonClientAsyncCore(unittest.TestCase):
