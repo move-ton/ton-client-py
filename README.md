@@ -1,5 +1,6 @@
-# TON Client
-TON SDK Client library Python bindings.
+# Everscale Client
+
+Everscale SDK Client library Python bindings.
 Works for Python 3.7+
 
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ton-client-py?label=Python)
@@ -10,8 +11,11 @@ Works for Python 3.7+
 [![Chat on Telegram EN](https://img.shields.io/badge/Chat%20on-Telegram%20EN-blue)](https://t.me/MOVETON_SDK_EN)
 
 ## Installation
+
 Check if Python 3.7+ is installed
+
 ##### MacOS/Linux
+
 ```
 # Using pipenv
 pipenv install ton-client-py
@@ -19,7 +23,9 @@ pipenv install ton-client-py
 # Using pip
 pip install ton-client-py
 ```
+
 ##### Windows
+
 ```
 # Using pipenv
 py -m pipenv install ton-client-py
@@ -29,7 +35,9 @@ py -m pip install ton-client-py
 ```
 
 ## Tests
-* Clone repository
+
+- Clone repository
+
 ```
 # Clone repository
 git clone https://github.com/move-ton/ton-client-py.git
@@ -38,8 +46,10 @@ git clone https://github.com/move-ton/ton-client-py.git
 cd ton-client-py
 ```
 
-* Install dev dependencies
+- Install dev dependencies
+
 ##### MacOS/Linux
+
 ```
 # Using pipenv
 pipenv install --dev
@@ -47,7 +57,9 @@ pipenv install --dev
 # Using pip
 pip install pytest
 ```
+
 ##### Windows
+
 ```
 # Using pipenv
 py -m pipenv install --dev
@@ -56,8 +68,10 @@ py -m pipenv install --dev
 py -m pip install pytest
 ```
 
-* Running tests
+- Running tests
+
 ##### MacOS/Linux
+
 ```
 # Using pipenv
 pipenv run pytest  # Display only module name while testing
@@ -69,7 +83,9 @@ python -m pytest
 python -m pytest -v
 python -m pytest -v -s --log-cli-level=INFO
 ```
+
 ##### Windows
+
 ```
 # Using pipenv
 py -m pipenv run pytest  # Display only module name while testing
@@ -82,8 +98,9 @@ py -m pytest -v
 py -m pytest -v -s --log-cli-level=INFO
 ```
 
-* Alternative running tests
-If you have problems with installing `pytest` package you can simply run
+- Alternative running tests
+  If you have problems with installing `pytest` package you can simply run
+
 ```
 # For MacOS/Linux
 python -m unittest -v
@@ -93,11 +110,13 @@ py -m unittest -v
 ```
 
 ## Client
+
 Core client library has sync and async request modes.
 Some core methods are available only in async request mode and
 this mode is more prefferable, so python client created with async core requests by default.
 
 Create client
+
 ```python
 from tonclient.types import ClientConfig
 from tonclient.client import TonClient
@@ -109,6 +128,7 @@ client_sync_core = TonClient(config=ClientConfig(), is_core_async=False)
 ```
 
 Client created with default config
+
 ```python
 from tonclient.types import NetworkConfig, CryptoConfig, AbiConfig, BocConfig, ProofsConfig, ClientConfig
 
@@ -169,6 +189,7 @@ config = ClientConfig(network=network, crypto=crypto, abi=abi, boc=boc, proofs=p
 ```
 
 You can override initial config while creating a client
+
 ```python
 from tonclient.types import ClientConfig
 from tonclient.client import TonClient, DEVNET_BASE_URLS
@@ -185,6 +206,7 @@ Client contains all core modules and its methods.
 You can get full list of modules and methods here:
 https://github.com/tonlabs/TON-SDK/blob/master/docs/modules.md
 Module method called by template `client.[module].[method]`
+
 ```python
 from tonclient.types import ClientConfig, ParamsOfParse
 from tonclient.client import TonClient, DEVNET_BASE_URLS
@@ -200,11 +222,14 @@ keypair = client.crypto.generate_random_sign_keys()
 parse_params = ParamsOfParse(boc='Account base64 BOC')
 result = client.boc.parse_account(params=parse_params)
 ```
+
 You always can get information about method and its arguments in method docstring.
 
 ### Methods with callbacks
+
 Some library methods accept `callback` argument to pass additional data to it.
 E.g. `net.subscribe_collection`
+
 ```python
 import time
 from datetime import datetime
@@ -243,10 +268,12 @@ while True:
         break
     time.sleep(1)
 ```
+
 Please, dig in `tonclient/test/test_net.py`, `tonclient/test/test_processing.py`,
 `tonclient/test/test_crypto.py`, `tonclient/test/test_debot.py` to get more examples.
 
 ## Client and asyncio
+
 ```python
 from tonclient.types import ClientConfig
 from tonclient.client import TonClient, DEVNET_BASE_URLS
@@ -259,4 +286,5 @@ client = TonClient(config=config, is_async=True)
 # Get version (simple method with result)
 version = await client.version()
 ```
+
 Please, dig in `tonclient/test/test_async.py` to get more info

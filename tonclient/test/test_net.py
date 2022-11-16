@@ -406,6 +406,7 @@ class TestTonNetSyncCore(unittest.TestCase):
 
     def test_wait_for_collection(self):
         now = int(datetime.now().timestamp())
+        time.sleep(1)
         tonos_punch()
 
         q_params = ParamsOfWaitForCollection(

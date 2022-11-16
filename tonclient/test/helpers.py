@@ -15,7 +15,7 @@ SAMPLES_DIR = os.path.join(BASE_DIR, 'samples')
 GIVER_ADDRESS = '0:f5c2510bfe407363cb1db6b9d7bc1184a05f8b343aeaa828189c580e8569ee23'
 
 client_config = ClientConfig()
-client_config.network.endpoints = ['https://everos.freeton.surf']
+client_config.network.endpoints = ['https://everos.ustinov.me']
 async_core_client = TonClient(config=client_config)
 sync_core_client = TonClient(config=client_config, is_core_async=False)
 
