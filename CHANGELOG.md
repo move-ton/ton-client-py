@@ -1,3 +1,8 @@
+## Version 1.39.0.0
+
+- Binaries updated to `1.39.0`;
+- Changes `1.39.0` (https://github.com/tonlabs/ever-sdk/blob/master/CHANGELOG.md#1390--2022-12-07);
+
 ## Version 1.38.1.0
 
 - Binaries updated to `1.38.1`;

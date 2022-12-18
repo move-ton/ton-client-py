@@ -523,6 +523,13 @@ class AbiErrorCode(int, Enum):
     INVALID_FUNCTION_NAME = 315
 
 
+class DataLayout(str, Enum):
+    """DataLayout"""
+
+    INPUT = 'Input'
+    OUTPUT = 'Output'
+
+
 class Abi:
     """Abi"""
 
@@ -1263,7 +1270,14 @@ class ResultOfAttachSignature:
 class ParamsOfDecodeMessage:
     """ParamsOfDecodeMessage"""
 
-    def __init__(self, abi: 'AbiType', message: str, allow_partial: bool = False):
+    def __init__(
+        self,
+        abi: 'AbiType',
+        message: str,
+        allow_partial: bool = False,
+        function_name: str = None,
+        data_layout: 'DataLayout' = None,
+    ):
         """
         :param abi: Contract ABI
         :param message: Message BOC
@@ -1272,11 +1286,14 @@ class ParamsOfDecodeMessage:
                 decoding all described in ABI params there are some data left in BOC:
                 `true` - return decoded values
                 `false` - return error of incomplete BOC deserialization (default)
-
+        :param function_name: Function name or function id if is known in advance
+        :param data_layout: DataLayout
         """
         self.abi = abi
         self.message = message
         self.allow_partial = allow_partial
+        self.function_name = function_name
+        self.data_layout = data_layout
 
     @property
     def dict(self):
@@ -1285,6 +1302,8 @@ class ParamsOfDecodeMessage:
             'abi': self.abi.dict,
             'message': self.message,
             'allow_partial': self.allow_partial,
+            'function_name': self.function_name,
+            'data_layout': self.data_layout,
         }
 
 
@@ -1322,7 +1341,13 @@ class ParamsOfDecodeMessageBody:
     """ParamsOfDecodeMessageBody"""
 
     def __init__(
-        self, abi: 'AbiType', body: str, is_internal: bool, allow_partial: bool = False
+        self,
+        abi: 'AbiType',
+        body: str,
+        is_internal: bool,
+        allow_partial: bool = False,
+        function_name: str = None,
+        data_layout: 'DataLayout' = None,
     ):
         """
         :param abi: Contract ABI used to decode
@@ -1333,11 +1358,15 @@ class ParamsOfDecodeMessageBody:
                 decoding all described in ABI params there are some data left in BOC:
                 `true` - return decoded values
                 `false` - return error of incomplete BOC deserialization (default)
+        :param function_name: Function name or function id if is known in advance
+        :param data_layout: DataLayout
         """
         self.abi = abi
         self.body = body
         self.is_internal = is_internal
         self.allow_partial = allow_partial
+        self.function_name = function_name
+        self.data_layout = data_layout
 
     @property
     def dict(self):
@@ -1347,6 +1376,8 @@ class ParamsOfDecodeMessageBody:
             'body': self.body,
             'is_internal': self.is_internal,
             'allow_partial': self.allow_partial,
+            'function_name': self.function_name,
+            'data_layout': self.data_layout,
         }
 
 
@@ -4697,7 +4728,11 @@ class ParamsOfQueryTransactionTree:
     """ParamsOfQueryTransactionTree"""
 
     def __init__(
-        self, in_msg: str, abi_registry: List['AbiType'] = None, timeout: int = None
+        self,
+        in_msg: str,
+        abi_registry: List['AbiType'] = None,
+        timeout: int = None,
+        transaction_max_count: int = None,
     ):
         """
         :param in_msg: Input message id
@@ -4708,10 +4743,18 @@ class ParamsOfQueryTransactionTree:
                 messages and transaction. If some of the following messages
                 and transactions are missing yet. The maximum waiting time is
                 regulated by this option. Default value is 60000 (1 min)
+        :param transaction_max_count:  Maximum transaction count to wait.
+                If transaction tree contains more transaction then this parameter
+                then only first transaction_max_count transaction are awaited and
+                returned.
+                Default value is 50. If transaction_max_count is set to 0 then no
+                limitation on transaction count is used and all transaction are
+                returned.
         """
         self.in_msg = in_msg
         self.abi_registry = abi_registry
         self.timeout = timeout
+        self.transaction_max_count = transaction_max_count
 
     @property
     def dict(self):
@@ -4726,6 +4769,7 @@ class ParamsOfQueryTransactionTree:
             'in_msg': self.in_msg,
             'abi_registry': abi_registry,
             'timeout': self.timeout,
+            'transaction_max_count': self.transaction_max_count,
         }
 
 

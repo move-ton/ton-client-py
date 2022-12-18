@@ -6,6 +6,7 @@ from tonclient.errors import TonException
 from tonclient.test.helpers import SAMPLES_DIR, async_core_client, sync_core_client
 from tonclient.types import (
     Abi,
+    DataLayout,
     KeyPair,
     DeploySet,
     CallSet,
@@ -470,6 +471,24 @@ class TestTonAbiAsyncCore(unittest.TestCase):
         )
         result = async_core_client.abi.calc_function_id(params)
         self.assertEqual('0xf744c7e2', hex(result.function_id))
+
+    def test_decode_responsible(self):
+        body = 'te6ccgEBAgEAsQAB0IAAAAAAAABnAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABDnTBYAAAAAAAAAAAAAAAAAO5rKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAQCHAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGAD9YhN79S7hQOnrVCizdlF32dvf9Wk8XgGP1lsYvH/14AYHg='
+        abi = Abi.from_path(path=os.path.join(SAMPLES_DIR, 'PriceXchg.abi.json'))
+        params = ParamsOfDecodeMessageBody(
+            abi=abi,
+            body=body,
+            function_name='onTip3LendOwnership',
+            data_layout=DataLayout.OUTPUT,
+            is_internal=True,
+        )
+        result = async_core_client.abi.decode_message_body(params)
+        self.assertEqual(103, int(result.value['err_code']))
+        self.assertEqual(
+            '0:7eb109bdfa9770a074f5aa1459bb28bbecedeffab49e2f00c7eb2d8c5e3ffaf0',
+            result.value['pair'],
+        )
+        self.assertTrue(result.value['sell'])
 
 
 class TestTonAbiSyncCore(unittest.TestCase):

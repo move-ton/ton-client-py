@@ -112,10 +112,13 @@ class TestTonNetAsyncCore(unittest.TestCase):
 
     def test_wait_for_collection(self):
         now = int(datetime.now().timestamp())
+        time.sleep(1)
         tonos_punch()
 
         q_params = ParamsOfWaitForCollection(
-            collection='transactions', result='id now', filter={'now': {'gt': now}}
+            collection='transactions',
+            result='id now',
+            filter={'now': {'gt': now}},
         )
         result = async_core_client.net.wait_for_collection(params=q_params)
         self.assertGreater(result.result['now'], now)
