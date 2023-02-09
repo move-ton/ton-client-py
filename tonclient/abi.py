@@ -32,6 +32,8 @@ from tonclient.types import (
     ResultOfEncodeInitialData,
     ParamsOfAbiEncodeBoc,
     ResultOfAbiEncodeBoc,
+    ParamsOfGetSignatureData,
+    ResultOfGetSignatureData,
 )
 
 
@@ -291,3 +293,16 @@ class TonAbi(TonModule):
         """
         response = self.request(method="abi.calc_function_id", **params.dict)
         return self.response(classname=ResultOfCalcFunctionId, response=response)
+
+    def get_signature_data(
+        self, params: ParamsOfGetSignatureData
+    ) -> Union[ResultOfGetSignatureData, Awaitable[ResultOfGetSignatureData]]:
+        """
+        Extracts signature from message body and calculates hash
+        to verify the signature
+
+        :param params: See `types.ParamsOfGetSignatureData`
+        :return: See `types.ResultOfGetSignatureData`
+        """
+        response = self.request(method="abi.get_signature_data", **params.dict)
+        return self.response(classname=ResultOfGetSignatureData, response=response)
