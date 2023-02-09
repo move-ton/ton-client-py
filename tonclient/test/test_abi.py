@@ -11,6 +11,7 @@ from tonclient.types import (
     DeploySet,
     CallSet,
     ParamsOfCalcFunctionId,
+    ParamsOfGetSignatureData,
     Signer,
     MessageSource,
     StateInitSource,
@@ -211,6 +212,14 @@ class TestTonAbiAsyncCore(unittest.TestCase):
             'te6ccgEBAwEAvAABRYgAC31qq9KF9Oifst6LU9U6FQSQQRlCSEMo+A3LN5MvphIMAQHhrd/b+MJ5Za+AygBc5qS/dVIPnqxCsM9PvqfVxutK+lnQEKzQoRTLYO6+jfM8TF4841bdNjLQwIDWL4UVFdxIhdMfECP8d3ruNZAXul5xxahT91swIEkEHph08JVlwmUmQAAAXRnJcuDX1XMZBW+LBKACAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==',
             signed.message,
         )
+
+        # Get signature data
+        data_params = ParamsOfGetSignatureData(
+            abi=self.events_abi, message=signed.message
+        )
+        data = async_core_client.abi.get_signature_data(params=data_params)
+        self.assertEqual(unsigned.data_to_sign, data.hash)
+        self.assertEqual(signature.signature, data.signature)
 
         # Create initially signed message
         signer = Signer.Keys(keys=self.keypair)

@@ -6,7 +6,7 @@ with open("README.md", "r", encoding="utf8") as fh:
 
 setuptools.setup(
     name="ton-client-py",
-    version="1.39.0.0",
+    version="1.40.0.0",
     author="MoveTON",
     author_email="",
     description="Python SDK for Everscale",

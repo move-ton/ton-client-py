@@ -1786,6 +1786,38 @@ class ResultOfCalcFunctionId:
         self.function_id = function_id
 
 
+class ParamsOfGetSignatureData:
+    """ParamsOfGetSignatureData"""
+
+    def __init__(self, abi: 'AbiType', message: str):
+        """
+        :param abi: Contract ABI used to decode
+        :param message: Message BOC encoded in `base64`
+        """
+        self.abi = abi
+        self.message = message
+
+    @property
+    def dict(self):
+        """Dict from object"""
+        return {
+            'abi': self.abi.dict,
+            'message': self.message,
+        }
+
+
+class ResultOfGetSignatureData:
+    """ResultOfGetSignatureData"""
+
+    def __init__(self, signature: str, hash: str):
+        """
+        :param signature: Signature from the message in `hex`
+        :param hash: Hash to verify the signature in `base64`
+        """
+        self.signature = signature
+        self.hash = hash
+
+
 # BOC module
 class BocErrorCode(int, Enum):
     """BOC module error codes"""
