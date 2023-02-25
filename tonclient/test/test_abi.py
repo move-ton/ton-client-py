@@ -218,7 +218,7 @@ class TestTonAbiAsyncCore(unittest.TestCase):
             abi=self.events_abi, message=signed.message
         )
         data = async_core_client.abi.get_signature_data(params=data_params)
-        self.assertEqual(unsigned.data_to_sign, data.hash)
+        self.assertEqual(unsigned.data_to_sign, data.unsigned)
         self.assertEqual(signature.signature, data.signature)
 
         # Create initially signed message

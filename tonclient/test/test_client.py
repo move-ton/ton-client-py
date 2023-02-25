@@ -1,5 +1,6 @@
 import unittest
 
+from tonclient.bindings.lib import LIB_VERSION
 from tonclient.client import TonClient, DEVNET_BASE_URLS
 from tonclient.types import (
     AbiConfig,
@@ -9,9 +10,6 @@ from tonclient.types import (
     NetworkConfig,
     ProofsConfig,
 )
-
-
-LIB_VERSION = '1.40.0'
 
 
 class TestTonClientAsyncCore(unittest.TestCase):
@@ -44,6 +42,7 @@ class TestTonClientAsyncCore(unittest.TestCase):
         self.assertIsInstance(result.abi, AbiConfig)
         self.assertIsInstance(result.boc, BocConfig)
         self.assertIsInstance(result.proofs, ProofsConfig)
+        self.assertEqual(LIB_VERSION, result.binding.version)
 
 
 class TestTonClientSyncCore(unittest.TestCase):
