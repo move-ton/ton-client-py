@@ -2,6 +2,8 @@
 from typing import Awaitable, Union
 
 from tonclient.bindings.lib import (
+    LIB_VERSION,
+    get_lib_path,
     tc_create_context,
     tc_destroy_context,
     tc_read_string,
@@ -21,6 +23,7 @@ from tonclient.tvm import TonTvm
 from tonclient.types import (
     ClientError,
     ClientConfig,
+    BindingConfig,
     ResultOfVersion,
     ResultOfGetApiReference,
     ResultOfBuildInfo,
@@ -146,6 +149,8 @@ class TonClient:
     @staticmethod
     def create_context(config: ClientConfig) -> TCClientContext:
         """Create context"""
+        config.binding = BindingConfig(library=get_lib_path(), version=LIB_VERSION)
+
         response_ptr = tc_create_context(config=config.dict)
         response = TCSyncResponseData(tc_read_string(string=response_ptr))
         is_success, result, error = (

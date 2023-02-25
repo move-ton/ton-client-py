@@ -352,6 +352,10 @@ class TestTonNetAsyncCore(unittest.TestCase):
             self.assertIsInstance(tree_result.transactions, list)
             self.assertIsInstance(tree_result.transactions[0], TransactionNode)
 
+    def test_get_signature_id(self):
+        result = async_core_client.net.get_signature_id()
+        self.assertTrue('signature_id' in result.__dict__.keys())
+
     # TODO: Not working on TONOS SE
     # def test_block_iterator(self):
     #     params = ParamsOfCreateBlockIterator(

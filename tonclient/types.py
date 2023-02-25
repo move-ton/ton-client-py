@@ -69,6 +69,7 @@ class ClientErrorCode(int, Enum):
     INTERNAL_ERROR = 33
     INVALID_HANDLE = 34
     LOCAL_STORAGE_ERROR = 35
+    INVALID_DATA = 36
 
 
 class ClientError:
@@ -98,6 +99,7 @@ class ClientConfig:
         crypto: 'CryptoConfig' = None,
         abi: 'AbiConfig' = None,
         proofs: 'ProofsConfig' = None,
+        binding: 'BindingConfig' = None,
         local_storage_path: str = None,
     ):
         """
@@ -106,6 +108,7 @@ class ClientConfig:
         :param abi:
         :param boc:
         :param proofs:
+        :param binding:
         :param local_storage_path: For file based storage is a folder name
             where SDK will store its data. For browser based is a browser
             async storage key prefix.
@@ -117,6 +120,7 @@ class ClientConfig:
         self.abi = abi or AbiConfig()
         self.boc = boc or BocConfig()
         self.proofs = proofs or ProofsConfig()
+        self.binding = binding or BindingConfig()
         self.local_storage_path = local_storage_path
 
     @property
@@ -128,6 +132,7 @@ class ClientConfig:
             'abi': self.abi.dict,
             'boc': self.boc.dict,
             'proofs': self.proofs.dict,
+            'binding': self.binding.dict,
             'local_storage_path': self.local_storage_path,
         }
 
@@ -140,6 +145,7 @@ class ClientConfig:
             abi=AbiConfig(**data['abi']),
             boc=BocConfig(**data['boc']),
             proofs=ProofsConfig(**data['proofs']),
+            binding=BindingConfig(**data['binding']),
             local_storage_path=data['local_storage_path'],
         )
 
@@ -177,6 +183,7 @@ class NetworkConfig:
         queries_protocol: 'NetworkQueriesProtocol' = None,
         first_remp_status_timeout: int = None,
         next_remp_status_timeout: int = None,
+        signature_id: int = None,
     ):
         """
         :param server_address: DApp Server public address. For instance,
@@ -239,6 +246,14 @@ class NetworkConfig:
         :param next_remp_status_timeout: Subsequent REMP status awaiting timeout.
                 If no status recieved during the timeout than fallback transaction
                 scenario is activated
+        :param signature_id: Network signature ID which is used by VM in signature
+                verifying instructions if capability `CapSignatureWithId` is enabled
+                in blockchain configuration parameters.
+                This parameter should be set to `global_id` field from any blockchain
+                block if network can not be reachable at the moment of message encoding
+                and the message is aimed to be sent into network with `CapSignatureWithId`
+                enabled. Otherwise signature ID is detected automatically inside message
+                encoding functions
         """
         self.server_address = server_address
         self.endpoints = endpoints
@@ -257,6 +272,7 @@ class NetworkConfig:
         self.queries_protocol = queries_protocol
         self.first_remp_status_timeout = first_remp_status_timeout
         self.next_remp_status_timeout = next_remp_status_timeout
+        self.signature_id = signature_id
 
     @property
     def dict(self):
@@ -279,6 +295,7 @@ class NetworkConfig:
             'queries_protocol': self.queries_protocol,
             'first_remp_status_timeout': self.first_remp_status_timeout,
             'next_remp_status_timeout': self.next_remp_status_timeout,
+            'signature_id': self.signature_id,
         }
 
 
@@ -382,6 +399,23 @@ class ProofsConfig:
     def dict(self):
         """Dict from object"""
         return {'cache_in_local_storage': self.cache_in_local_storage}
+
+
+class BindingConfig:
+    """Binding config object"""
+
+    def __init__(self, library: str = None, version: str = None):
+        """
+        :param library:
+        :param version:
+        """
+        self.library = library
+        self.version = version
+
+    @property
+    def dict(self):
+        """Dict from object"""
+        return {'library': self.library, 'version': self.version}
 
 
 class BuildInfoDependency:
@@ -1809,13 +1843,13 @@ class ParamsOfGetSignatureData:
 class ResultOfGetSignatureData:
     """ResultOfGetSignatureData"""
 
-    def __init__(self, signature: str, hash: str):
+    def __init__(self, signature: str, unsigned: str):
         """
         :param signature: Signature from the message in `hex`
-        :param hash: Hash to verify the signature in `base64`
+        :param unsigned: Hash to verify the signature in `base64`
         """
         self.signature = signature
-        self.hash = hash
+        self.unsigned = unsigned
 
 
 # BOC module
@@ -1826,8 +1860,8 @@ class BocErrorCode(int, Enum):
     SERIALIZATION_ERROR = 202
     INAPPROPRIATE_BLOCK = 203
     MISSING_SOURCE_BOC = 204
-    INSUFFICIENT_CACHE_SIZE = (205,)
-    BOC_REF_NOT_FOUND = (206,)
+    INSUFFICIENT_CACHE_SIZE = 205
+    BOC_REF_NOT_FOUND = 206
     INVALID_BOC_REF = 207
 
 
@@ -4205,6 +4239,9 @@ class NetErrorCode(int, Enum):
     NO_ENDPOINTS_PROVIDED = 612
     GRAPHQL_WEBSOCKET_INIT_ERROR = 613
     NETWORK_MODULE_RESUMED = 614
+    UNAUTHORIZED = 615
+    QUERY_TRANSACTION_TREE_TIMEOUT = 616
+    GRAPHQL_CONNECTION_ERROR = 617
 
 
 class SortDirection(str, Enum):
@@ -5085,6 +5122,17 @@ class ResultOfIteratorNext:
         self.resume_state = resume_state
 
 
+class ResultOfGetSignatureId:
+    """ResultOfGetSignatureId"""
+
+    def __init__(self, signature_id: int = None) -> None:
+        """
+        :param signature_id: Signature ID for configured network if it should be used
+                in messages signature
+        """
+        self.signature_id = signature_id
+
+
 # PROCESSING module
 class ProcessingErrorCode(int, Enum):
     """Processing module error codes"""
@@ -5119,10 +5167,16 @@ class ProcessingEvent:
         Fetched block will be used later in waiting phase
         """
 
-        def __init__(self):
+        def __init__(self, message_id: str, message_dst: str):
+            """
+            :param message_id:
+            :param message_dst:
+            """
             super(ProcessingEvent.WillFetchFirstBlock, self).__init__(
                 type='WillFetchFirstBlock'
             )
+            self.message_id = message_id
+            self.message_dst = message_dst
 
     class FetchFirstBlockFailed(BaseTypedType):
         """
@@ -5134,14 +5188,18 @@ class ProcessingEvent:
         hope that the connection is restored
         """
 
-        def __init__(self, error: 'ClientError'):
+        def __init__(self, error: 'ClientError', message_id: str, message_dst: str):
             """
             :param error:
+            :param message_id:
+            :param message_dst:
             """
             super(ProcessingEvent.FetchFirstBlockFailed, self).__init__(
                 type='FetchFirstBlockFailed'
             )
             self.error = error
+            self.message_id = message_id
+            self.message_dst = message_dst
 
     class WillSend(BaseTypedType):
         """
@@ -5151,15 +5209,19 @@ class ProcessingEvent:
         (`abi.encode_message` function was executed successfully)
         """
 
-        def __init__(self, shard_block_id: str, message_id: str, message: str):
+        def __init__(
+            self, shard_block_id: str, message_id: str, message_dst: str, message: str
+        ):
             """
             :param shard_block_id:
             :param message_id:
+            :param message_dst:
             :param message:
             """
             super(ProcessingEvent.WillSend, self).__init__(type='WillSend')
             self.shard_block_id = shard_block_id
             self.message_id = message_id
+            self.message_dst = message_dst
             self.message = message
 
     class DidSend(BaseTypedType):
@@ -5175,15 +5237,19 @@ class ProcessingEvent:
         crucial for processing
         """
 
-        def __init__(self, shard_block_id: str, message_id: str, message: str):
+        def __init__(
+            self, shard_block_id: str, message_id: str, message_dst: str, message: str
+        ):
             """
             :param shard_block_id:
             :param message_id:
+            :param message_dst:
             :param message:
             """
             super(ProcessingEvent.DidSend, self).__init__(type='DidSend')
             self.shard_block_id = shard_block_id
             self.message_id = message_id
+            self.message_dst = message_dst
             self.message = message
 
     class SendFailed(BaseTypedType):
@@ -5204,18 +5270,21 @@ class ProcessingEvent:
             self,
             shard_block_id: str,
             message_id: str,
+            message_dst: str,
             message: str,
             error: 'ClientError',
         ):
             """
             :param shard_block_id:
             :param message_id:
+            :param message_dst:
             :param message:
             :param error:
             """
             super(ProcessingEvent.SendFailed, self).__init__(type='SendFailed')
             self.shard_block_id = shard_block_id
             self.message_id = message_id
+            self.message_dst = message_dst
             self.message = message
             self.error = error
 
@@ -5232,10 +5301,13 @@ class ProcessingEvent:
         crucial for processing
         """
 
-        def __init__(self, shard_block_id: str, message_id: str, message: str):
+        def __init__(
+            self, shard_block_id: str, message_id: str, message_dst: str, message: str
+        ):
             """
             :param shard_block_id:
             :param message_id:
+            :param message_dst:
             :param message:
             """
             super(ProcessingEvent.WillFetchNextBlock, self).__init__(
@@ -5243,6 +5315,7 @@ class ProcessingEvent:
             )
             self.shard_block_id = shard_block_id
             self.message_id = message_id
+            self.message_dst = message_dst
             self.message = message
 
     class FetchNextBlockFailed(BaseTypedType):
@@ -5264,12 +5337,14 @@ class ProcessingEvent:
             self,
             shard_block_id: str,
             message_id: str,
+            message_dst: str,
             message: str,
             error: 'ClientError',
         ):
             """
             :param shard_block_id:
             :param message_id:
+            :param message_dst:
             :param message:
             :param error:
             """
@@ -5278,6 +5353,7 @@ class ProcessingEvent:
             )
             self.shard_block_id = shard_block_id
             self.message_id = message_id
+            self.message_dst = message_dst
             self.message = message
             self.error = error
 
@@ -5295,14 +5371,18 @@ class ProcessingEvent:
         All the processing events will be repeated
         """
 
-        def __init__(self, message_id: str, message: str, error: 'ClientError'):
+        def __init__(
+            self, message_id: str, message_dst: str, message: str, error: 'ClientError'
+        ):
             """
             :param message_id:
+            :param message_dst:
             :param message:
             :param error:
             """
             super(ProcessingEvent.MessageExpired, self).__init__(type='MessageExpired')
             self.message_id = message_id
+            self.message_dst = message_dst
             self.message = message
             self.error = error
 
@@ -5311,9 +5391,12 @@ class ProcessingEvent:
         Notifies the app that the message has been delivered to the thread's validators
         """
 
-        def __init__(self, message_id: str, timestamp: int, json: Any):
+        def __init__(
+            self, message_id: str, message_dst: str, timestamp: int, json: Any
+        ):
             """
             :param message_id:
+            :param message_dst:
             :param timestamp:
             :param json:
             """
@@ -5321,6 +5404,7 @@ class ProcessingEvent:
                 type='RempSentToValidators'
             )
             self.message_id = message_id
+            self.message_dst = message_dst
             self.timestamp = timestamp
             self.json = json
 
@@ -5330,9 +5414,12 @@ class ProcessingEvent:
         candidate by the thread's collator
         """
 
-        def __init__(self, message_id: str, timestamp: int, json: Any):
+        def __init__(
+            self, message_id: str, message_dst: str, timestamp: int, json: Any
+        ):
             """
             :param message_id:
+            :param message_dst:
             :param timestamp:
             :param json:
             """
@@ -5340,6 +5427,7 @@ class ProcessingEvent:
                 type='RempIncludedIntoBlock'
             )
             self.message_id = message_id
+            self.message_dst = message_dst
             self.timestamp = timestamp
             self.json = json
 
@@ -5349,9 +5437,12 @@ class ProcessingEvent:
         accepted by the thread's validators
         """
 
-        def __init__(self, message_id: str, timestamp: int, json: Any):
+        def __init__(
+            self, message_id: str, message_dst: str, timestamp: int, json: Any
+        ):
             """
             :param message_id:
+            :param message_dst:
             :param timestamp:
             :param json:
             """
@@ -5359,6 +5450,7 @@ class ProcessingEvent:
                 type='RempIncludedIntoAcceptedBlock'
             )
             self.message_id = message_id
+            self.message_dst = message_dst
             self.timestamp = timestamp
             self.json = json
 
@@ -5368,14 +5460,18 @@ class ProcessingEvent:
         message processing
         """
 
-        def __init__(self, message_id: str, timestamp: int, json: Any):
+        def __init__(
+            self, message_id: str, message_dst: str, timestamp: int, json: Any
+        ):
             """
             :param message_id:
+            :param message_dst:
             :param timestamp:
             :param json:
             """
             super(ProcessingEvent.RempOther, self).__init__(type='RempOther')
             self.message_id = message_id
+            self.message_dst = message_dst
             self.timestamp = timestamp
             self.json = json
 
@@ -5386,14 +5482,16 @@ class ProcessingEvent:
         scenario (sequential block reading)
         """
 
-        def __init__(self, error: 'ClientError'):
+        def __init__(self, error: 'ClientError', message_id: str, message_dst: str):
             """
+            :param error:
             :param message_id:
-            :param timestamp:
-            :param json:
+            :param message_dst:
             """
             super(ProcessingEvent.RempError, self).__init__(type='RempError')
             self.error = error
+            self.message_id = message_id
+            self.message_dst = message_dst
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> 'ProcessingEventType':
@@ -5644,6 +5742,7 @@ class ExecutionOptions:
         block_lt: int = None,
         transaction_lt: int = None,
         chksig_always_succeed: bool = None,
+        signature_id: int = None,
     ):
         """
         :param blockchain_config: boc with config
@@ -5652,12 +5751,15 @@ class ExecutionOptions:
         :param transaction_lt: transaction logical time
         :param chksig_always_succeed: Overrides standard TVM behaviour.
                 If set to `true` then CHKSIG always will return `true`
+        :param signature_id: Signature ID to be used in signature verifying
+                instructions when `CapSignatureWithId` capability is enabled
         """
         self.blockchain_config = blockchain_config
         self.block_time = block_time
         self.block_lt = block_lt
         self.transaction_lt = transaction_lt
         self.chksig_always_succeed = chksig_always_succeed
+        self.signature_id = signature_id
 
     @property
     def dict(self):
@@ -5668,6 +5770,7 @@ class ExecutionOptions:
             'block_lt': self.block_lt,
             'transaction_lt': self.transaction_lt,
             'chksig_always_succeed': self.chksig_always_succeed,
+            'signature_id': self.signature_id,
         }
 
 

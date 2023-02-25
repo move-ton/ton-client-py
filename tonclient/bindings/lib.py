@@ -11,9 +11,11 @@ from .types import TCStringData, TCResponseHandler
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 LIB_DIR = os.path.join(BASE_DIR, 'bin')
 LIB_FILENAME = 'ton-rust-client'
+LIB_VERSION = '1.41.0'
 
 
-def _get_lib_path():
+def get_lib_path():
+    """Resolve library path"""
     machine = platform.machine().lower()
     system = platform.system().lower()
     system_ext = {'windows': 'dll', 'darwin': 'dylib', 'linux': 'so'}
@@ -33,7 +35,7 @@ def _get_lib_path():
     return fallback
 
 
-_LIB = ctypes.cdll.LoadLibrary(_get_lib_path())
+_LIB = ctypes.cdll.LoadLibrary(get_lib_path())
 
 
 def tc_create_context(

@@ -31,6 +31,7 @@ from tonclient.types import (
     ParamsOfIteratorNext,
     ResultOfIteratorNext,
     ParamsOfSubscribe,
+    ResultOfGetSignatureId,
 )
 
 
@@ -407,3 +408,15 @@ class TonNet(TonModule):
         :param params: See `types.RegisteredIterator`
         """
         return self.request(method='net.remove_iterator', **params.dict)
+
+    def get_signature_id(
+        self,
+    ) -> Union[ResultOfGetSignatureId, Awaitable[ResultOfGetSignatureId]]:
+        """
+        Returns signature ID for configured network if it should be used in
+        messages signature
+
+        :return: See `types.ResultOfGetSignatureId`
+        """
+        response = self.request(method='net.get_signature_id')
+        return self.response(classname=ResultOfGetSignatureId, response=response)
