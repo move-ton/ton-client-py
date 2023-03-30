@@ -5675,6 +5675,376 @@ class ParamsOfProcessMessage:
         }
 
 
+class MonitoredMessage:
+    """MonitoredMessage"""
+
+    class Boc(BaseTypedType):
+        """BOC of the message"""
+
+        def __init__(self, boc: str):
+            super(MonitoredMessage.Boc, self).__init__(type='Boc')
+            self.boc = boc
+
+        @property
+        def dict(self):
+            return {
+                'Boc': {
+                    'boc': self.boc,
+                }
+            }
+
+    class HashAddress(BaseTypedType):
+        """Message's hash and destination address"""
+
+        def __init__(self, hash: str, address: str):
+            super(MonitoredMessage.HashAddress, self).__init__(type='HashAddress')
+            self.hash = hash
+            self.address = address
+
+        @property
+        def dict(self):
+            return {
+                'HashAddress': {
+                    'hash': self.hash,
+                    'address': self.address,
+                }
+            }
+
+    @staticmethod
+    def from_dict(data: Dict[str, Any]) -> 'MonitoredMessage':
+        """Object from dict"""
+        k, v = list(data.items())[0]
+        return getattr(MonitoredMessage, k)(**v)
+
+
+class MonitorFetchWaitMode(str, Enum):
+    """
+    AtLeastOne
+        If there are no resolved results yet, then monitor awaits for the next
+        resolved result
+    All
+        Monitor waits until all unresolved messages will be resolved.
+        If there are no unresolved messages then monitor will wait
+    NoWait
+    """
+
+    AT_LEAST_ONE = 'AtLeastOne'
+    ALL = 'All'
+    NO_WAIT = 'NoWait'
+
+
+class MessageMonitoringStatus(str, Enum):
+    FINALIZED = 'Finalized'
+    TIMEOUT = 'Timeout'
+    RESERVED = 'Reserved'
+
+
+class MessageMonitoringTransactionCompute:
+    """MessageMonitoringTransactionCompute"""
+
+    def __init__(self, exit_code: int) -> None:
+        """
+        :param exit_code: Compute phase exit code
+        """
+        self.exit_code = exit_code
+
+    @property
+    def dict(self):
+        """Dict from object"""
+        return {'exit_code': self.exit_code}
+
+    @staticmethod
+    def from_dict(data: Dict[str, Any]) -> 'MessageMonitoringTransactionCompute':
+        """Object from dict"""
+        return MessageMonitoringTransactionCompute(**data)
+
+
+class MessageMonitoringTransaction:
+    """MessageMonitoringTransaction"""
+
+    def __init__(
+        self,
+        aborted: bool,
+        hash: str = None,
+        compute: MessageMonitoringTransactionCompute = None,
+    ) -> None:
+        """
+        :param aborted: Aborted field of the transaction
+        :param hash: Hash of the transaction.
+                Present if transaction was included into the blocks.
+                When then transaction was emulated this field will be missing
+        :param compute: Optional information about the compute phase of the transaction
+        """
+        self.aborted = aborted
+        self.hash = hash
+        self.compute = compute
+
+    @property
+    def dict(self):
+        """Dict from object"""
+        return {
+            'aborted': self.aborted,
+            'hash': self.hash,
+            'compute': self.compute.dict if self.compute else None,
+        }
+
+    @staticmethod
+    def from_dict(data: Dict[str, Any]) -> 'MessageMonitoringTransaction':
+        """Object from dict"""
+        if data['compute']:
+            data['compute'] = MessageMonitoringTransactionCompute.from_dict(
+                data=data['compute']
+            )
+        return MessageMonitoringTransaction(**data)
+
+
+class MessageMonitoringParams:
+    """MessageMonitoringParams"""
+
+    def __init__(
+        self, message: 'MonitoredMessageType', wait_until: int, user_data: Any = None
+    ) -> None:
+        """
+        :param message: Monitored message identification.
+                Can be provided as a message's BOC or (hash, address) pair.
+                BOC is a preferable way because it helps to determine possible
+                error reason (using TVM execution of the message).
+        :param wait_until: Block time Must be specified as a UNIX timestamp in seconds
+        :param user_data: User defined data associated with this message.
+                Helps to identify this message
+        """
+        self.message = message
+        self.wait_until = wait_until
+        self.user_data = user_data
+
+    @property
+    def dict(self):
+        """Dict from object"""
+        return {
+            'message': self.message.dict,
+            'wait_until': self.wait_until,
+            'user_data': self.user_data,
+        }
+
+    @staticmethod
+    def from_dict(data: Dict[str, Any]) -> 'MessageMonitoringParams':
+        """Dict from object"""
+        if data['message']:
+            data['message'] = MonitoredMessage.from_dict(data=data['message'])
+        return MessageMonitoringParams(**data)
+
+
+class ParamsOfMonitorMessages:
+    """ParamsOfMonitorMessages"""
+
+    def __init__(self, queue: str, messages: List['MessageMonitoringParams']) -> None:
+        """
+        :param queue: Name of the monitoring queue
+        :param messages: Messages to start monitoring for
+        """
+        self.queue = queue
+        self.messages = messages
+
+    @property
+    def dict(self):
+        """Dict from object"""
+        return {
+            'queue': self.queue,
+            'messages': [item.dict for item in self.messages],
+        }
+
+
+class MonitoringQueueInfo:
+    """MonitoringQueueInfo"""
+
+    def __init__(self, unresolved: int, resolved: int) -> None:
+        """
+        :param unresolved: Count of the unresolved messages
+        :param resolved: Count of resolved results
+        """
+        self.unresolved = unresolved
+        self.resolved = resolved
+
+    @staticmethod
+    def from_dict(data: Dict[str, Any]) -> 'MonitoringQueueInfo':
+        """Object from dict"""
+        return MonitoringQueueInfo(**data)
+
+
+class ParamsOfGetMonitorInfo:
+    """ParamsOfGetMonitorInfo"""
+
+    def __init__(self, queue: str) -> None:
+        """
+        :param queue: Name of the monitoring queue
+        """
+        self.queue = queue
+
+    @property
+    def dict(self):
+        """Dict from object"""
+        return {
+            'queue': self.queue,
+        }
+
+
+class MessageMonitoringResult:
+    """MessageMonitoringResult"""
+
+    def __init__(
+        self,
+        hash: str,
+        status: 'MessageMonitoringStatus',
+        transaction: 'MessageMonitoringTransaction' = None,
+        error: str = None,
+        user_data: Any = None,
+    ) -> None:
+        """
+        :param hash: Hash of the message
+        :param status: Processing status
+        :param transaction:
+                In case of `Finalized` the transaction is extracted
+                from the block.
+                In case of `Timeout` the transaction is emulated using
+                the last known account state
+        :param error: In case of `Timeout` contains possible error reason
+        :param user_data: User defined data related to this message
+        """
+        self.hash = hash
+        self.status = status
+        self.transaction = transaction
+        self.error = error
+        self.user_data = user_data
+
+    @staticmethod
+    def from_dict(data: Dict[str, Any]) -> 'MessageMonitoringResult':
+        """Object from dict"""
+        if data['transaction']:
+            data['transaction'] = MessageMonitoringTransaction.from_dict(
+                data=data['transaction']
+            )
+        return MessageMonitoringResult(**data)
+
+
+class ParamsOfFetchNextMonitorResults:
+    """ParamsOfFetchNextMonitorResults"""
+
+    def __init__(self, queue: str, wait_mode: 'MonitorFetchWaitMode' = None) -> None:
+        """
+        :param queue: Name of the monitoring queue
+        :param wait_mode: Wait mode. Default is `NO_WAIT`
+        """
+        self.queue = queue
+        self.wait_mode = wait_mode
+
+    @property
+    def dict(self):
+        """Dict from object"""
+        return {'queue': self.queue, 'wait_mode': self.wait_mode}
+
+
+class ResultOfFetchNextMonitorResults:
+    """ResultOfFetchNextMonitorResults"""
+
+    def __init__(self, results: List['MessageMonitoringResult']) -> None:
+        """
+        :param results: List of the resolved results
+        """
+        self.results = results
+
+    @staticmethod
+    def from_dict(data: Dict[str, Any]) -> 'ResultOfFetchNextMonitorResults':
+        """Object from dict"""
+        if data['results']:
+            data['results'] = [
+                MessageMonitoringResult.from_dict(data=item) for item in data['results']
+            ]
+        return ResultOfFetchNextMonitorResults(**data)
+
+
+class ParamsOfCancelMonitor:
+    """ParamsOfCancelMonitor"""
+
+    def __init__(self, queue: str) -> None:
+        """
+        :param queue: Name of the monitoring queue
+        """
+        self.queue = queue
+
+    @property
+    def dict(self):
+        """Dict from object"""
+        return {'queue': self.queue}
+
+
+class MessageSendingParams:
+    """MessageSendingParams"""
+
+    def __init__(self, boc: str, wait_until: int, user_data: Any = None) -> None:
+        """
+        :param boc: BOC of the message, that must be sent to the blockchain
+        :param wait_until: Expiration time of the message.
+                Must be specified as a UNIX timestamp in seconds
+        :param user_data: User defined data associated with this message.
+                Helps to identify this message when received `MessageMonitoringResult`
+        """
+        self.boc = boc
+        self.wait_until = wait_until
+        self.user_data = user_data
+
+    @property
+    def dict(self):
+        """Dict from object"""
+        return {
+            'boc': self.boc,
+            'wait_until': self.wait_until,
+            'user_data': self.user_data,
+        }
+
+
+class ParamsOfSendMessages:
+    """ParamsOfSendMessages"""
+
+    def __init__(
+        self, messages: List['MessageSendingParams'], monitor_queue: str = None
+    ) -> None:
+        """
+        :param messages: Messages that must be sent to the blockchain
+        :param monitor_queue: Optional message monitor queue that starts
+                monitoring for the processing results for sent messages
+        """
+        self.messages = messages
+        self.monitor_queue = monitor_queue
+
+    @property
+    def dict(self):
+        """Dict from object"""
+        return {
+            'messages': [item.dict for item in self.messages],
+            'monitor_queue': self.monitor_queue,
+        }
+
+
+class ResultOfSendMessages:
+    """ResultOfSendMessages"""
+
+    def __init__(self, messages: List['MessageMonitoringParams']) -> None:
+        """
+        :param messages: Messages that was sent to the blockchain for execution
+        """
+        self.messages = messages
+
+    @staticmethod
+    def from_dict(data: Dict[str, Any]) -> 'ResultOfSendMessages':
+        """Object from dict"""
+        if data['messages']:
+            data['messages'] = [
+                MessageMonitoringParams.from_dict(data=item)
+                for item in data['messages']
+            ]
+        return ResultOfSendMessages(**data)
+
+
 # TVM module
 class TvmErrorCode(int, Enum):
     """TVM module error codes"""
@@ -6883,3 +7253,4 @@ BoxEncryptionAlgorithmType = Union[
     BoxEncryptionAlgorithm.NaclBox,
     BoxEncryptionAlgorithm.NaclSecretBox,
 ]
+MonitoredMessageType = Union[MonitoredMessage.Boc, MonitoredMessage.HashAddress]
