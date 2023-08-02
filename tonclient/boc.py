@@ -25,14 +25,16 @@ from tonclient.types import (
     ResultOfSetCodeSalt,
     ParamsOfDecodeTvc,
     ResultOfDecodeTvc,
-    ParamsOfEncodeTvc,
-    ResultOfEncodeTvc,
+    ParamsOfEncodeStateInit,
+    ResultOfEncodeStateInit,
     ParamsOfGetCompilerVersion,
     ResultOfGetCompilerVersion,
     ParamsOfGetBocDepth,
     ResultOfGetBocDepth,
     ParamsOfEncodeExternalInMessage,
     ResultOfEncodeExternalInMessage,
+    ParamsOfDecodeStateInit,
+    ResultOfDecodeStateInit,
 )
 
 
@@ -229,18 +231,30 @@ class TonBoc(TonModule):
         response = self.request(method='boc.decode_tvc', **params.dict)
         return self.response(classname=ResultOfDecodeTvc, response=response)
 
-    def encode_tvc(
-        self, params: ParamsOfEncodeTvc
-    ) -> Union[ResultOfEncodeTvc, Awaitable[ResultOfEncodeTvc]]:
+    def decode_state_init(
+        self, params: ParamsOfDecodeStateInit
+    ) -> Union[ResultOfDecodeStateInit, Awaitable[ResultOfDecodeStateInit]]:
         """
-        Encodes tvc from code, data, libraries ans special options
-        (see input params)
+        Decodes contract's initial state into code, data, libraries and special options.
 
-        :param params: See `types.ParamsOfEncodeTvc`
-        :return: See `types.ResultOfEncodeTvc`
+        :param params: See `types.ParamsOfDecodeStateInit`
+        :return: See `types.ResultOfDecodeStateInit`
         """
-        response = self.request(method='boc.encode_tvc', **params.dict)
-        return self.response(classname=ResultOfEncodeTvc, response=response)
+        response = self.request(method='boc.decode_state_init', **params.dict)
+        return self.response(classname=ResultOfDecodeStateInit, response=response)
+
+    def encode_state_init(
+        self, params: ParamsOfEncodeStateInit
+    ) -> Union[ResultOfEncodeStateInit, Awaitable[ResultOfEncodeStateInit]]:
+        """
+        Encodes initial contract state from code, data, libraries
+        and special options (see input params)
+
+        :param params: See `types.ParamsOfEncodeStateInit`
+        :return: See `types.ResultOfEncodeStateInit`
+        """
+        response = self.request(method='boc.encode_state_init', **params.dict)
+        return self.response(classname=ResultOfEncodeStateInit, response=response)
 
     def get_compiler_version(
         self, params: ParamsOfGetCompilerVersion

@@ -411,6 +411,38 @@ class TestTonNetSyncCore(unittest.TestCase):
             q_params = ParamsOfQueryCollection(collection='messages', result='')
             sync_core_client.net.query_collection(params=q_params)
 
+    def test_query_collection_ws(self):
+        config = ClientConfig()
+        config.network.endpoints = sync_core_client.config().network.endpoints
+        config.network.queries_protocol = NetworkQueriesProtocol.WS
+        client_ws = TonClient(config=config)
+
+        q_params = ParamsOfQueryCollection(collection='messages', result='id', limit=1)
+        result = client_ws.net.query_collection(params=q_params)
+        self.assertGreater(len(result.result), 0)
+
+        q_params = ParamsOfQueryCollection(
+            collection='accounts', result='id balance', limit=5
+        )
+        result = client_ws.net.query_collection(params=q_params)
+        self.assertEqual(5, len(result.result))
+
+        q_params = ParamsOfQueryCollection(
+            collection='messages',
+            result='body created_at',
+            limit=10,
+            filter={'created_at': {'gt': 1562342740}},
+            order=[OrderBy(path='created_at', direction=SortDirection.ASC)],
+        )
+        result = client_ws.net.query_collection(params=q_params)
+        self.assertGreater(result.result[0]['created_at'], 1562342740)
+
+        with self.assertRaises(TonException):
+            q_params = ParamsOfQueryCollection(
+                collection='messages', result='id balance'
+            )
+            client_ws.net.query_collection(params=q_params)
+
     def test_wait_for_collection(self):
         now = int(datetime.now().timestamp())
         time.sleep(1)
@@ -427,3 +459,86 @@ class TestTonNetSyncCore(unittest.TestCase):
                 collection='transactions', filter={'now': {'gt': now}}, result=''
             )
             sync_core_client.net.wait_for_collection(params=q_params)
+
+    def test_query(self):
+        tonos_punch()
+        q_params = ParamsOfQuery(
+            query='query($time: Float){messages(filter:{created_at:{ge:$time}}limit:5){id}}',
+            variables={'time': int(datetime.now().timestamp()) - 60},
+        )
+        result = sync_core_client.net.query(params=q_params)
+        self.assertGreater(len(result.result['data']['messages']), 0)
+
+    def test_find_last_shard_block(self):
+        find_params = ParamsOfFindLastShardBlock(address=GIVER_ADDRESS)
+        result = sync_core_client.net.find_last_shard_block(params=find_params)
+        self.assertIsInstance(result.block_id, str)
+
+    def test_get_endpoints(self):
+        result = sync_core_client.net.get_endpoints()
+        self.assertGreaterEqual(len(result.endpoints), 1)
+
+    def test_aggregate_collection(self):
+        fields = [FieldAggregation(field='', fn=AggregationFn.COUNT)]
+        params = ParamsOfAggregateCollection(collection='accounts', fields=fields)
+        result = sync_core_client.net.aggregate_collection(params=params)
+        count = int(result.values[0])
+        self.assertGreater(count, 0)
+
+        params.filter = {'workchain_id': {'eq': -1}}
+        result = sync_core_client.net.aggregate_collection(params=params)
+        count = int(result.values[0])
+        self.assertGreaterEqual(count, 0)
+
+    def test_batch_query(self):
+        operations = [
+            ParamsOfQueryOperation.QueryCollection(
+                params=ParamsOfQueryCollection(
+                    collection='blocks_signatures', result='id', limit=1
+                )
+            ),
+            ParamsOfQueryOperation.AggregateCollection(
+                params=ParamsOfAggregateCollection(
+                    collection='accounts',
+                    fields=[FieldAggregation(field='', fn=AggregationFn.COUNT)],
+                )
+            ),
+            ParamsOfQueryOperation.WaitForCollection(
+                params=ParamsOfWaitForCollection(
+                    collection='transactions',
+                    filter={'now': {'gt': 20}},
+                    result='id now',
+                )
+            ),
+        ]
+        params = ParamsOfBatchQuery(operations=operations)
+        result = sync_core_client.net.batch_query(params=params)
+        self.assertEqual(3, len(result.results))
+
+    def test_query_transaction_tree(self):
+        query_params = ParamsOfQueryCollection(
+            collection='messages',
+            filter={'msg_type': {'eq': 1}},
+            limit=5,
+            result='id dst dst_transaction {id aborted out_messages {id dst msg_type_name dst_transaction {id aborted out_messages {id dst msg_type_name dst_transaction {id aborted}}}}}',
+        )
+        query_result = sync_core_client.net.query_collection(params=query_params)
+
+        abi_registry = [Abi.from_path(path=os.path.join(SAMPLES_DIR, 'Hello.abi.json'))]
+
+        for message in query_result.result:
+            tree_params = ParamsOfQueryTransactionTree(
+                in_msg=message['id'], abi_registry=abi_registry
+            )
+            tree_result = sync_core_client.net.query_transaction_tree(
+                params=tree_params
+            )
+
+            self.assertIsInstance(tree_result.messages, list)
+            self.assertIsInstance(tree_result.messages[0], MessageNode)
+            self.assertIsInstance(tree_result.transactions, list)
+            self.assertIsInstance(tree_result.transactions[0], TransactionNode)
+
+    def test_get_signature_id(self):
+        result = sync_core_client.net.get_signature_id()
+        self.assertTrue('signature_id' in result.__dict__.keys())

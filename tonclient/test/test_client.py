@@ -66,3 +66,13 @@ class TestTonClientSyncCore(unittest.TestCase):
 
     def test_destroy_context(self):
         self.client.destroy_context()
+
+    def test_config(self):
+        result = self.client.config()
+        self.assertIsInstance(result, ClientConfig)
+        self.assertIsInstance(result.network, NetworkConfig)
+        self.assertIsInstance(result.crypto, CryptoConfig)
+        self.assertIsInstance(result.abi, AbiConfig)
+        self.assertIsInstance(result.boc, BocConfig)
+        self.assertIsInstance(result.proofs, ProofsConfig)
+        self.assertEqual(LIB_VERSION, result.binding.version)
