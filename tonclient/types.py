@@ -7,6 +7,7 @@ from asyncio.selector_events import BaseSelectorEventLoop
 from enum import Enum
 from io import StringIO
 from typing import Dict, Union, Any, List, Callable
+from warnings import warn
 
 
 class BaseTypedType:
@@ -163,6 +164,18 @@ class NetworkQueriesProtocol(str, Enum):
 
 class NetworkConfig:
     """Network config object"""
+
+    deprecated = ['network_retries_count', 'reconnect_timeout']
+
+    def __getattribute__(self, __name: str) -> Any:
+        if __name in NetworkConfig.deprecated:
+            warn(f'`{__name}` is deprecated', DeprecationWarning, stacklevel=2)
+        return super().__getattribute__(__name)
+
+    def __setattr__(self, __name: str, __value: Any) -> None:
+        if __name in NetworkConfig.deprecated:
+            warn(f'`{__name}` is deprecated', DeprecationWarning, stacklevel=2)
+        super().__setattr__(__name, __value)
 
     def __init__(
         self,
@@ -845,13 +858,18 @@ class DeploySet:
 
     def __init__(
         self,
-        tvc: str,
+        tvc: str = None,
+        code: str = None,
+        state_init: str = None,
         workchain_id: int = None,
         initial_data: List[Dict[str, Any]] = None,
         initial_pubkey: str = None,
     ):
         """
         :param tvc: Content of TVC file encoded in `base64`
+                For compatibility reason this field can contain an encoded `StateInit`.
+        :param code: Contract code BOC encoded with `base64`
+        :param state_init: State init BOC encoded with `base64`
         :param workchain_id: Target workchain for destination address.
                 Default is 0
         :param initial_data: List of initial values for contract's public
@@ -865,6 +883,8 @@ class DeploySet:
                     3. Public key, provided by Signer
         """
         self.tvc = tvc
+        self.code = code
+        self.state_init = state_init
         self.workchain_id = workchain_id
         self.initial_data = initial_data
         self.initial_pubkey = initial_pubkey
@@ -874,6 +894,8 @@ class DeploySet:
         """Dict from object"""
         return {
             'tvc': self.tvc,
+            'code': self.code,
+            'state_init': self.state_init,
             'workchain_id': self.workchain_id,
             'initial_data': self.initial_data,
             'initial_pubkey': self.initial_pubkey,
@@ -1865,6 +1887,35 @@ class BocErrorCode(int, Enum):
     INVALID_BOC_REF = 207
 
 
+class Tvc:
+    """TVC"""
+
+    class V1(BaseTypedType):
+        """Tvc.V1"""
+
+        def __init__(self, code: str = None, description: str = None):
+            """
+            :param code:
+            :param description:
+            """
+            super(Tvc.V1, self).__init__(type='V1')
+            self.code = code
+            self.description = description
+
+        @property
+        def dict(self):
+            return {
+                **super(Tvc.V1, self).dict,
+                'code': self.code,
+                'description': self.description,
+            }
+
+    @staticmethod
+    def from_dict(data: Dict[str, Any]) -> 'Tvc':
+        """Object from dict"""
+        return getattr(Tvc, data['type'])(**data['value'])
+
+
 class ParamsOfParse:
     """ParamsOfParse"""
 
@@ -2274,24 +2325,58 @@ class ResultOfSetCodeSalt:
 class ParamsOfDecodeTvc:
     """ParamsOfDecodeTvc"""
 
-    def __init__(self, tvc: str, boc_cache: 'BocCacheTypeType' = None):
+    def __init__(self, tvc: str):
         """
         :param tvc: Contract TVC image BOC encoded as `base64` or BOC handle
         :param boc_cache: Cache type to put the result.
                 The BOC itself returned if no cache type provided
         """
         self.tvc = tvc
+
+    @property
+    def dict(self):
+        """Dict from object"""
+        return {'tvc': self.tvc}
+
+
+class ResultOfDecodeTvc:
+    """ResultOfDecodeTvc"""
+
+    def __init__(self, tvc: 'TvcType'):
+        """
+        :param tvc:
+        """
+        self.tvc = tvc
+
+    @staticmethod
+    def from_dict(data: Dict[str, Any]) -> 'ResultOfDecodeTvc':
+        """Object from dict"""
+        if data['tvc']:
+            data['tvc'] = Tvc.from_dict(data=data['tvc'])
+        return ResultOfDecodeTvc(**data)
+
+
+class ParamsOfDecodeStateInit:
+    """ParamsOfDecodeInit"""
+
+    def __init__(self, state_init: str, boc_cache: 'BocCacheTypeType' = None):
+        """
+        :param state_init: Contract StateInit image BOC encoded as `base64` or BOC handle
+        :param boc_cache: Cache type to put the result.
+                The BOC itself returned if no cache type provided
+        """
+        self.state_init = state_init
         self.boc_cache = boc_cache
 
     @property
     def dict(self):
         """Dict from object"""
         boc_cache = self.boc_cache.dict if self.boc_cache else self.boc_cache
-        return {'tvc': self.tvc, 'boc_cache': boc_cache}
+        return {'state_init': self.state_init, 'boc_cache': boc_cache}
 
 
-class ResultOfDecodeTvc:
-    """ResultOfDecodeTvc"""
+class ResultOfDecodeStateInit:
+    """ResultOfDecodeStateInit"""
 
     def __init__(
         self,
@@ -2336,8 +2421,8 @@ class ResultOfDecodeTvc:
         self.compiler_version = compiler_version
 
 
-class ParamsOfEncodeTvc:
-    """ParamsOfEncodeTvc"""
+class ParamsOfEncodeStateInit:
+    """ParamsOfEncodeStateInit"""
 
     def __init__(
         self,
@@ -2385,15 +2470,15 @@ class ParamsOfEncodeTvc:
         }
 
 
-class ResultOfEncodeTvc:
-    """ResultOfEncodeTvc"""
+class ResultOfEncodeStateInit:
+    """ResultOfEncodeStateInit"""
 
-    def __init__(self, tvc: str):
+    def __init__(self, state_init: str):
         """
-        :param tvc: Contract TVC image BOC encoded as `base64` or
+        :param tvc: Contract StateInit image BOC encoded as `base64` or
                 BOC handle of boc_cache parameter was specified
         """
-        self.tvc = tvc
+        self.state_init = state_init
 
 
 class ParamsOfGetCompilerVersion:
@@ -5570,7 +5655,7 @@ class DecodedOutput:
 class ParamsOfSendMessage:
     """ParamsOfSendMessage"""
 
-    def __init__(self, message: str, send_events: bool, abi: 'AbiType' = None):
+    def __init__(self, message: str, send_events: bool = None, abi: 'AbiType' = None):
         """
         :param message: Message BOC
         :param send_events: Flag for requesting events sending
@@ -5616,7 +5701,7 @@ class ParamsOfWaitForTransaction:
         self,
         message: str,
         shard_block_id: str,
-        send_events: bool,
+        send_events: bool = None,
         abi: 'AbiType' = None,
         sending_endpoints: List[str] = None,
     ):
@@ -5657,7 +5742,7 @@ class ParamsOfProcessMessage:
     """ParamsOfProcessMessage"""
 
     def __init__(
-        self, message_encode_params: 'ParamsOfEncodeMessage', send_events: bool
+        self, message_encode_params: 'ParamsOfEncodeMessage', send_events: bool = None
     ):
         """
         :param message_encode_params: Message encode parameters
@@ -5688,9 +5773,8 @@ class MonitoredMessage:
         @property
         def dict(self):
             return {
-                'Boc': {
-                    'boc': self.boc,
-                }
+                **super(MonitoredMessage.Boc, self).dict,
+                'boc': self.boc,
             }
 
     class HashAddress(BaseTypedType):
@@ -5704,17 +5788,16 @@ class MonitoredMessage:
         @property
         def dict(self):
             return {
-                'HashAddress': {
-                    'hash': self.hash,
-                    'address': self.address,
-                }
+                **super(MonitoredMessage.HashAddress, self).dict,
+                'hash': self.hash,
+                'address': self.address,
             }
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> 'MonitoredMessage':
         """Object from dict"""
-        k, v = list(data.items())[0]
-        return getattr(MonitoredMessage, k)(**v)
+        kwargs = {k: v for k, v in data.items() if k != 'type'}
+        return getattr(MonitoredMessage, data['type'])(**kwargs)
 
 
 class MonitorFetchWaitMode(str, Enum):
@@ -7254,3 +7337,4 @@ BoxEncryptionAlgorithmType = Union[
     BoxEncryptionAlgorithm.NaclSecretBox,
 ]
 MonitoredMessageType = Union[MonitoredMessage.Boc, MonitoredMessage.HashAddress]
+TvcType = Tvc.V1

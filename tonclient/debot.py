@@ -1,5 +1,6 @@
 """DeBot module methods"""
 from typing import Union, Awaitable
+from warnings import warn
 
 from tonclient.module import TonModule
 from tonclient.types import (
@@ -13,6 +14,8 @@ from tonclient.types import (
     ResultOfFetch,
     ParamsOfRemove,
 )
+
+warn(f'`Module {__name__}` is deprecated', DeprecationWarning, stacklevel=2)
 
 
 class TonDebot(TonModule):
