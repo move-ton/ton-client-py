@@ -406,7 +406,7 @@ class TestTonBocAsyncCore(unittest.TestCase):
         self.assertEqual(abi_encoded.message, boc_encoded.message)
 
     def test_decode_tvc(self):
-        tvc_boc = 'te6ccgEBBQEAMgACCQFn9wzgAwEBAtACACZTb21lIFNtYXJ0IENvbnRyYWN0ART/APSkE/S88sgLBAAC0w=='
+        tvc_boc = 'te6ccgEBBAEALgACCaLwuBzgAgEAJlNvbWUgU21hcnQgQ29udHJhY3QBFP8A9KQT9LzyyAsDAALT'
         code_boc = 'te6ccgEBAgEAEAABFP8A9KQT9LzyyAsBAALT'
         description = 'Some Smart Contract'
 
@@ -788,7 +788,7 @@ class TestTonBocSyncCore(unittest.TestCase):
         self.assertEqual(abi_encoded.message, boc_encoded.message)
 
     def test_decode_tvc(self):
-        tvc_boc = 'te6ccgEBBQEAMgACCQFn9wzgAwEBAtACACZTb21lIFNtYXJ0IENvbnRyYWN0ART/APSkE/S88sgLBAAC0w=='
+        tvc_boc = 'te6ccgEBBAEALgACCaLwuBzgAgEAJlNvbWUgU21hcnQgQ29udHJhY3QBFP8A9KQT9LzyyAsDAALT'
         code_boc = 'te6ccgEBAgEAEAABFP8A9KQT9LzyyAsBAALT'
         description = 'Some Smart Contract'
 

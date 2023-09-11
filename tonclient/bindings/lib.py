@@ -11,7 +11,7 @@ from .types import TCStringData, TCResponseHandler
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 LIB_DIR = os.path.join(BASE_DIR, 'bin')
 LIB_FILENAME = 'ton-rust-client'
-LIB_VERSION = '1.44.1'
+LIB_VERSION = '1.44.3'
 
 
 def get_lib_path():
