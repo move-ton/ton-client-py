@@ -1,3 +1,5 @@
+## :exclamation: This binding is no longer supported
+
 # Everscale Client
 
 Everscale SDK Client library Python bindings.
